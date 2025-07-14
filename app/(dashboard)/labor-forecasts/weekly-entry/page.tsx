@@ -97,7 +97,7 @@ export default function WeeklyLaborEntryPage() {
       const data = await response.json()
       
       setProjectInfo(data.project)
-      setCraftTypes(data.craftTypes)
+      // setCraftTypes(data.craftTypes)
       
       // Build labor entries map
       const entriesMap = new Map<string, LaborActual>()

@@ -153,7 +153,7 @@ export default function BudgetImportPage({ params }: BudgetImportPageProps) {
           allRows.push({
             discipline: currentDiscipline,
             costType: description.trim().toUpperCase(),
-            manhours: numericManhours,
+            manhours: numericManhours ?? undefined,
             value: numericValue,
             description: ''
           })
@@ -210,11 +210,11 @@ export default function BudgetImportPage({ params }: BudgetImportPageProps) {
         
         // Process ALL rows to calculate totals
         const allRows: BudgetBreakdownImportRow[] = jsonData.map((row: Record<string, unknown>) => ({
-          discipline: row.Discipline || row.discipline || '',
-          costType: row['Cost Type'] || row.cost_type || row.costType || '',
-          manhours: row.Manhours || row.manhours || row.Hours || 0,
-          value: row.Value || row.value || row.Amount || row.amount || 0,
-          description: row.Description || row.description || ''
+          discipline: String(row.Discipline || row.discipline || ''),
+          costType: String(row['Cost Type'] || row.cost_type || row.costType || ''),
+          manhours: Number(row.Manhours || row.manhours || row.Hours || 0),
+          value: Number(row.Value || row.value || row.Amount || row.amount || 0),
+          description: String(row.Description || row.description || '')
         }))
 
         // Get preview rows (first 10)

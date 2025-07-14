@@ -102,7 +102,7 @@ export default function HeadcountForecastPage() {
       const data = await response.json()
       
       setProjectInfo(data.project)
-      setCraftTypes(data.craftTypes)
+      // setCraftTypes(data.craftTypes)
       setWeeklyData(data.weeks)
     } catch (err) {
       console.error('Error fetching data:', err)

@@ -9,6 +9,41 @@ import { useUser } from '@/hooks/use-auth'
 import { LoadingPage } from '@/components/ui/loading'
 import { formatCurrency, formatPercentage } from '@/lib/utils'
 import Link from 'next/link'
+
+interface RevenueForecast {
+  projectId: string
+  currentMonth: number
+  nextMonth: number
+  monthPlus2: number
+  remainingBacklog: number
+  notes: string
+}
+
+interface RiskyPO {
+  id: string
+  po_number: string
+  project: { name: string }
+  vendor_name: string
+  committed_amount: number
+  invoiced_amount: number
+  remaining_amount: number
+  forecast_amount: number
+  status: string
+}
+
+interface FinancialSnapshot {
+  revised_contract?: number
+  total_committed?: number
+  cost_to_complete?: number
+  forecasted_cost?: number
+  forecasted_profit?: number
+  profit_margin?: number
+  percent_complete?: number
+}
+
+interface ProjectWithSnapshots {
+  financial_snapshots?: FinancialSnapshot[]
+}
 import { 
   Building, 
   FileText,
@@ -25,8 +60,8 @@ export default function ProjectManagerDashboard() {
   const { data: projects, isLoading: projectsLoading, error } = useUserProjects()
 
   // Declare all states and effects at the top
-  const [revenueForecasts, setRevenueForecasts] = useState([])
-  const [riskyPOs, setRiskyPOs] = useState([])
+  const [revenueForecasts, setRevenueForecasts] = useState<RevenueForecast[]>([])
+  const [riskyPOs, setRiskyPOs] = useState<RiskyPO[]>([])
   const [poLoading, setPOLoading] = useState(true)
   const [showPOWatchlist, setShowPOWatchlist] = useState(false)
 
@@ -94,7 +129,7 @@ export default function ProjectManagerDashboard() {
   //   : 0
 
   // Handler for updating revenue forecast (local; add mutation to save)
-  const updateForecast = (projectId, field, value) => {
+  const updateForecast = (projectId: string, field: keyof RevenueForecast, value: number | string) => {
     setRevenueForecasts(prev => prev.map(f => 
       f.projectId === projectId ? { ...f, [field]: value } : f
     ))
@@ -142,7 +177,7 @@ export default function ProjectManagerDashboard() {
             </TableHeader>
             <TableBody>
               {activeProjects.map(project => {
-                const snapshot = project.financial_snapshots?.[0] // Latest snapshot
+                const snapshot = (project as ProjectWithSnapshots).financial_snapshots?.[0] // Latest snapshot
                 const bac = snapshot?.revised_contract || 0
                 const actualCost = snapshot?.total_committed || 0
                 const etc = snapshot?.cost_to_complete || 0

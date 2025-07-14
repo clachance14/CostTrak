@@ -326,7 +326,7 @@ export default function OpsManagerDashboard() {
           id: po.id,
           poNumber: po.po_number,
           projectId: po.project_id,
-          projectName: po.projects && 'name' in po.projects ? po.projects.name : '',
+          projectName: po.projects && 'name' in po.projects ? String(po.projects.name) : '',
           vendor: po.vendor_name || '',
           scope: po.description || '',
           poValue,

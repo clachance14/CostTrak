@@ -112,8 +112,8 @@ export default function LaborForecastsMainPage() {
             })
           }
           const weekData = weekMap.get(week)!
-          weekData.totalCost += actual.totalCost
-          weekData.totalHours += actual.totalHours
+          weekData.totalCost += actual.actualCost
+          weekData.totalHours += actual.actualHours
         })
         
         // Calculate average rates
