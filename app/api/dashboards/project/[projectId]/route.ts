@@ -5,10 +5,10 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
   const supabase = await createClient()
-  const projectId = params.projectId
+  const { projectId } = await params
   
   // Check authentication
   const { data: { user }, error: userError } = await supabase.auth.getUser()

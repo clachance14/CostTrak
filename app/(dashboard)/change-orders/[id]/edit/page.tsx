@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { use, useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, AlertCircle } from 'lucide-react'
@@ -8,7 +8,12 @@ import ChangeOrderForm from '@/components/change-orders/change-order-form'
 import { createClient } from '@/lib/supabase/client'
 import type { ChangeOrderFormData } from '@/lib/validations/change-order'
 
-export default function EditChangeOrderPage({ params }: { params: { id: string } }) {
+interface EditChangeOrderPageProps {
+  params: Promise<{ id: string }>
+}
+
+export default function EditChangeOrderPage({ params }: EditChangeOrderPageProps) {
+  const { id } = use(params)
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -25,7 +30,7 @@ export default function EditChangeOrderPage({ params }: { params: { id: string }
       }
 
       // Fetch change order details
-      const response = await fetch(`/api/change-orders/${params.id}`)
+      const response = await fetch(`/api/change-orders/${id}`)
       const data = await response.json()
 
       if (!response.ok) {
@@ -56,7 +61,7 @@ export default function EditChangeOrderPage({ params }: { params: { id: string }
     } finally {
       setLoading(false)
     }
-  }, [params.id, router, supabase])
+  }, [id, router, supabase])
 
   useEffect(() => {
     fetchChangeOrder()
@@ -99,7 +104,7 @@ export default function EditChangeOrderPage({ params }: { params: { id: string }
     <div className="p-8">
       <div className="mb-6">
         <Link
-          href={`/change-orders/${params.id}`}
+          href={`/change-orders/${id}`}
           className="inline-flex items-center text-sm text-foreground/80 hover:text-foreground/80"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
@@ -115,7 +120,7 @@ export default function EditChangeOrderPage({ params }: { params: { id: string }
           <ChangeOrderForm 
             mode="edit" 
             initialData={initialData} 
-            changeOrderId={params.id}
+            changeOrderId={id}
           />
         </div>
       </div>

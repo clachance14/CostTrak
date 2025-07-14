@@ -11,10 +11,11 @@ export const dynamic = 'force-dynamic'
 // POST /api/change-orders/[id]/approve - Approve a change order
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createClient()
-  const changeOrderId = params.id
+  const { id } = await params
+  const changeOrderId = id
   
   // Check authentication
   const { data: { user }, error: userError } = await supabase.auth.getUser()

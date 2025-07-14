@@ -13,10 +13,11 @@ export const dynamic = 'force-dynamic'
 // GET /api/labor-forecasts/[id] - Get single labor forecast
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createClient()
-  const forecastId = params.id
+  const { id } = await params
+  const forecastId = id
   
   // Check authentication
   const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -177,10 +178,11 @@ export async function GET(
 // PATCH /api/labor-forecasts/[id] - Update labor forecast
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createClient()
-  const forecastId = params.id
+  const { id } = await params
+  const forecastId = id
   
   // Check authentication
   const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -359,10 +361,11 @@ export async function PATCH(
 // DELETE /api/labor-forecasts/[id] - Soft delete labor forecast
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createClient()
-  const forecastId = params.id
+  const { id } = await params
+  const forecastId = id
   
   // Check authentication
   const { data: { user }, error: userError } = await supabase.auth.getUser()

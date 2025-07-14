@@ -59,7 +59,7 @@ export default function LoginScreen() {
     } catch (error) {
       setError('root', {
         type: 'manual',
-        message: error.message || 'Invalid email or password',
+        message: (error as Error).message || 'Invalid email or password',
       })
     }
   }

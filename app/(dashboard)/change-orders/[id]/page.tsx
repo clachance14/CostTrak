@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { use, useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Edit, Check, X, AlertCircle, Clock, User, Calendar } from 'lucide-react'
@@ -68,8 +68,13 @@ const statusConfig = {
   cancelled: { label: 'Cancelled', className: 'bg-foreground/5 text-foreground', icon: X }
 }
 
-export default function ChangeOrderDetailPage({ params }: { params: { id: string } }) {
+interface ChangeOrderDetailPageProps {
+  params: Promise<{ id: string }>
+}
+
+export default function ChangeOrderDetailPage({ params }: ChangeOrderDetailPageProps) {
   const router = useRouter()
+  const { id } = use(params)
   const [changeOrder, setChangeOrder] = useState<ChangeOrderDetails | null>(null)
   const [auditTrail, setAuditTrail] = useState<AuditEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -108,7 +113,7 @@ export default function ChangeOrderDetailPage({ params }: { params: { id: string
       }
 
       // Fetch change order details
-      const response = await fetch(`/api/change-orders/${params.id}`)
+      const response = await fetch(`/api/change-orders/${id}`)
       const data = await response.json()
 
       if (!response.ok) {
@@ -123,7 +128,7 @@ export default function ChangeOrderDetailPage({ params }: { params: { id: string
     } finally {
       setLoading(false)
     }
-  }, [params.id, router, supabase])
+  }, [id, router, supabase])
 
   useEffect(() => {
     fetchChangeOrderDetails()
@@ -135,7 +140,7 @@ export default function ChangeOrderDetailPage({ params }: { params: { id: string
     }
 
     try {
-      const response = await fetch(`/api/change-orders/${params.id}/approve`, {
+      const response = await fetch(`/api/change-orders/${id}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
@@ -163,7 +168,7 @@ export default function ChangeOrderDetailPage({ params }: { params: { id: string
     }
 
     try {
-      const response = await fetch(`/api/change-orders/${params.id}/reject`, {
+      const response = await fetch(`/api/change-orders/${id}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason })
