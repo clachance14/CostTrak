@@ -170,19 +170,6 @@ export default function OpsManagerDashboard() {
     }
   }, [supabase]);
 
-  useEffect(() => {
-    fetchDashboardData()
-  }, [fetchDashboardData]);
-
-  useEffect(() => {
-    if (activeTab === 'financial' && projectFinancials.length === 0) {
-      fetchProjectFinancials()
-    }
-    if (activeTab === 'purchase-orders' && poTrackingData.length === 0) {
-      fetchPOTrackingData()
-    }
-  }, [activeTab, poTrackingData.length, projectFinancials.length, fetchProjectFinancials, fetchPOTrackingData])
-
   const fetchProjectFinancials = useCallback(async () => {
     try {
       // Fetch projects with financial data
@@ -331,6 +318,19 @@ export default function OpsManagerDashboard() {
       console.error('Failed to fetch PO tracking data:', err)
     }
   }, [supabase])
+
+  useEffect(() => {
+    fetchDashboardData()
+  }, [fetchDashboardData]);
+
+  useEffect(() => {
+    if (activeTab === 'financial' && projectFinancials.length === 0) {
+      fetchProjectFinancials()
+    }
+    if (activeTab === 'purchase-orders' && poTrackingData.length === 0) {
+      fetchPOTrackingData()
+    }
+  }, [activeTab, poTrackingData.length, projectFinancials.length, fetchProjectFinancials, fetchPOTrackingData])
 
   const togglePOExpansion = (poId: string) => {
     const newExpanded = new Set(expandedPOs)
