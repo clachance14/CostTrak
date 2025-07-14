@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { 
   Building, 
   DollarSign, 
@@ -107,23 +107,10 @@ export default function OpsManagerDashboard() {
   
   const canEditForecast = user && ['controller', 'ops_manager'].includes(user.role)
 
-  useEffect(() => {
-    fetchDashboardData()
-  }, [])
+  const supabase = useMemo(() => createClient(), []);
 
-  useEffect(() => {
-    if (activeTab === 'financial' && projectFinancials.length === 0) {
-      fetchProjectFinancials()
-    }
-    if (activeTab === 'purchase-orders' && poTrackingData.length === 0) {
-      fetchPOTrackingData()
-    }
-  }, [activeTab, poTrackingData.length, projectFinancials.length])
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
-      const supabase = createClient()
-      
       // Get all divisions
       const { data: divisionsData, error: divisionsError } = await supabase
         .from('divisions')
@@ -133,7 +120,7 @@ export default function OpsManagerDashboard() {
       if (divisionsError) throw divisionsError
 
       // Fetch dashboard data for each division
-      const divisionPromises = divisionsData.map(async (division) => {
+      const divisionPromises = divisionsData.map(async (division: { id: string; name: string; code: string }) => {
         const response = await fetch(`/api/dashboards/division/${division.id}`)
         if (!response.ok) throw new Error(`Failed to fetch data for ${division.name}`)
         const result = await response.json()
@@ -147,7 +134,7 @@ export default function OpsManagerDashboard() {
       const divisionResults = await Promise.all(divisionPromises)
       
       // Extract division data and all projects
-      const divisionMetrics: DivisionData[] = divisionResults.map(d => ({
+      const divisionMetrics: DivisionData[] = divisionResults.map((d: { id: string; name: string; code: string; totalProjects: number; activeProjects: number; totalContractValue: number; activeContractValue: number; totalCommitted: number; totalInvoiced: number; averageMargin: number; projects: { id: string; jobNumber: string; name: string; client: string; status: string; contractValue: number; margin: number; projectManager: string }[] }) => ({
         id: d.id,
         name: d.name,
         code: d.code,
@@ -160,17 +147,8 @@ export default function OpsManagerDashboard() {
         averageMargin: d.averageMargin
       }))
 
-      const allProjectsData: ProjectSummary[] = divisionResults.flatMap(d => 
-        d.projects.map((p: {
-          id: string
-          jobNumber: string
-          name: string
-          client: string
-          status: string
-          contractValue: number
-          margin: number
-          projectManager: string
-        }) => ({
+      const allProjectsData: ProjectSummary[] = divisionResults.flatMap((d: { name: string; projects: { id: string; jobNumber: string; name: string; client: string; status: string; contractValue: number; margin: number; projectManager: string }[] }) => 
+        d.projects.map((p: { id: string; jobNumber: string; name: string; client: string; status: string; contractValue: number; margin: number; projectManager: string }) => ({
           id: p.id,
           jobNumber: p.jobNumber,
           name: p.name,
@@ -190,12 +168,23 @@ export default function OpsManagerDashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase]);
 
-  const fetchProjectFinancials = async () => {
+  useEffect(() => {
+    fetchDashboardData()
+  }, [fetchDashboardData]);
+
+  useEffect(() => {
+    if (activeTab === 'financial' && projectFinancials.length === 0) {
+      fetchProjectFinancials()
+    }
+    if (activeTab === 'purchase-orders' && poTrackingData.length === 0) {
+      fetchPOTrackingData()
+    }
+  }, [activeTab, poTrackingData.length, projectFinancials.length, fetchProjectFinancials, fetchPOTrackingData])
+
+  const fetchProjectFinancials = useCallback(async () => {
     try {
-      const supabase = createClient()
-      
       // Fetch projects with financial data
       const { data: projects, error: projectsError } = await supabase
         .from('projects')
@@ -223,7 +212,7 @@ export default function OpsManagerDashboard() {
       if (projectsError) throw projectsError
 
       // Calculate financial metrics
-      const financialData: ProjectFinancialOverview[] = projects.map(project => {
+      const financialData: ProjectFinancialOverview[] = projects.map((project: { id: string; job_number: string; name: string; percent_complete: number | null; revised_contract_amount: number | null; original_contract_amount: number | null; actual_cost_to_date: number | null; cost_to_complete: number | null; estimated_final_cost: number | null; profit_forecast: number | null; margin_percent: number | null; variance_at_completion: number | null; change_orders: { amount: number; status: string }[] | null }) => {
         const approvedCOs = project.change_orders
           ?.filter((co: { status: string }) => co.status === 'approved')
           .reduce((sum: number, co: { amount: number }) => sum + (co.amount || 0), 0) || 0
@@ -255,11 +244,10 @@ export default function OpsManagerDashboard() {
     } catch (err) {
       console.error('Failed to fetch project financials:', err)
     }
-  }
+  }, [supabase]);
 
-  const fetchPOTrackingData = async () => {
+  const fetchPOTrackingData = useCallback(async () => {
     try {
-      const supabase = createClient()
       
       // Fetch POs with line items
       const { data: purchaseOrders, error: poError } = await supabase
@@ -296,11 +284,10 @@ export default function OpsManagerDashboard() {
       if (poError) throw poError
 
       // Process PO data
-      const poData: POTracking[] = purchaseOrders.map(po => {
+      const poData: POTracking[] = purchaseOrders.map((po: { id: string; po_number: string; project_id: string; vendor_name: string; description: string; total_amount: number; committed_amount: number; forecasted_final_cost: number; forecasted_overrun: number; risk_status: 'normal' | 'at-risk' | 'over-budget'; status: string; projects: { id: string; name: string; job_number: string }; po_line_items: { id: string; line_number: string; invoice_ticket: string; invoice_date: string; description: string; total_amount: number }[] }) => {
         const poValue = po.committed_amount || po.total_amount || 0
         const invoicedToDate = po.po_line_items?.reduce(
-          (sum: number, item: { total_amount?: number }) => sum + (item.total_amount || 0), 
-          0
+          (sum: number, item: { total_amount: number }) => sum + (item.total_amount || 0), 0
         ) || 0
         
         const remaining = poValue - invoicedToDate
@@ -343,7 +330,7 @@ export default function OpsManagerDashboard() {
     } catch (err) {
       console.error('Failed to fetch PO tracking data:', err)
     }
-  }
+  }, [supabase])
 
   const togglePOExpansion = (poId: string) => {
     const newExpanded = new Set(expandedPOs)
@@ -418,7 +405,7 @@ export default function OpsManagerDashboard() {
   }
 
   // Calculate totals across all divisions
-  const totals = divisions.reduce((acc, div) => ({
+  const totals = divisions.reduce((acc: { totalProjects: number; activeProjects: number; totalContractValue: number; totalCommitted: number }, div: DivisionData) => ({
     totalProjects: acc.totalProjects + div.totalProjects,
     activeProjects: acc.activeProjects + div.activeProjects,
     totalContractValue: acc.totalContractValue + div.totalContractValue,
@@ -506,28 +493,28 @@ export default function OpsManagerDashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {divisions.map((division) => (
-                <TableRow key={division.id}>
-                  <TableCell className="font-medium">{division.name}</TableCell>
-                  <TableCell className="text-center">{division.totalProjects}</TableCell>
-                  <TableCell className="text-center">{division.activeProjects}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(division.totalContractValue)}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(division.totalCommitted)}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(division.totalInvoiced)}</TableCell>
+              {divisions.map((div: DivisionData) => (
+                <TableRow key={div.id}>
+                  <TableCell className="font-medium">{div.name}</TableCell>
+                  <TableCell className="text-center">{div.totalProjects}</TableCell>
+                  <TableCell className="text-center">{div.activeProjects}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(div.totalContractValue)}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(div.totalCommitted)}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(div.totalInvoiced)}</TableCell>
                   <TableCell className="text-right">
-                    <span className={division.averageMargin < 10 ? 'text-orange-600 font-medium' : ''}>
-                      {division.averageMargin.toFixed(1)}%
+                    <span className={div.averageMargin < 10 ? 'text-orange-600 font-medium' : ''}>
+                      {div.averageMargin.toFixed(1)}%
                     </span>
                   </TableCell>
                   <TableCell>
                     <Button
                       size="sm"
-                      variant={selectedDivision === division.name ? "primary" : "outline"}
+                      variant={selectedDivision === div.name ? "primary" : "outline"}
                       onClick={() => setSelectedDivision(
-                        selectedDivision === division.name ? null : division.name
+                        selectedDivision === div.name ? null : div.name
                       )}
                     >
-                      {selectedDivision === division.name ? "Show All" : "Filter"}
+                      {selectedDivision === div.name ? "Show All" : "Filter"}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -573,7 +560,7 @@ export default function OpsManagerDashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {displayProjects.slice(0, 10).map((project) => (
+              {displayProjects.slice(0, 10).map((project: ProjectSummary) => (
                 <TableRow key={project.id}>
                   <TableCell className="font-medium">{project.jobNumber}</TableCell>
                   <TableCell>{project.name}</TableCell>
@@ -658,7 +645,7 @@ export default function OpsManagerDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {projectFinancials.map((project) => (
+                  {projectFinancials.map((project: ProjectFinancialOverview) => (
                     <TableRow key={project.id}>
                       <TableCell className="font-medium">{project.jobNumber}</TableCell>
                       <TableCell>{project.name}</TableCell>
@@ -716,7 +703,7 @@ export default function OpsManagerDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {poTrackingData.map((po) => (
+                  {poTrackingData.map((po: POTracking) => (
                     <React.Fragment key={po.id}>
                       <TableRow className="cursor-pointer hover:bg-gray-50" onClick={() => togglePOExpansion(po.id)}>
                         <TableCell>
