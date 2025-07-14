@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, Edit, Trash2, AlertTriangle, Calendar, ArrowLeft } from 'lucide-react'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
 import { formatWeekEnding } from '@/lib/validations/labor-forecast'
 import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
@@ -66,7 +66,7 @@ const categoryColors: Record<string, string> = {
   electrical: 'bg-yellow-100 text-yellow-800',
   civil: 'bg-green-100 text-green-800',
   instrumentation: 'bg-purple-100 text-purple-800',
-  other: 'bg-gray-100 text-gray-800'
+  other: 'bg-foreground/5 text-foreground'
 }
 
 export default function LaborForecastsPage() {
@@ -83,7 +83,7 @@ export default function LaborForecastsPage() {
   const [varianceOnly, setVarianceOnly] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [projectFilter, setProjectFilter] = useState<string | null>(projectIdParam)
+  const [projectFilter] = useState<string | null>(projectIdParam)
   const [projectInfo, setProjectInfo] = useState<ProjectInfo | null>(null)
   const supabase = createClient()
 
@@ -196,7 +196,7 @@ export default function LaborForecastsPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading labor forecasts...</p>
+          <p className="mt-4 text-foreground">Loading labor forecasts...</p>
         </div>
       </div>
     )
@@ -222,7 +222,7 @@ export default function LaborForecastsPage() {
           <div className="mb-4">
             <Link
               href={`/projects/${projectInfo.id}`}
-              className="inline-flex items-center text-sm text-gray-700 hover:text-gray-700"
+              className="inline-flex items-center text-sm text-foreground/80 hover:text-foreground/80"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
               Back to Project {projectInfo.jobNumber} - {projectInfo.name}
@@ -232,9 +232,9 @@ export default function LaborForecastsPage() {
         
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Labor Forecasts</h1>
+            <h1 className="text-3xl font-bold text-foreground">Labor Forecasts</h1>
             {projectInfo && (
-              <p className="text-gray-600 mt-1">
+              <p className="text-foreground mt-1">
                 For Project {projectInfo.jobNumber} - {projectInfo.name}
               </p>
             )}
@@ -266,7 +266,7 @@ export default function LaborForecastsPage() {
             type="week"
             value={weekFilter}
             onChange={(e) => setWeekFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-4 py-2 border border-foreground/30 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="Filter by week"
           />
           <label className="flex items-center gap-2">
@@ -274,62 +274,62 @@ export default function LaborForecastsPage() {
               type="checkbox"
               checked={varianceOnly}
               onChange={(e) => setVarianceOnly(e.target.checked)}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="rounded border-foreground/30 text-blue-600 focus:ring-blue-500"
             />
-            <span className="text-sm text-gray-700">Show variance alerts only</span>
+            <span className="text-sm text-foreground/80">Show variance alerts only</span>
           </label>
         </div>
       </div>
 
       {laborForecasts.length === 0 ? (
-        <div className="bg-gray-50 rounded-lg p-8 text-center">
-          <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">No labor forecasts found</p>
+        <div className="bg-background rounded-lg p-8 text-center">
+          <Calendar className="h-12 w-12 text-foreground mx-auto mb-4" />
+          <p className="text-foreground">No labor forecasts found</p>
         </div>
       ) : (
         <>
           <div className="bg-white shadow-sm rounded-lg overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-background">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
                     Week Ending
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
                     Project
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
                     Craft Type
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
                     Forecast
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
                     Actual
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
                     Variance
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-foreground/80 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {laborForecasts.map((forecast) => (
-                  <tr key={forecast.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <tr key={forecast.id} className="hover:bg-background">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
                       <Link href={`/labor-forecasts/${forecast.id}`} className="text-blue-600 hover:text-blue-800">
                         {formatWeekEnding(new Date(forecast.weekEnding))}
                       </Link>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground/80">
                       <div>
-                        <div className="font-medium text-gray-900">{forecast.project.jobNumber}</div>
-                        <div className="text-gray-700">{forecast.project.name}</div>
+                        <div className="font-medium text-foreground">{forecast.project.jobNumber}</div>
+                        <div className="text-foreground/80">{forecast.project.name}</div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                       <div className="flex items-center gap-2">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${categoryColors[forecast.craftType.category] || categoryColors.other}`}>
                           {forecast.craftType.category}
@@ -337,16 +337,16 @@ export default function LaborForecastsPage() {
                         <span>{forecast.craftType.name}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                       <div>
                         <div>{forecast.forecastedHours.toFixed(1)} hrs @ ${forecast.forecastedRate.toFixed(2)}</div>
-                        <div className="text-gray-700">{formatCurrency(forecast.forecastedCost)}</div>
+                        <div className="text-foreground/80">{formatCurrency(forecast.forecastedCost)}</div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                       <div>
                         <div>{forecast.actualHours.toFixed(1)} hrs</div>
-                        <div className="text-gray-700">{formatCurrency(forecast.actualCost)}</div>
+                        <div className="text-foreground/80">{formatCurrency(forecast.actualCost)}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -359,7 +359,7 @@ export default function LaborForecastsPage() {
                           </div>
                         </div>
                       ) : (
-                        <div className="text-gray-700">
+                        <div className="text-foreground/80">
                           <div>{forecast.variance.hours.percentage.toFixed(1)}% hrs</div>
                           <div className="text-xs">{forecast.variance.cost.percentage.toFixed(1)}% cost</div>
                         </div>
@@ -391,21 +391,21 @@ export default function LaborForecastsPage() {
 
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between">
-              <div className="text-sm text-gray-700">
+              <div className="text-sm text-foreground/80">
                 Page {currentPage} of {totalPages}
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 border border-foreground/30 rounded-md text-sm font-medium text-foreground/80 bg-white hover:bg-background disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 border border-foreground/30 rounded-md text-sm font-medium text-foreground/80 bg-white hover:bg-background disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>

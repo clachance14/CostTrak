@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { 
   ArrowLeft, 
@@ -12,19 +12,17 @@ import {
   Clock,
   Copy,
   TrendingUp,
-  Calculator
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
-import { getWeekEndingDate, formatWeekEnding } from '@/lib/validations/labor-forecast-v2'
-import { createClient } from '@/lib/supabase/client'
+import { formatWeekEnding } from '@/lib/validations/labor-forecast-v2'
 
-interface CraftType {
-  id: string
-  name: string
-  code: string
-  laborCategory: 'direct' | 'indirect' | 'staff'
-  avgRate: number
-}
+// interface CraftType {
+//   id: string
+//   name: string
+//   code: string
+//   laborCategory: 'direct' | 'indirect' | 'staff'
+//   avgRate: number
+// }
 
 interface HeadcountEntry {
   craftTypeId: string
@@ -60,10 +58,9 @@ const laborCategoryLabels = {
   staff: 'Staff'
 }
 
-const HOURS_PER_PERSON = 50 // Standard work week
+// const HOURS_PER_PERSON = 50 // Standard work week
 
 export default function HeadcountForecastPage() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const projectId = searchParams.get('project_id')
   const weeksAheadParam = searchParams.get('weeks') || '8'
@@ -75,11 +72,11 @@ export default function HeadcountForecastPage() {
   
   const [projectInfo, setProjectInfo] = useState<ProjectInfo | null>(null)
   const [weeksAhead, setWeeksAhead] = useState(parseInt(weeksAheadParam, 10))
-  const [craftTypes, setCraftTypes] = useState<CraftType[]>([])
+  // const [craftTypes, setCraftTypes] = useState<CraftType[]>([])
   const [weeklyData, setWeeklyData] = useState<WeekData[]>([])
   const [selectedWeekIndex, setSelectedWeekIndex] = useState<number | null>(null)
   
-  const supabase = createClient()
+  // const supabase = createClient()
 
   const fetchData = useCallback(async () => {
     if (!projectId) {
@@ -240,7 +237,7 @@ export default function HeadcountForecastPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-foreground">Loading...</p>
         </div>
       </div>
     )
@@ -266,7 +263,7 @@ export default function HeadcountForecastPage() {
       <div className="mb-8">
         <Link
           href={`/labor-forecasts?project_id=${projectId}`}
-          className="inline-flex items-center text-sm text-gray-700 hover:text-gray-700 mb-4"
+          className="inline-flex items-center text-sm text-foreground/80 hover:text-foreground/80 mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Labor Forecasts
@@ -274,19 +271,19 @@ export default function HeadcountForecastPage() {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Headcount Forecast</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-3xl font-bold text-foreground">Headcount Forecast</h1>
+            <p className="text-foreground mt-1">
               Project {projectInfo.jobNumber} - {projectInfo.name}
             </p>
           </div>
           
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-700">Weeks ahead:</label>
+              <label className="text-sm font-medium text-foreground/80">Weeks ahead:</label>
               <select
                 value={weeksAhead}
                 onChange={(e) => setWeeksAhead(parseInt(e.target.value, 10))}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-foreground/30 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
                 <option value="4">4 weeks</option>
                 <option value="8">8 weeks</option>
@@ -318,42 +315,42 @@ export default function HeadcountForecastPage() {
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Headcount</p>
-              <p className="text-2xl font-bold text-gray-900">{grandTotals.headcount}</p>
+              <p className="text-sm font-medium text-foreground">Total Headcount</p>
+              <p className="text-2xl font-bold text-foreground">{grandTotals.headcount}</p>
             </div>
-            <Users className="h-8 w-8 text-gray-400" />
+            <Users className="h-8 w-8 text-foreground" />
           </div>
         </div>
         
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Hours</p>
-              <p className="text-2xl font-bold text-gray-900">{grandTotals.totalHours.toLocaleString()}</p>
+              <p className="text-sm font-medium text-foreground">Total Hours</p>
+              <p className="text-2xl font-bold text-foreground">{grandTotals.totalHours.toLocaleString()}</p>
             </div>
-            <Clock className="h-8 w-8 text-gray-400" />
+            <Clock className="h-8 w-8 text-foreground" />
           </div>
         </div>
         
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Forecasted Cost</p>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(grandTotals.forecastedCost)}</p>
+              <p className="text-sm font-medium text-foreground">Forecasted Cost</p>
+              <p className="text-2xl font-bold text-foreground">{formatCurrency(grandTotals.forecastedCost)}</p>
             </div>
-            <DollarSign className="h-8 w-8 text-gray-400" />
+            <DollarSign className="h-8 w-8 text-foreground" />
           </div>
         </div>
         
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Avg Weekly Cost</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-foreground">Avg Weekly Cost</p>
+              <p className="text-2xl font-bold text-foreground">
                 {formatCurrency(grandTotals.forecastedCost / weeksAhead)}
               </p>
             </div>
-            <TrendingUp className="h-8 w-8 text-gray-400" />
+            <TrendingUp className="h-8 w-8 text-foreground" />
           </div>
         </div>
       </div>
@@ -369,7 +366,7 @@ export default function HeadcountForecastPage() {
                 className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 ${
                   selectedWeekIndex === index
                     ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-700 hover:text-gray-700'
+                    : 'border-transparent text-foreground/80 hover:text-foreground/80'
                 }`}
               >
                 Week {index + 1}
@@ -407,17 +404,17 @@ export default function HeadcountForecastPage() {
 
               return (
                 <div key={category} className="mb-6">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">{label}</h4>
+                  <h4 className="text-sm font-medium text-foreground/80 mb-3">{label}</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {categoryEntries.map(entry => (
                       <div key={entry.craftTypeId} className="border rounded-lg p-4">
                         <div className="flex items-center justify-between mb-2">
                           <div>
-                            <p className="font-medium text-gray-900">{entry.craftName}</p>
-                            <p className="text-sm text-gray-700">{entry.craftCode}</p>
+                            <p className="font-medium text-foreground">{entry.craftName}</p>
+                            <p className="text-sm text-foreground/80">{entry.craftCode}</p>
                           </div>
                           {entry.avgRate > 0 && (
-                            <span className="text-sm text-gray-700">
+                            <span className="text-sm text-foreground/80">
                               ${entry.avgRate.toFixed(2)}/hr
                             </span>
                           )}
@@ -429,14 +426,14 @@ export default function HeadcountForecastPage() {
                             min="0"
                             value={entry.headcount || ''}
                             onChange={(e) => updateHeadcount(selectedWeekIndex, entry.craftTypeId, e.target.value)}
-                            className="w-20 px-3 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                            className="w-20 px-3 py-1 border border-foreground/30 rounded-md focus:ring-2 focus:ring-blue-500"
                             placeholder="0"
                           />
-                          <span className="text-sm text-gray-600">people</span>
+                          <span className="text-sm text-foreground">people</span>
                         </div>
                         
                         {entry.headcount > 0 && (
-                          <div className="mt-2 text-sm text-gray-600">
+                          <div className="mt-2 text-sm text-foreground">
                             <p>{entry.totalHours} hrs = {formatCurrency(entry.forecastedCost)}</p>
                           </div>
                         )}
@@ -451,15 +448,15 @@ export default function HeadcountForecastPage() {
             <div className="mt-6 pt-6 border-t">
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center">
-                  <p className="text-sm text-gray-600">Week Headcount</p>
+                  <p className="text-sm text-foreground">Week Headcount</p>
                   <p className="text-xl font-bold">{weeklyData[selectedWeekIndex].totals.headcount}</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm text-gray-600">Week Hours</p>
+                  <p className="text-sm text-foreground">Week Hours</p>
                   <p className="text-xl font-bold">{weeklyData[selectedWeekIndex].totals.totalHours.toLocaleString()}</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm text-gray-600">Week Cost</p>
+                  <p className="text-sm text-foreground">Week Cost</p>
                   <p className="text-xl font-bold">{formatCurrency(weeklyData[selectedWeekIndex].totals.forecastedCost)}</p>
                 </div>
               </div>
@@ -472,7 +469,7 @@ export default function HeadcountForecastPage() {
       <div className="flex justify-end gap-4 mt-6 pb-8">
         <Link
           href={`/labor-forecasts?project_id=${projectId}`}
-          className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+          className="px-4 py-2 border border-foreground/30 rounded-lg text-foreground/80 hover:bg-background"
         >
           Cancel
         </Link>

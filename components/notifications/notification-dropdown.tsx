@@ -7,7 +7,6 @@ import { formatDistanceToNow } from 'date-fns'
 import { 
   Bell, 
   CheckCheck, 
-  AlertCircle,
   TrendingUp,
   FileText,
   DollarSign,
@@ -32,7 +31,7 @@ interface Notification {
   created_at: string
   action_url?: string
   related_entity_type?: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 interface NotificationDropdownProps {
@@ -111,42 +110,6 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
     },
   })
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'change_order_created':
-      case 'change_order_updated':
-        return <FileText className="h-4 w-4" />
-      case 'po_import_complete':
-      case 'po_threshold_exceeded':
-        return <DollarSign className="h-4 w-4" />
-      case 'labor_variance_alert':
-      case 'budget_threshold_alert':
-        return <AlertCircle className="h-4 w-4" />
-      case 'project_deadline_approaching':
-        return <Calendar className="h-4 w-4" />
-      case 'financial_snapshot_ready':
-        return <TrendingUp className="h-4 w-4" />
-      case 'user_assigned_project':
-      case 'user_role_changed':
-        return <User className="h-4 w-4" />
-      case 'document_uploaded':
-        return <FileUp className="h-4 w-4" />
-      case 'system_announcement':
-        return <Megaphone className="h-4 w-4" />
-      default:
-        return <Bell className="h-4 w-4" />
-    }
-  }
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'critical': return 'text-red-600 bg-red-50'
-      case 'high': return 'text-orange-600 bg-orange-50'
-      case 'medium': return 'text-blue-600 bg-blue-50'
-      case 'low': return 'text-gray-800 bg-gray-50'
-      default: return 'text-gray-800 bg-gray-50'
-    }
-  }
 
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.is_read) {
@@ -192,7 +155,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : notifications.length === 0 ? (
-              <div className="text-center py-8 text-gray-700">
+              <div className="text-center py-8 text-foreground/80">
                 {activeTab === 'unread' 
                   ? 'No unread notifications' 
                   : 'No notifications'}
@@ -203,7 +166,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
                   <div
                     key={notification.id}
                     className={cn(
-                      'p-4 hover:bg-gray-50 cursor-pointer transition-colors',
+                      'p-4 hover:bg-background cursor-pointer transition-colors',
                       !notification.is_read && 'bg-blue-50/50'
                     )}
                     onClick={() => handleNotificationClick(notification)}
@@ -246,10 +209,10 @@ function NotificationItem({ notification }: { notification: Notification }) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-medium text-sm truncate">{notification.title}</p>
-        <p className="text-sm text-gray-700 line-clamp-2">
+        <p className="text-sm text-foreground/80 line-clamp-2">
           {notification.message}
         </p>
-        <p className="text-xs text-gray-700 mt-1">
+        <p className="text-xs text-foreground/80 mt-1">
           {formatDistanceToNow(new Date(notification.created_at), { 
             addSuffix: true 
           })}
@@ -269,7 +232,7 @@ function getPriorityColor(priority: string) {
     case 'critical': return 'text-red-600 bg-red-50'
     case 'high': return 'text-orange-600 bg-orange-50'
     case 'medium': return 'text-blue-600 bg-blue-50'
-    case 'low': return 'text-gray-800 bg-gray-50'
-    default: return 'text-gray-800 bg-gray-50'
+    case 'low': return 'text-foreground bg-background'
+    default: return 'text-foreground bg-background'
   }
 }

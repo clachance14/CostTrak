@@ -46,7 +46,7 @@ export default function TwoFactorSetupPage() {
       setQrCodeUrl(qrCode)
       
       setStep('verify')
-    } catch (error) {
+    } catch {
       setError('An unexpected error occurred')
     } finally {
       setIsLoading(false)
@@ -75,7 +75,7 @@ export default function TwoFactorSetupPage() {
       }
 
       setStep('complete')
-    } catch (error) {
+    } catch {
       setError('An unexpected error occurred')
     } finally {
       setIsLoading(false)
@@ -105,7 +105,7 @@ export default function TwoFactorSetupPage() {
             <div className="space-y-6">
               <div className="space-y-4">
                 <h3 className="font-medium">How it works</h3>
-                <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600">
+                <ol className="list-decimal list-inside space-y-2 text-sm text-foreground">
                   <li>Install an authenticator app on your phone (Google Authenticator, Authy, etc.)</li>
                   <li>Scan the QR code or enter the secret key manually</li>
                   <li>Enter the 6-digit code from your app to verify</li>
@@ -152,16 +152,16 @@ export default function TwoFactorSetupPage() {
                 </div>
                 
                 <div className="text-center space-y-2">
-                  <p className="text-sm text-gray-600">
-                    Can't scan? Enter this code manually:
+                  <p className="text-sm text-foreground">
+                    Can&apos;t scan? Enter this code manually:
                   </p>
                   <div className="flex items-center justify-center gap-2">
-                    <code className="px-2 py-1 bg-gray-100 rounded text-sm">
+                    <code className="px-2 py-1 bg-foreground/5 rounded text-sm">
                       {secret}
                     </code>
                     <button
                       onClick={() => copyToClipboard(secret)}
-                      className="text-gray-700 hover:text-gray-700"
+                      className="text-foreground/80 hover:text-foreground/80"
                     >
                       <Copy className="h-4 w-4" />
                     </button>
@@ -221,14 +221,14 @@ export default function TwoFactorSetupPage() {
                 <h3 className="font-medium text-lg mb-2">
                   Two-Factor Authentication Enabled!
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-foreground">
                   Your account is now protected with two-factor authentication.
                 </p>
               </div>
 
               <div className="space-y-4">
                 <h3 className="font-medium">Save Your Backup Codes</h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-foreground">
                   Store these codes in a secure place. You can use them to access your account if you lose your authenticator device.
                 </p>
                 
@@ -236,12 +236,12 @@ export default function TwoFactorSetupPage() {
                   {backupCodes.map((code, index) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded border"
+                      className="flex items-center justify-between px-3 py-2 bg-background rounded border"
                     >
                       <code className="text-sm">{code}</code>
                       <button
                         onClick={() => copyToClipboard(code)}
-                        className="text-gray-700 hover:text-gray-700"
+                        className="text-foreground/80 hover:text-foreground/80"
                       >
                         <Copy className="h-3 w-3" />
                       </button>

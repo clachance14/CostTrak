@@ -118,7 +118,7 @@ export default function ControllerDashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Role Testing Dashboard</h1>
-        <p className="text-gray-700">
+        <p className="text-foreground/70">
           Test CostTrak workflows from different user perspectives
         </p>
       </div>
@@ -151,15 +151,15 @@ export default function ControllerDashboard() {
                     </div>
                     <Badge variant="outline">{dashboard.role.replace('_', ' ')}</Badge>
                   </div>
-                  <CardTitle className="text-xl">{dashboard.title}</CardTitle>
+                  <CardTitle className="text-xl text-foreground">{dashboard.title}</CardTitle>
                   <CardDescription>{dashboard.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <p className="text-sm font-medium mb-2">Key Features:</p>
+                    <p className="text-sm font-medium text-foreground mb-2">Key Features:</p>
                     <ul className="space-y-1">
                       {dashboard.features.map((feature, index) => (
-                        <li key={index} className="text-sm text-gray-700 flex items-start gap-2">
+                        <li key={index} className="text-sm text-foreground/70 flex items-start gap-2">
                           <ChevronRight className="h-3 w-3 mt-0.5 flex-shrink-0" />
                           <span>{feature}</span>
                         </li>

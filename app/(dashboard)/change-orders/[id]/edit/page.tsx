@@ -67,7 +67,7 @@ export default function EditChangeOrderPage({ params }: { params: { id: string }
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading change order...</p>
+          <p className="mt-4 text-foreground">Loading change order...</p>
         </div>
       </div>
     )
@@ -79,7 +79,7 @@ export default function EditChangeOrderPage({ params }: { params: { id: string }
         <div className="mb-6">
           <Link
             href="/change-orders"
-            className="inline-flex items-center text-sm text-gray-700 hover:text-gray-700"
+            className="inline-flex items-center text-sm text-foreground/80 hover:text-foreground/80"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Change Orders
@@ -100,7 +100,7 @@ export default function EditChangeOrderPage({ params }: { params: { id: string }
       <div className="mb-6">
         <Link
           href={`/change-orders/${params.id}`}
-          className="inline-flex items-center text-sm text-gray-700 hover:text-gray-700"
+          className="inline-flex items-center text-sm text-foreground/80 hover:text-foreground/80"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Change Order Details
@@ -108,8 +108,8 @@ export default function EditChangeOrderPage({ params }: { params: { id: string }
       </div>
 
       <div className="bg-white shadow-sm rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-900">Edit Change Order</h1>
+        <div className="px-6 py-4 border-b border-foreground/20">
+          <h1 className="text-2xl font-bold text-foreground">Edit Change Order</h1>
         </div>
         <div className="p-6">
           <ChangeOrderForm 

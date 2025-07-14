@@ -7,8 +7,6 @@ import {
   ArrowLeft, 
   FileText, 
   DollarSign, 
-  Calendar,
-  Building,
   User,
   Package,
   Clock,
@@ -52,9 +50,9 @@ export default function PurchaseOrderDetailPage({ params }: PODetailPageProps) {
     switch (status) {
       case 'approved': return 'bg-green-100 text-green-800'
       case 'draft': return 'bg-yellow-100 text-yellow-800'
-      case 'closed': return 'bg-gray-100 text-gray-800'
+      case 'closed': return 'bg-foreground/5 text-foreground'
       case 'cancelled': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      default: return 'bg-foreground/5 text-foreground'
     }
   }
 
@@ -64,7 +62,7 @@ export default function PurchaseOrderDetailPage({ params }: PODetailPageProps) {
         <Card className="p-8 text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">Error Loading Purchase Order</h2>
-          <p className="text-gray-600 mb-4">Unable to load purchase order details.</p>
+          <p className="text-foreground mb-4">Unable to load purchase order details.</p>
           <Button
             variant="outline"
             onClick={() => router.push('/purchase-orders')}
@@ -80,7 +78,7 @@ export default function PurchaseOrderDetailPage({ params }: PODetailPageProps) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <p className="text-gray-700">Loading purchase order...</p>
+          <p className="text-foreground/80">Loading purchase order...</p>
         </div>
       </div>
     )
@@ -117,12 +115,12 @@ export default function PurchaseOrderDetailPage({ params }: PODetailPageProps) {
             Back
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">PO #{po.po_number}</h1>
+            <h1 className="text-3xl font-bold text-foreground">PO #{po.po_number}</h1>
             <div className="flex items-center gap-4 mt-2">
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(po.status)}`}>
                 {po.status.toUpperCase()}
               </span>
-              <span className="text-gray-600">{po.vendor_name}</span>
+              <span className="text-foreground">{po.vendor_name}</span>
             </div>
           </div>
         </div>
@@ -136,28 +134,28 @@ export default function PurchaseOrderDetailPage({ params }: PODetailPageProps) {
             <h2 className="text-xl font-semibold mb-4">Purchase Order Details</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-600">Vendor</p>
+                <p className="text-sm text-foreground">Vendor</p>
                 <p className="font-medium">{po.vendor_name}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Status</p>
+                <p className="text-sm text-foreground">Status</p>
                 <p className="font-medium capitalize">{po.status}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Issue Date</p>
+                <p className="text-sm text-foreground">Issue Date</p>
                 <p className="font-medium">
                   {po.issue_date ? format(new Date(po.issue_date), 'MMMM d, yyyy') : 'Not specified'}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Expected Delivery</p>
+                <p className="text-sm text-foreground">Expected Delivery</p>
                 <p className="font-medium">
                   {po.expected_delivery ? format(new Date(po.expected_delivery), 'MMMM d, yyyy') : 'Not specified'}
                 </p>
               </div>
               {po.description && (
                 <div className="col-span-2">
-                  <p className="text-sm text-gray-600">Description</p>
+                  <p className="text-sm text-foreground">Description</p>
                   <p className="mt-1">{po.description}</p>
                 </div>
               )}
@@ -169,30 +167,30 @@ export default function PurchaseOrderDetailPage({ params }: PODetailPageProps) {
             <h2 className="text-xl font-semibold mb-4">Project Information</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-600">Job Number</p>
+                <p className="text-sm text-foreground">Job Number</p>
                 <p className="font-medium">{po.project.job_number}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Project Name</p>
+                <p className="text-sm text-foreground">Project Name</p>
                 <p className="font-medium">{po.project.name}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Division</p>
+                <p className="text-sm text-foreground">Division</p>
                 <p className="font-medium">{po.project.division.name} ({po.project.division.code})</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Client</p>
+                <p className="text-sm text-foreground">Client</p>
                 <p className="font-medium">{po.project.client.name}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Project Manager</p>
+                <p className="text-sm text-foreground">Project Manager</p>
                 <p className="font-medium">
                   {po.project.project_manager.first_name} {po.project.project_manager.last_name}
                 </p>
-                <p className="text-sm text-gray-700">{po.project.project_manager.email}</p>
+                <p className="text-sm text-foreground/80">{po.project.project_manager.email}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Project Status</p>
+                <p className="text-sm text-foreground">Project Status</p>
                 <p className="font-medium capitalize">{po.project.status}</p>
               </div>
             </div>
@@ -212,27 +210,34 @@ export default function PurchaseOrderDetailPage({ params }: PODetailPageProps) {
               <h2 className="text-xl font-semibold mb-4">Line Items</h2>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-background">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-foreground/80 uppercase">
                         Line #
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-foreground/80 uppercase">
                         Description
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">
+                      <th className="px-4 py-3 text-right text-xs font-medium text-foreground/80 uppercase">
                         Quantity
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">
+                      <th className="px-4 py-3 text-right text-xs font-medium text-foreground/80 uppercase">
                         Unit Price
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">
+                      <th className="px-4 py-3 text-right text-xs font-medium text-foreground/80 uppercase">
                         Total
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {po.po_line_items.map((item: any) => (
+                    {po.po_line_items.map((item: {
+                      id: string
+                      line_number: number
+                      description: string
+                      quantity: number
+                      unit_price: number
+                      amount: number
+                    }) => (
                       <tr key={item.id}>
                         <td className="px-4 py-3 text-sm">{item.line_number}</td>
                         <td className="px-4 py-3 text-sm">{item.description}</td>
@@ -246,7 +251,7 @@ export default function PurchaseOrderDetailPage({ params }: PODetailPageProps) {
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-gray-50">
+                  <tfoot className="bg-background">
                     <tr>
                       <td colSpan={4} className="px-4 py-3 text-sm font-medium text-right">
                         Line Items Total:
@@ -266,23 +271,23 @@ export default function PurchaseOrderDetailPage({ params }: PODetailPageProps) {
             <h2 className="text-xl font-semibold mb-4">Audit Information</h2>
             <div className="space-y-3">
               <div className="flex items-center text-sm">
-                <User className="h-4 w-4 text-gray-400 mr-2" />
-                <span className="text-gray-600">Created by:</span>
+                <User className="h-4 w-4 text-foreground mr-2" />
+                <span className="text-foreground">Created by:</span>
                 <span className="ml-2 font-medium">
                   {po.created_by_user?.first_name} {po.created_by_user?.last_name}
                 </span>
               </div>
               <div className="flex items-center text-sm">
-                <Clock className="h-4 w-4 text-gray-400 mr-2" />
-                <span className="text-gray-600">Created on:</span>
+                <Clock className="h-4 w-4 text-foreground mr-2" />
+                <span className="text-foreground">Created on:</span>
                 <span className="ml-2 font-medium">
                   {format(new Date(po.created_at), 'MMMM d, yyyy h:mm a')}
                 </span>
               </div>
               {po.approved_by_user && (
                 <div className="flex items-center text-sm">
-                  <User className="h-4 w-4 text-gray-400 mr-2" />
-                  <span className="text-gray-600">Approved by:</span>
+                  <User className="h-4 w-4 text-foreground mr-2" />
+                  <span className="text-foreground">Approved by:</span>
                   <span className="ml-2 font-medium">
                     {po.approved_by_user.first_name} {po.approved_by_user.last_name}
                   </span>
@@ -290,16 +295,16 @@ export default function PurchaseOrderDetailPage({ params }: PODetailPageProps) {
               )}
               {po.approved_at && (
                 <div className="flex items-center text-sm">
-                  <Clock className="h-4 w-4 text-gray-400 mr-2" />
-                  <span className="text-gray-600">Approved on:</span>
+                  <Clock className="h-4 w-4 text-foreground mr-2" />
+                  <span className="text-foreground">Approved on:</span>
                   <span className="ml-2 font-medium">
                     {format(new Date(po.approved_at), 'MMMM d, yyyy h:mm a')}
                   </span>
                 </div>
               )}
               <div className="flex items-center text-sm">
-                <Clock className="h-4 w-4 text-gray-400 mr-2" />
-                <span className="text-gray-600">Last updated:</span>
+                <Clock className="h-4 w-4 text-foreground mr-2" />
+                <span className="text-foreground">Last updated:</span>
                 <span className="ml-2 font-medium">
                   {format(new Date(po.updated_at), 'MMMM d, yyyy h:mm a')}
                 </span>
@@ -315,31 +320,31 @@ export default function PurchaseOrderDetailPage({ params }: PODetailPageProps) {
             <h2 className="text-xl font-semibold mb-4">Financial Summary</h2>
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-gray-600">Committed Amount</p>
+                <p className="text-sm text-foreground">Committed Amount</p>
                 <p className="text-2xl font-bold">{formatCurrency(po.committed_amount)}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Invoiced Amount</p>
+                <p className="text-sm text-foreground">Invoiced Amount</p>
                 <p className="text-2xl font-bold text-green-600">
                   {formatCurrency(po.invoiced_amount)}
                 </p>
               </div>
               <div className="pt-4 border-t">
-                <p className="text-sm text-gray-600">Remaining</p>
+                <p className="text-sm text-foreground">Remaining</p>
                 <p className="text-xl font-semibold">
                   {formatCurrency(po.calculated.remainingAmount)}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Invoiced %</p>
+                <p className="text-sm text-foreground">Invoiced %</p>
                 <div className="mt-2">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-foreground/10 rounded-full h-2">
                     <div 
                       className="bg-green-600 h-2 rounded-full"
                       style={{ width: `${Math.min(po.calculated.invoicedPercentage, 100)}%` }}
                     />
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-foreground mt-1">
                     {po.calculated.invoicedPercentage.toFixed(1)}%
                   </p>
                 </div>
@@ -353,14 +358,14 @@ export default function PurchaseOrderDetailPage({ params }: PODetailPageProps) {
               <h2 className="text-xl font-semibold mb-4">Line Items Summary</h2>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="flex items-center text-gray-600">
+                  <span className="flex items-center text-foreground">
                     <Package className="h-4 w-4 mr-2" />
                     Total Line Items
                   </span>
                   <span className="font-semibold">{po.po_line_items.length}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="flex items-center text-gray-600">
+                  <span className="flex items-center text-foreground">
                     <DollarSign className="h-4 w-4 mr-2" />
                     Line Items Total
                   </span>
@@ -370,7 +375,7 @@ export default function PurchaseOrderDetailPage({ params }: PODetailPageProps) {
                 </div>
                 {po.calculated.variance !== 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center text-gray-600">
+                    <span className="flex items-center text-foreground">
                       <AlertCircle className="h-4 w-4 mr-2" />
                       Variance
                     </span>

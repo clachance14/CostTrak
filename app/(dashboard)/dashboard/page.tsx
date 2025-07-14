@@ -35,7 +35,7 @@ export default function DashboardPage() {
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Welcome to CostTrak</h2>
-      <p className="text-gray-800">Redirecting to your dashboard...</p>
+      <p className="text-foreground">Redirecting to your dashboard...</p>
     </div>
   )
 }

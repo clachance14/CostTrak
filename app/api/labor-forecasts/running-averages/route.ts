@@ -93,7 +93,13 @@ export async function GET(request: NextRequest) {
       .order('week_ending', { ascending: true })
 
     // Group historical data by craft type
-    const trendsMap = new Map<string, any[]>()
+    interface TrendData {
+      weekEnding: string
+      rate: number
+      hours: number
+      cost: number
+    }
+    const trendsMap = new Map<string, TrendData[]>()
     historicalData?.forEach(row => {
       if (!trendsMap.has(row.craft_type_id)) {
         trendsMap.set(row.craft_type_id, [])

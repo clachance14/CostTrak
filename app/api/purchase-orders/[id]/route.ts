@@ -41,10 +41,25 @@ export async function GET(
           total_amount,
           created_at,
           updated_at
+        ),
+        po_forecast_history(
+          id,
+          changed_by,
+          change_date,
+          field_name,
+          old_value,
+          new_value,
+          reason,
+          changed_by_user:profiles!po_forecast_history_changed_by_fkey(
+            id,
+            first_name,
+            last_name
+          )
         )
       `)
       .eq('id', id)
       .is('deleted_at', null)
+      .order('change_date', { foreignTable: 'po_forecast_history', ascending: false })
       .single()
 
     if (error) {
@@ -59,7 +74,7 @@ export async function GET(
     let lineItemsTotal = 0
     if (purchaseOrder.po_line_items && purchaseOrder.po_line_items.length > 0) {
       lineItemsTotal = purchaseOrder.po_line_items.reduce(
-        (sum: number, item: any) => sum + (item.total_amount || 0), 
+        (sum: number, item: { total_amount?: number }) => sum + (item.total_amount || 0), 
         0
       )
     }

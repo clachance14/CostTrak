@@ -35,9 +35,38 @@ export async function POST(request: NextRequest) {
     if (error) throw error
 
     // Group by week for easier consumption
-    const weeklyData = new Map<string, any>()
+    interface WeekData {
+      weekEnding: string
+      entries: Array<{
+        craftTypeId: string
+        craftName: string
+        craftCode: string
+        laborCategory: string
+        headcount: number
+        hours: number
+        cost: number
+      }>
+      totals: {
+        headcount: number
+        totalHours: number
+        totalCost: number
+        byCategory: Record<string, { headcount: number; hours: number; cost: number }>
+      }
+    }
+    const weeklyData = new Map<string, WeekData>()
     
-    data?.forEach((row: any) => {
+    data?.forEach((row: {
+      week_ending: string
+      craft_type_id: string
+      craft_name: string
+      craft_code: string
+      labor_category: string
+      headcount: number
+      hours_per_person: number
+      avg_rate: number
+      total_hours: number
+      total_cost: number
+    }) => {
       const weekKey = row.week_ending
       
       if (!weeklyData.has(weekKey)) {
@@ -81,8 +110,24 @@ export async function POST(request: NextRequest) {
     }), { headcount: 0, totalHours: 0, forecastedCost: 0 })
 
     // Get labor categories summary
-    const categorySummary = new Map<string, any>()
-    data?.forEach((row: any) => {
+    const categorySummary = new Map<string, {
+      craftCount: number
+      totalHeadcount: number
+      totalHours: number
+      totalCost: number
+    }>()
+    data?.forEach((row: {
+      week_ending: string
+      craft_type_id: string
+      craft_name: string
+      craft_code: string
+      labor_category: string
+      headcount: number
+      hours_per_person: number
+      avg_rate: number
+      total_hours: number
+      total_cost: number
+    }) => {
       const category = row.labor_category
       if (!categorySummary.has(category)) {
         categorySummary.set(category, {

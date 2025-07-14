@@ -165,7 +165,7 @@ export default function FinancialSnapshotsPage() {
     <div className="container mx-auto py-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Financial Snapshots</h1>
-        <p className="text-gray-700">
+        <p className="text-foreground/80">
           View and generate financial performance snapshots
         </p>
       </div>
@@ -211,7 +211,7 @@ export default function FinancialSnapshotsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">All projects</SelectItem>
-                  {projects?.map((project: any) => (
+                  {projects?.map((project: { id: string; job_number: string; name: string }) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.job_number} - {project.name}
                     </SelectItem>
@@ -234,7 +234,7 @@ export default function FinancialSnapshotsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">All divisions</SelectItem>
-                  {divisions?.map((division: any) => (
+                  {divisions?.map((division: { id: string; code: string; name: string }) => (
                     <SelectItem key={division.id} value={division.id}>
                       {division.code} - {division.name}
                     </SelectItem>
@@ -346,7 +346,7 @@ export default function FinancialSnapshotsPage() {
           {isLoading ? (
             <div className="text-center py-8">Loading snapshots...</div>
           ) : snapshots.length === 0 ? (
-            <div className="text-center py-8 text-gray-700">
+            <div className="text-center py-8 text-foreground/80">
               No snapshots found. Generate your first snapshot above.
             </div>
           ) : (

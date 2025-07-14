@@ -11,7 +11,7 @@ const STATUS_COLORS = {
   active: 'bg-green-500',
   on_hold: 'bg-orange-500',
   completed: 'bg-blue-500',
-  cancelled: 'bg-gray-500'
+  cancelled: 'bg-background0'
 }
 
 const STATUS_LABELS = {
@@ -35,14 +35,14 @@ export function StatusDistribution({ data }: StatusDistributionProps) {
         <div className="space-y-4">
           {Object.entries(data).map(([status, count]) => {
             const percentage = total > 0 ? (count / total) * 100 : 0
-            const color = STATUS_COLORS[status as keyof typeof STATUS_COLORS] || 'bg-gray-500'
+            const color = STATUS_COLORS[status as keyof typeof STATUS_COLORS] || 'bg-background0'
             const label = STATUS_LABELS[status as keyof typeof STATUS_LABELS] || status
 
             return (
               <div key={status}>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm font-medium">{label}</span>
-                  <span className="text-sm text-gray-700">
+                  <span className="text-sm text-foreground/80">
                     {count} ({percentage.toFixed(1)}%)
                   </span>
                 </div>

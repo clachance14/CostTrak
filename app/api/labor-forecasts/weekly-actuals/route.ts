@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { 
   weeklyActualBatchSchema,
-  validateUniqueActual,
   getWeekEndingDate
 } from '@/lib/validations/labor-forecast-v2'
 import { z } from 'zod'
@@ -224,7 +223,7 @@ export async function POST(request: NextRequest) {
 
         if (existing) {
           // Update existing entry
-          const { data: updated, error: updateError } = await supabase
+          const { error: updateError } = await supabase
             .from('labor_actuals')
             .update({
               total_cost: entry.total_cost,

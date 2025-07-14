@@ -74,7 +74,7 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <p className="text-gray-700">Loading project...</p>
+          <p className="text-foreground/80">Loading project...</p>
         </div>
       </div>
     )
@@ -91,8 +91,8 @@ export default function EditProjectPage({ params }: EditProjectPageProps) {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Project
         </Button>
-        <h1 className="text-3xl font-bold text-gray-900 mt-4">Edit Project</h1>
-        <p className="text-gray-600 mt-1">Update project details</p>
+        <h1 className="text-3xl font-bold text-foreground mt-4">Edit Project</h1>
+        <p className="text-foreground mt-1">Update project details</p>
       </div>
 
       <ProjectForm

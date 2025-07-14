@@ -6,7 +6,6 @@ import { formatDistanceToNow } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -30,7 +29,6 @@ import {
   CheckCheck, 
   Trash2,
   Search,
-  Filter,
   AlertCircle,
   TrendingUp,
   FileText,
@@ -55,7 +53,7 @@ interface Notification {
   created_at: string
   action_url?: string
   related_entity_type?: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 export default function NotificationsPage() {
@@ -178,8 +176,8 @@ export default function NotificationsPage() {
       case 'critical': return 'bg-red-100 text-red-800'
       case 'high': return 'bg-orange-100 text-orange-800'
       case 'medium': return 'bg-blue-100 text-blue-800'
-      case 'low': return 'bg-gray-100 text-gray-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'low': return 'bg-foreground/5 text-foreground'
+      default: return 'bg-foreground/5 text-foreground'
     }
   }
 
@@ -195,7 +193,7 @@ export default function NotificationsPage() {
     if (selectedNotifications.length === filteredNotifications.length) {
       setSelectedNotifications([])
     } else {
-      setSelectedNotifications(filteredNotifications.map(n => n.id))
+      setSelectedNotifications(filteredNotifications.map((n: Notification) => n.id))
     }
   }
 
@@ -213,7 +211,7 @@ export default function NotificationsPage() {
     <div className="container mx-auto py-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Notifications</h1>
-        <p className="text-gray-700">
+        <p className="text-foreground/80">
           Manage your notifications and stay updated
         </p>
       </div>
@@ -226,7 +224,7 @@ export default function NotificationsPage() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-foreground" />
               <Input
                 placeholder="Search notifications..."
                 value={searchTerm}
@@ -306,7 +304,7 @@ export default function NotificationsPage() {
               )}
             </div>
             
-            <div className="text-sm text-gray-700">
+            <div className="text-sm text-foreground/80">
               {filteredNotifications.length} notifications
               {unreadCount > 0 && ` (${unreadCount} unread)`}
             </div>
@@ -322,12 +320,12 @@ export default function NotificationsPage() {
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : filteredNotifications.length === 0 ? (
-            <div className="text-center py-12 text-gray-700">
+            <div className="text-center py-12 text-foreground/80">
               No notifications found
             </div>
           ) : (
             <div className="divide-y">
-              <div className="p-4 bg-gray-50 border-b">
+              <div className="p-4 bg-background border-b">
                 <label className="flex items-center gap-3">
                   <input
                     type="checkbox"
@@ -343,7 +341,7 @@ export default function NotificationsPage() {
                 <div
                   key={notification.id}
                   className={cn(
-                    'p-4 hover:bg-gray-50 transition-colors',
+                    'p-4 hover:bg-background transition-colors',
                     !notification.is_read && 'bg-blue-50/30'
                   )}
                 >
@@ -367,14 +365,14 @@ export default function NotificationsPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
                           <h3 className="font-medium">{notification.title}</h3>
-                          <p className="text-sm text-gray-700 mt-1">
+                          <p className="text-sm text-foreground/80 mt-1">
                             {notification.message}
                           </p>
                           <div className="flex items-center gap-4 mt-2">
                             <Badge className={getPriorityColor(notification.priority)}>
                               {notification.priority}
                             </Badge>
-                            <span className="text-xs text-gray-700">
+                            <span className="text-xs text-foreground/80">
                               {formatDistanceToNow(new Date(notification.created_at), { 
                                 addSuffix: true 
                               })}

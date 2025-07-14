@@ -58,7 +58,7 @@ export default function TwoFactorPage() {
 
       // Success - redirect to dashboard
       router.push('/dashboard')
-    } catch (error) {
+    } catch {
       setError('root', {
         type: 'manual',
         message: 'An unexpected error occurred. Please try again.',
@@ -81,7 +81,7 @@ export default function TwoFactorPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           {/* Company Logo */}
@@ -173,16 +173,16 @@ export default function TwoFactorPage() {
       </Card>
 
       {/* Footer */}
-      <div className="mt-8 text-center text-xs text-gray-700">
+      <div className="mt-8 text-center text-xs text-foreground/80">
         <p className="mb-2">© {new Date().getFullYear()} Industrial Construction Services. All rights reserved.</p>
         <div className="space-x-4">
-          <Link href="/privacy" className="hover:text-gray-700">
+          <Link href="/privacy" className="hover:text-foreground/80">
             Privacy Policy
           </Link>
-          <Link href="/terms" className="hover:text-gray-700">
+          <Link href="/terms" className="hover:text-foreground/80">
             Terms of Service
           </Link>
-          <Link href="/security" className="hover:text-gray-700">
+          <Link href="/security" className="hover:text-foreground/80">
             Security
           </Link>
         </div>

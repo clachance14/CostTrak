@@ -110,7 +110,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
         <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground/80 mb-1">
               Project Name *
             </label>
             <Input
@@ -123,7 +123,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground/80 mb-1">
               Job Number *
             </label>
             <Input
@@ -137,12 +137,12 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground/80 mb-1">
               Client *
             </label>
             <select
               {...register('client_id')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-foreground/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={!!project}
             >
               <option value="">Select a client</option>
@@ -158,12 +158,12 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground/80 mb-1">
               Division *
             </label>
             <select
               {...register('division_id')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-foreground/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={!!project}
             >
               <option value="">Select a division</option>
@@ -179,12 +179,12 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground/80 mb-1">
               Project Manager *
             </label>
             <select
               {...register('project_manager_id')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-foreground/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Select a project manager</option>
               {users?.map((user: User) => (
@@ -199,12 +199,12 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground/80 mb-1">
               Status *
             </label>
             <select
               {...register('status')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-foreground/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="planning">Planning</option>
               <option value="active">Active</option>
@@ -223,7 +223,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
         <h2 className="text-xl font-semibold mb-4">Contract & Schedule</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground/80 mb-1">
               Original Contract Amount *
             </label>
             <Input
@@ -242,7 +242,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground/80 mb-1">
               Start Date *
             </label>
             <Input
@@ -255,7 +255,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground/80 mb-1">
               End Date *
             </label>
             <Input
@@ -273,7 +273,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
         <h2 className="text-xl font-semibold mb-4">Location</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground/80 mb-1">
               Address
             </label>
             <Input
@@ -283,7 +283,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground/80 mb-1">
               City
             </label>
             <Input
@@ -294,7 +294,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground/80 mb-1">
                 State
               </label>
               <Input
@@ -308,7 +308,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground/80 mb-1">
                 ZIP Code
               </label>
               <Input
@@ -324,13 +324,13 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
         </div>
 
         <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-foreground/80 mb-1">
             Description
           </label>
           <textarea
             {...register('description')}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-foreground/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Enter project description"
           />
         </div>

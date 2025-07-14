@@ -146,16 +146,16 @@ export function DocumentUploadModal({
               'border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors',
               isDragActive
                 ? 'border-primary bg-primary/5'
-                : 'border-gray-300 hover:border-gray-400',
-              file && 'bg-gray-50'
+                : 'border-foreground/30 hover:border-foreground/40',
+              file && 'bg-background'
             )}
           >
             <input {...getInputProps()} />
             {file ? (
               <div className="space-y-2">
-                <FileText className="mx-auto h-10 w-10 text-gray-400" />
+                <FileText className="mx-auto h-10 w-10 text-foreground" />
                 <p className="font-medium">{file.name}</p>
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-foreground/80">
                   {formatFileSize(file.size)}
                 </p>
                 <Button
@@ -173,13 +173,13 @@ export function DocumentUploadModal({
               </div>
             ) : (
               <div className="space-y-2">
-                <Upload className="mx-auto h-10 w-10 text-gray-400" />
+                <Upload className="mx-auto h-10 w-10 text-foreground" />
                 <p className="font-medium">
                   {isDragActive
                     ? 'Drop the file here'
                     : 'Drag & drop a file here, or click to select'}
                 </p>
-                <p className="text-xs text-gray-700">
+                <p className="text-xs text-foreground/80">
                   PDF, Word, Excel, Images (max 50MB)
                 </p>
               </div>

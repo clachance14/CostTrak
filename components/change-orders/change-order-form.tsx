@@ -194,13 +194,13 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
       )}
 
       <div>
-        <label htmlFor="project_id" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="project_id" className="block text-sm font-medium text-foreground/80">
           Project *
         </label>
         <select
           {...register('project_id')}
           disabled={mode === 'edit'}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100"
+          className="mt-1 block w-full rounded-md border-foreground/30 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-foreground/5"
         >
           <option value="">Select a project</option>
           {projects.map((project) => (
@@ -215,13 +215,13 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
       </div>
 
       <div>
-        <label htmlFor="co_number" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="co_number" className="block text-sm font-medium text-foreground/80">
           CO Number *
         </label>
         <input
           type="text"
           {...register('co_number')}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          className="mt-1 block w-full rounded-md border-foreground/30 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           placeholder="CO-001"
         />
         {errors.co_number && (
@@ -230,13 +230,13 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
       </div>
 
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="description" className="block text-sm font-medium text-foreground/80">
           Description *
         </label>
         <textarea
           {...register('description')}
           rows={4}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          className="mt-1 block w-full rounded-md border-foreground/30 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           placeholder="Describe the change order..."
         />
         {errors.description && (
@@ -246,17 +246,17 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div>
-          <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="amount" className="block text-sm font-medium text-foreground/80">
             Amount *
           </label>
           <div className="mt-1 relative rounded-md shadow-sm">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <span className="text-gray-700 sm:text-sm">$</span>
+              <span className="text-foreground/80 sm:text-sm">$</span>
             </div>
             <input
               type="text"
               {...register('amount')}
-              className="block w-full pl-7 pr-3 rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="block w-full pl-7 pr-3 rounded-md border-foreground/30 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               placeholder="0.00"
             />
           </div>
@@ -266,31 +266,31 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
         </div>
 
         <div>
-          <label htmlFor="impact_schedule_days" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="impact_schedule_days" className="block text-sm font-medium text-foreground/80">
             Schedule Impact (days)
           </label>
           <input
             type="number"
             {...register('impact_schedule_days')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full rounded-md border-foreground/30 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             placeholder="0"
           />
           {errors.impact_schedule_days && (
             <p className="mt-1 text-sm text-red-600">{errors.impact_schedule_days.message}</p>
           )}
-          <p className="mt-1 text-xs text-gray-700">Positive for delays, negative for acceleration</p>
+          <p className="mt-1 text-xs text-foreground/80">Positive for delays, negative for acceleration</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div>
-          <label htmlFor="submitted_date" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="submitted_date" className="block text-sm font-medium text-foreground/80">
             Submitted Date
           </label>
           <input
             type="date"
             {...register('submitted_date')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full rounded-md border-foreground/30 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           />
           {errors.submitted_date && (
             <p className="mt-1 text-sm text-red-600">{errors.submitted_date.message}</p>
@@ -299,12 +299,12 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
 
         {canEditStatus && (
           <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="status" className="block text-sm font-medium text-foreground/80">
               Status
             </label>
             <select
               {...register('status')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="mt-1 block w-full rounded-md border-foreground/30 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             >
               <option value="pending">Pending</option>
               <option value="approved">Approved</option>
@@ -322,7 +322,7 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
         <button
           type="button"
           onClick={() => router.push('/change-orders')}
-          className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          className="px-4 py-2 border border-foreground/30 rounded-md shadow-sm text-sm font-medium text-foreground/80 bg-white hover:bg-background focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           Cancel
         </button>

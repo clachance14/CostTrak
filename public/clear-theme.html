@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Theme Settings</title>
+</head>
+<body>
+    <h1>Clear Theme Settings</h1>
+    <p>Click the button below to clear theme settings from localStorage:</p>
+    <button onclick="clearTheme()">Clear Theme</button>
+    <script>
+        function clearTheme() {
+            localStorage.removeItem('costtrak-theme');
+            localStorage.removeItem('theme');
+            alert('Theme cleared from localStorage. The page will now refresh.');
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>

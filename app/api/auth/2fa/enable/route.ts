@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { AuditLogger } from '@/lib/security/audit-logger'
 import speakeasy from 'speakeasy'
-import { hash } from '@node-rs/argon2'
 
 const auditLogger = new AuditLogger()
 

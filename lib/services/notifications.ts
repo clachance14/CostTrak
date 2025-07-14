@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js'
-import { Database } from '@/types/database.generated'
+import { Database } from '@/types/database'
 
 type NotificationType = Database['public']['Enums']['notification_type']
 type NotificationPriority = 'low' | 'medium' | 'high' | 'critical'
@@ -14,7 +14,7 @@ interface NotificationData {
   relatedEntityId?: string
   actionUrl?: string
   expiresAt?: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 export class NotificationService {
@@ -66,6 +66,7 @@ export class NotificationService {
       description: string
     }
     project: {
+      id: string
       job_number: string
       name: string
       division_id: string
@@ -87,7 +88,7 @@ export class NotificationService {
       userId: user.id,
       title: 'New Change Order Created',
       message: `Change Order ${changeOrder.co_number} for ${this.formatCurrency(changeOrder.amount)} has been created for project ${project.job_number} - ${project.name}`,
-      type: 'change_order_created' as NotificationType,
+      type: 'change_order' as NotificationType,
       priority: changeOrder.amount > 100000 ? 'high' as NotificationPriority : 'medium' as NotificationPriority,
       relatedEntityType: 'change_order',
       relatedEntityId: changeOrder.id,
@@ -117,7 +118,7 @@ export class NotificationService {
       userId: importedBy,
       title: 'Purchase Order Import Complete',
       message: `Successfully imported ${importedCount} purchase orders totaling ${this.formatCurrency(totalAmount)} for project ${projectName}`,
-      type: 'po_import_complete',
+      type: 'purchase_order',
       priority: 'low',
       relatedEntityType: 'project',
       relatedEntityId: projectId,
@@ -146,7 +147,7 @@ export class NotificationService {
       userId: projectManagerId,
       title: 'Labor Cost Variance Alert',
       message: `${craftType} labor costs are ${variance}% over forecast for week ending ${weekEnding} on project ${projectName}`,
-      type: 'labor_variance_alert',
+      type: 'labor',
       priority: variance > 20 ? 'high' : 'medium',
       relatedEntityType: 'project',
       relatedEntityId: projectId,
@@ -182,7 +183,7 @@ export class NotificationService {
       userId: project.project_manager_id,
       title: 'Project Deadline Approaching',
       message: `Project ${project.job_number} - ${project.name} is due in ${daysUntilDeadline} days`,
-      type: 'project_deadline_approaching',
+      type: 'project',
       priority,
       relatedEntityType: 'project',
       relatedEntityId: project.id,
@@ -223,7 +224,7 @@ export class NotificationService {
       userId: user.id,
       title: 'Budget Threshold Alert',
       message: `Project ${project.job_number} has reached ${budgetPercentage.toFixed(1)}% of budget (${this.formatCurrency(totalCommitted)} of ${this.formatCurrency(revisedContract)})`,
-      type: 'budget_threshold_alert' as NotificationType,
+      type: 'financial' as NotificationType,
       priority: budgetPercentage >= 95 ? 'critical' as NotificationPriority : 'high' as NotificationPriority,
       relatedEntityType: 'project',
       relatedEntityId: project.id,
@@ -254,7 +255,7 @@ export class NotificationService {
       userId,
       title: 'Financial Snapshot Ready',
       message: `New ${snapshotType} financial snapshot available for ${entityName}`,
-      type: 'financial_snapshot_ready' as NotificationType,
+      type: 'financial' as NotificationType,
       priority: 'low' as NotificationPriority,
       relatedEntityType: 'financial_snapshot',
       relatedEntityId: snapshotId,
@@ -286,7 +287,7 @@ export class NotificationService {
       userId,
       title: 'Assigned to New Project',
       message: `You have been assigned as ${role} to project ${project.job_number} - ${project.name}`,
-      type: 'user_assigned_project',
+      type: 'user',
       priority: 'medium',
       relatedEntityType: 'project',
       relatedEntityId: project.id,
@@ -319,7 +320,7 @@ export class NotificationService {
         userId,
         title: 'New Document Uploaded',
         message: `New ${document.category} document "${document.name}" uploaded to ${entityType} ${entityName}`,
-        type: 'document_uploaded' as NotificationType,
+        type: 'document' as NotificationType,
         priority: 'low' as NotificationPriority,
         relatedEntityType: 'document',
         relatedEntityId: document.id,
@@ -364,7 +365,7 @@ export class NotificationService {
       userId: user.id,
       title,
       message,
-      type: 'system_announcement' as NotificationType,
+      type: 'system' as NotificationType,
       priority,
       expiresAt,
       metadata: {

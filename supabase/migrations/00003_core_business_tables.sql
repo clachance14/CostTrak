@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS public.projects (
     name VARCHAR(255) NOT NULL,
     division_id UUID NOT NULL REFERENCES public.divisions(id),
     client_id UUID REFERENCES public.clients(id),
-    project_manager_id UUID REFERENCES public.users(id),
+    project_manager_id UUID REFERENCES public.profiles(id),
     original_contract DECIMAL(15, 2) DEFAULT 0,
     revised_contract DECIMAL(15, 2) DEFAULT 0,
     status project_status DEFAULT 'planning',
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS public.projects (
     state VARCHAR(50),
     zip_code VARCHAR(20),
     description TEXT,
-    created_by UUID REFERENCES public.users(id),
+    created_by UUID REFERENCES public.profiles(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ
@@ -39,9 +39,9 @@ CREATE TABLE IF NOT EXISTS public.change_orders (
     reason TEXT,
     submitted_date DATE,
     approved_date DATE,
-    approved_by UUID REFERENCES public.users(id),
+    approved_by UUID REFERENCES public.profiles(id),
     rejection_reason TEXT,
-    created_by UUID REFERENCES public.users(id),
+    created_by UUID REFERENCES public.profiles(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT unique_co_number_per_project UNIQUE (project_id, co_number)
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS public.audit_log (
     entity_id UUID NOT NULL,
     action VARCHAR(50) NOT NULL,
     changes JSONB DEFAULT '{}',
-    performed_by UUID REFERENCES public.users(id),
+    performed_by UUID REFERENCES public.profiles(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -119,9 +119,9 @@ CREATE POLICY "controllers_executives_view_all_projects" ON public.projects
     FOR SELECT
     USING (
         EXISTS (
-            SELECT 1 FROM public.users
-            WHERE users.id = auth.uid()
-            AND users.role IN ('controller', 'executive')
+            SELECT 1 FROM public.profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.role IN ('controller', 'executive')
         )
     );
 
@@ -130,10 +130,10 @@ CREATE POLICY "ops_managers_view_division_projects" ON public.projects
     FOR SELECT
     USING (
         EXISTS (
-            SELECT 1 FROM public.users
-            WHERE users.id = auth.uid()
-            AND users.role = 'ops_manager'
-            AND users.division_id = projects.division_id
+            SELECT 1 FROM public.profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.role = 'ops_manager'
+            AND profiles.division_id = projects.division_id
         )
     );
 
@@ -147,9 +147,9 @@ CREATE POLICY "accounting_view_all_projects" ON public.projects
     FOR SELECT
     USING (
         EXISTS (
-            SELECT 1 FROM public.users
-            WHERE users.id = auth.uid()
-            AND users.role = 'accounting'
+            SELECT 1 FROM public.profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.role = 'accounting'
         )
     );
 
@@ -158,9 +158,9 @@ CREATE POLICY "controllers_manage_projects" ON public.projects
     FOR ALL
     USING (
         EXISTS (
-            SELECT 1 FROM public.users
-            WHERE users.id = auth.uid()
-            AND users.role = 'controller'
+            SELECT 1 FROM public.profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.role = 'controller'
         )
     );
 
@@ -179,7 +179,7 @@ CREATE POLICY "controllers_ops_manage_change_orders" ON public.change_orders
     FOR ALL
     USING (
         EXISTS (
-            SELECT 1 FROM public.users u
+            SELECT 1 FROM public.profiles u
             LEFT JOIN public.projects p ON p.id = change_orders.project_id
             WHERE u.id = auth.uid()
             AND (
@@ -201,7 +201,7 @@ CREATE POLICY "users_view_relevant_audit_logs" ON public.audit_log
                 EXISTS (SELECT 1 FROM public.change_orders WHERE id = entity_id)
             ELSE
                 EXISTS (
-                    SELECT 1 FROM public.users
+                    SELECT 1 FROM public.profiles
                     WHERE id = auth.uid()
                     AND role IN ('controller', 'executive')
                 )
@@ -218,7 +218,7 @@ CREATE POLICY "users_view_financial_snapshots" ON public.financial_snapshots
                 EXISTS (SELECT 1 FROM public.projects WHERE id = project_id)
             WHEN snapshot_type = 'division' THEN
                 EXISTS (
-                    SELECT 1 FROM public.users u
+                    SELECT 1 FROM public.profiles u
                     WHERE u.id = auth.uid()
                     AND (
                         u.role IN ('controller', 'executive') OR
@@ -227,7 +227,7 @@ CREATE POLICY "users_view_financial_snapshots" ON public.financial_snapshots
                 )
             WHEN snapshot_type = 'company' THEN
                 EXISTS (
-                    SELECT 1 FROM public.users
+                    SELECT 1 FROM public.profiles
                     WHERE id = auth.uid()
                     AND role IN ('controller', 'executive')
                 )
@@ -240,7 +240,7 @@ CREATE POLICY "controllers_create_financial_snapshots" ON public.financial_snaps
     FOR INSERT
     WITH CHECK (
         EXISTS (
-            SELECT 1 FROM public.users
+            SELECT 1 FROM public.profiles
             WHERE id = auth.uid()
             AND role = 'controller'
         )
@@ -292,7 +292,7 @@ DECLARE
 BEGIN
     -- Get user info
     SELECT role, division_id INTO v_user_role, v_user_division
-    FROM public.users
+    FROM public.profiles
     WHERE id = auth.uid();
     
     -- Get project info

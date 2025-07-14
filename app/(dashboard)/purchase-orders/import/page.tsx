@@ -5,10 +5,9 @@ import { useRouter } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { 
   Upload, 
-  FileText, 
+ 
   AlertCircle, 
   CheckCircle,
-  X,
   Download,
   ArrowLeft,
   Info
@@ -23,17 +22,18 @@ interface ImportResult {
   imported: number
   updated: number
   skipped: number
+  lineItemsCreated: number
   errors: Array<{
     row: number
     field?: string
     message: string
-    data?: any
+    data?: unknown
   }>
 }
 
 interface PreviewData {
   headers: string[]
-  rows: any[]
+  rows: unknown[]
   isValid: boolean
   errors: string[]
 }
@@ -45,7 +45,7 @@ export default function PurchaseOrdersImportPage() {
   const [preview, setPreview] = useState<PreviewData | null>(null)
   const [selectedProject, setSelectedProject] = useState<string>('')
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
-  const [isProcessing, setIsProcessing] = useState(false)
+  const [, setIsProcessing] = useState(false)
 
   // Check permissions
   const canImport = user && ['controller', 'accounting', 'ops_manager', 'project_manager'].includes(user.role)
@@ -84,6 +84,7 @@ export default function PurchaseOrdersImportPage() {
         imported: 0,
         updated: 0,
         skipped: 0,
+        lineItemsCreated: 0,
         errors: [{
           row: 0,
           message: error.message
@@ -107,29 +108,30 @@ export default function PurchaseOrdersImportPage() {
       const workbook = XLSX.read(arrayBuffer, { type: 'array', dateNF: 'yyyy-mm-dd' })
       const sheetName = workbook.SheetNames[0]
       const worksheet = workbook.Sheets[sheetName]
-      const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][]
+      const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as unknown[][]
 
-      if (data.length === 0) {
+      if (data.length < 3) {
         setPreview({
           headers: [],
           rows: [],
           isValid: false,
-          errors: ['File is empty']
+          errors: ['Invalid ICS PO Log format. File must have header metadata and data rows.']
         })
         return
       }
 
-      const headers = data[0] as string[]
-      const rows = data.slice(1, 11) // Preview first 10 rows
+      // Skip first 2 rows (metadata) and use row 3 as headers
+      const headers = data[2] as string[]
+      const rows = data.slice(3, 13) // Preview first 10 data rows
 
-      // Validate headers
-      const requiredHeaders = ['project_job_number', 'po_number', 'vendor_name', 'committed_amount']
+      // Validate ICS format headers
+      const requiredHeaders = ['Job No.', 'PO Number', 'Vendor', 'Est. PO Value']
       const missingHeaders = requiredHeaders.filter(h => !headers.includes(h))
 
       setPreview({
         headers,
         rows: rows.map(row => {
-          const obj: any = {}
+          const obj: Record<string, unknown> = {}
           headers.forEach((header, index) => {
             obj[header] = row[index]
           })
@@ -140,7 +142,7 @@ export default function PurchaseOrdersImportPage() {
           ? [`Missing required columns: ${missingHeaders.join(', ')}`]
           : []
       })
-    } catch (error) {
+    } catch {
       setPreview({
         headers: [],
         rows: [],
@@ -166,15 +168,16 @@ export default function PurchaseOrdersImportPage() {
 
   const downloadTemplate = () => {
     const template = [
-      ['project_job_number', 'po_number', 'vendor_name', 'description', 'committed_amount', 'invoiced_amount', 'status', 'issue_date', 'expected_delivery'],
-      ['2024-001', 'PO-2024-001', 'ABC Supplies', 'Steel materials', '75000', '50000', 'approved', '2024-01-15', '2024-02-01'],
-      ['2024-001', 'PO-2024-002', 'XYZ Electric', 'Electrical components', '45000', '0', 'draft', '2024-01-20', '2024-02-15']
+      ['*** TrackerPO PO General Search Export *** REPORT produced on: 2025-07-12 00:00:00 (GMT)'],
+      ['*** Search Selection: Sample Data'],
+      ['Job No.', 'PO Number', 'Generation Date', 'Requestor', 'Sub Cost Code', 'Def. Contr./Extra', 'Vendor', 'WO/PMO', 'Cost Center', 'Sub CC', 'SubSub CC', 'Est. PO Value', 'PO Status', ' PO Comments', 'Invoice/Ticket', 'Inv. Date', 'Contract/Extra', 'Line Item Value', 'FTO Sent Date', 'FTO Ret. Date', ' BB Date', 'Material Description', 'Comments'],
+      ['5640', '5640.1001 (Active)', '2024-12-05', 'Fleming, Katelynn', '0000', 'Contract', 'Brock', '', '4000', '0000', '', '96913.53', 'Active', 'Sample PO Comments', '28044619', '2025-02-21', 'Contract', '96913.54', '0000-00-00', '2025-02-24', '0000-00-00', 'Sample Material', '']
     ]
 
     const ws = XLSX.utils.aoa_to_sheet(template)
     const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Purchase Orders')
-    XLSX.writeFile(wb, 'purchase_orders_template.xlsx')
+    XLSX.utils.book_append_sheet(wb, ws, 'ICS PO Log')
+    XLSX.writeFile(wb, 'ics_po_log_template.csv')
   }
 
   const downloadErrors = () => {
@@ -199,7 +202,7 @@ export default function PurchaseOrdersImportPage() {
         <Card className="p-8 text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">Permission Denied</h2>
-          <p className="text-gray-600">You don't have permission to import purchase orders.</p>
+          <p className="text-foreground">You don&apos;t have permission to import purchase orders.</p>
           <Button
             variant="outline"
             className="mt-4"
@@ -226,8 +229,8 @@ export default function PurchaseOrdersImportPage() {
           Back
         </Button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Import Purchase Orders</h1>
-          <p className="text-gray-600 mt-1">Upload a CSV or Excel file to import purchase orders</p>
+          <h1 className="text-3xl font-bold text-foreground">Import ICS Purchase Orders</h1>
+          <p className="text-foreground mt-1">Upload an ICS PO Log CSV export to import purchase orders</p>
         </div>
       </div>
 
@@ -235,14 +238,15 @@ export default function PurchaseOrdersImportPage() {
       <Card className="p-6 mb-6">
         <div className="flex items-start">
           <Info className="h-5 w-5 text-blue-500 mt-0.5 mr-3 flex-shrink-0" />
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-foreground">
             <p className="font-semibold mb-2">Import Instructions:</p>
             <ul className="list-disc ml-5 space-y-1">
-              <li>File must be in CSV or Excel format (.csv, .xlsx, .xls)</li>
-              <li>Required columns: project_job_number, po_number, vendor_name, committed_amount</li>
-              <li>Optional columns: description, invoiced_amount, status, issue_date, expected_delivery</li>
-              <li>Existing POs will be updated based on matching po_number + project</li>
-              <li>If project_job_number is not in file, select a project below</li>
+              <li>File must be ICS PO Log CSV export format</li>
+              <li>System will automatically skip header metadata rows</li>
+              <li>Multiple invoice lines per PO will be aggregated appropriately</li>
+              <li>Required columns: Job No., PO Number, Vendor, Est. PO Value</li>
+              <li>All ICS fields will be imported including cost codes, requestor, and dates</li>
+              <li>Existing POs will be updated based on matching PO Number + Job No.</li>
             </ul>
             <Button
               variant="outline"
@@ -251,7 +255,7 @@ export default function PurchaseOrdersImportPage() {
               onClick={downloadTemplate}
             >
               <Download className="h-4 w-4 mr-2" />
-              Download Template
+              Download ICS Format Template
             </Button>
           </div>
         </div>
@@ -259,29 +263,29 @@ export default function PurchaseOrdersImportPage() {
 
       {/* Project Selection (optional) */}
       <Card className="p-6 mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-foreground/80 mb-2">
           Project Override (Optional)
         </label>
         <select
           value={selectedProject}
           onChange={(e) => setSelectedProject(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full px-3 py-2 border border-foreground/30 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
-          <option value="">Use project_job_number from file</option>
-          {projectsData?.projects?.map((project: any) => (
+          <option value="">Use Job No. from ICS file</option>
+          {projectsData?.projects?.map((project: { id: string; job_number: string; name: string }) => (
             <option key={project.id} value={project.id}>
               {project.job_number} - {project.name}
             </option>
           ))}
         </select>
-        <p className="text-sm text-gray-700 mt-1">
-          If selected, all POs will be imported to this project regardless of job numbers in the file
+        <p className="text-sm text-foreground/80 mt-1">
+          If selected, all POs will be imported to this project regardless of Job No. in the file
         </p>
       </Card>
 
       {/* File Upload */}
       <Card className="p-6 mb-6">
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+        <div className="border-2 border-dashed border-foreground/30 rounded-lg p-8 text-center">
           <input
             type="file"
             accept=".csv,.xlsx,.xls"
@@ -290,11 +294,11 @@ export default function PurchaseOrdersImportPage() {
             id="file-upload"
           />
           <label htmlFor="file-upload" className="cursor-pointer">
-            <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-lg font-medium text-gray-900 mb-2">
+            <Upload className="h-12 w-12 text-foreground mx-auto mb-4" />
+            <p className="text-lg font-medium text-foreground mb-2">
               {file ? file.name : 'Click to upload or drag and drop'}
             </p>
-            <p className="text-sm text-gray-700">CSV or Excel files up to 10MB</p>
+            <p className="text-sm text-foreground/80">ICS PO Log CSV files up to 10MB</p>
           </label>
         </div>
       </Card>
@@ -323,10 +327,10 @@ export default function PurchaseOrdersImportPage() {
           {preview.isValid && preview.rows.length > 0 && (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-background">
                   <tr>
                     {preview.headers.map((header, i) => (
-                      <th key={i} className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase">
+                      <th key={i} className="px-4 py-2 text-left text-xs font-medium text-foreground/80 uppercase">
                         {header}
                       </th>
                     ))}
@@ -336,7 +340,7 @@ export default function PurchaseOrdersImportPage() {
                   {preview.rows.map((row, i) => (
                     <tr key={i}>
                       {preview.headers.map((header, j) => (
-                        <td key={j} className="px-4 py-2 text-sm text-gray-900 whitespace-nowrap">
+                        <td key={j} className="px-4 py-2 text-sm text-foreground whitespace-nowrap">
                           {row[header] || '-'}
                         </td>
                       ))}
@@ -345,12 +349,12 @@ export default function PurchaseOrdersImportPage() {
                 </tbody>
               </table>
               {preview.rows.length < 10 && (
-                <p className="text-sm text-gray-700 mt-2">
+                <p className="text-sm text-foreground/80 mt-2">
                   Showing all {preview.rows.length} rows
                 </p>
               )}
               {preview.rows.length === 10 && (
-                <p className="text-sm text-gray-700 mt-2">
+                <p className="text-sm text-foreground/80 mt-2">
                   Showing first 10 rows (file may contain more)
                 </p>
               )}
@@ -373,8 +377,9 @@ export default function PurchaseOrdersImportPage() {
                 Import {importResult.success ? 'Completed' : 'Failed'}
               </h3>
               <div className="space-y-1 text-sm">
-                <p>Imported: {importResult.imported} new records</p>
-                <p>Updated: {importResult.updated} existing records</p>
+                <p>Imported: {importResult.imported} new POs</p>
+                <p>Updated: {importResult.updated} existing POs</p>
+                <p>Line Items Created: {importResult.lineItemsCreated} invoice records</p>
                 <p>Skipped: {importResult.skipped} records</p>
                 {importResult.errors.length > 0 && (
                   <p>Errors: {importResult.errors.length} records</p>
@@ -413,6 +418,7 @@ export default function PurchaseOrdersImportPage() {
         </Card>
       )}
 
+
       {/* Actions */}
       <div className="flex justify-end gap-3">
         <Button
@@ -422,10 +428,10 @@ export default function PurchaseOrdersImportPage() {
           Cancel
         </Button>
         <Button
-          variant="primary"
           onClick={handleImport}
           disabled={!file || !preview?.isValid || importMutation.isPending}
           loading={importMutation.isPending}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-md disabled:bg-gray-300 disabled:cursor-not-allowed"
         >
           Import Purchase Orders
         </Button>

@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { startOfWeek, endOfWeek, format } from 'date-fns'
+import { endOfWeek, format } from 'date-fns'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 // Helper to get Sunday week ending date
 export const getWeekEndingDate = (date: Date): Date => {
@@ -133,7 +134,7 @@ export const calculateVariance = (
 
 // Validate unique constraint (one record per project/craft/week)
 export const validateUniqueEntry = async (
-  supabase: any,
+  supabase: SupabaseClient,
   projectId: string,
   craftTypeId: string,
   weekEnding: string,
@@ -169,7 +170,7 @@ export const validateUniqueEntry = async (
 
 // Get default rate for project/craft combination
 export const getProjectCraftRate = async (
-  supabase: any,
+  supabase: SupabaseClient,
   projectId: string,
   craftTypeId: string
 ): Promise<number | null> => {

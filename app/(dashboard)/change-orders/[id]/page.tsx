@@ -65,7 +65,7 @@ const statusConfig = {
   pending: { label: 'Pending', className: 'bg-yellow-100 text-yellow-800', icon: Clock },
   approved: { label: 'Approved', className: 'bg-green-100 text-green-800', icon: Check },
   rejected: { label: 'Rejected', className: 'bg-red-100 text-red-800', icon: X },
-  cancelled: { label: 'Cancelled', className: 'bg-gray-100 text-gray-800', icon: X }
+  cancelled: { label: 'Cancelled', className: 'bg-foreground/5 text-foreground', icon: X }
 }
 
 export default function ChangeOrderDetailPage({ params }: { params: { id: string } }) {
@@ -190,7 +190,7 @@ export default function ChangeOrderDetailPage({ params }: { params: { id: string
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading change order details...</p>
+          <p className="mt-4 text-foreground">Loading change order details...</p>
         </div>
       </div>
     )
@@ -216,7 +216,7 @@ export default function ChangeOrderDetailPage({ params }: { params: { id: string
       <div className="mb-6">
         <Link
           href="/change-orders"
-          className="inline-flex items-center text-sm text-gray-700 hover:text-gray-700"
+          className="inline-flex items-center text-sm text-foreground/80 hover:text-foreground/80"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Change Orders
@@ -224,10 +224,10 @@ export default function ChangeOrderDetailPage({ params }: { params: { id: string
       </div>
 
       <div className="bg-white shadow-sm rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-6 py-4 border-b border-foreground/20">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold text-gray-900">{changeOrder.coNumber}</h1>
+              <h1 className="text-2xl font-bold text-foreground">{changeOrder.coNumber}</h1>
               <span className={`px-3 py-1 inline-flex items-center gap-1 text-sm font-semibold rounded-full ${statusConfig[changeOrder.status].className}`}>
                 <StatusIcon className="h-4 w-4" />
                 {statusConfig[changeOrder.status].label}
@@ -268,44 +268,44 @@ export default function ChangeOrderDetailPage({ params }: { params: { id: string
         <div className="p-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Change Order Details</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-4">Change Order Details</h2>
               <dl className="space-y-3">
                 <div>
-                  <dt className="text-sm font-medium text-gray-700">Description</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{changeOrder.description}</dd>
+                  <dt className="text-sm font-medium text-foreground/80">Description</dt>
+                  <dd className="mt-1 text-sm text-foreground">{changeOrder.description}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm font-medium text-gray-700">Amount</dt>
-                  <dd className="mt-1 text-lg font-semibold text-gray-900">
+                  <dt className="text-sm font-medium text-foreground/80">Amount</dt>
+                  <dd className="mt-1 text-lg font-semibold text-foreground">
                     {formatCurrency(changeOrder.amount)}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-sm font-medium text-gray-700">Schedule Impact</dt>
-                  <dd className="mt-1 text-sm text-gray-900">
+                  <dt className="text-sm font-medium text-foreground/80">Schedule Impact</dt>
+                  <dd className="mt-1 text-sm text-foreground">
                     {changeOrder.impactScheduleDays > 0 ? `+${changeOrder.impactScheduleDays} days` : 
                      changeOrder.impactScheduleDays < 0 ? `${changeOrder.impactScheduleDays} days` : 
                      'No impact'}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-sm font-medium text-gray-700">Submitted Date</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{formatDate(changeOrder.submittedDate)}</dd>
+                  <dt className="text-sm font-medium text-foreground/80">Submitted Date</dt>
+                  <dd className="mt-1 text-sm text-foreground">{formatDate(changeOrder.submittedDate)}</dd>
                 </div>
                 {changeOrder.approvedDate && (
                   <div>
-                    <dt className="text-sm font-medium text-gray-700">Approved Date</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{formatDate(changeOrder.approvedDate)}</dd>
+                    <dt className="text-sm font-medium text-foreground/80">Approved Date</dt>
+                    <dd className="mt-1 text-sm text-foreground">{formatDate(changeOrder.approvedDate)}</dd>
                   </div>
                 )}
               </dl>
             </div>
 
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Project Information</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-4">Project Information</h2>
               <dl className="space-y-3">
                 <div>
-                  <dt className="text-sm font-medium text-gray-700">Project</dt>
+                  <dt className="text-sm font-medium text-foreground/80">Project</dt>
                   <dd className="mt-1">
                     <Link href={`/projects/${changeOrder.project.id}`} className="text-blue-600 hover:text-blue-800">
                       {changeOrder.project.jobNumber} - {changeOrder.project.name}
@@ -313,20 +313,20 @@ export default function ChangeOrderDetailPage({ params }: { params: { id: string
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-sm font-medium text-gray-700">Client</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{changeOrder.project.client.name}</dd>
+                  <dt className="text-sm font-medium text-foreground/80">Client</dt>
+                  <dd className="mt-1 text-sm text-foreground">{changeOrder.project.client.name}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm font-medium text-gray-700">Division</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{changeOrder.project.division.name}</dd>
+                  <dt className="text-sm font-medium text-foreground/80">Division</dt>
+                  <dd className="mt-1 text-sm text-foreground">{changeOrder.project.division.name}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm font-medium text-gray-700">Original Contract</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{formatCurrency(changeOrder.project.originalContract)}</dd>
+                  <dt className="text-sm font-medium text-foreground/80">Original Contract</dt>
+                  <dd className="mt-1 text-sm text-foreground">{formatCurrency(changeOrder.project.originalContract)}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm font-medium text-gray-700">Revised Contract</dt>
-                  <dd className="mt-1 text-sm font-semibold text-gray-900">
+                  <dt className="text-sm font-medium text-foreground/80">Revised Contract</dt>
+                  <dd className="mt-1 text-sm font-semibold text-foreground">
                     {formatCurrency(changeOrder.project.revisedContract)}
                   </dd>
                 </div>
@@ -335,23 +335,23 @@ export default function ChangeOrderDetailPage({ params }: { params: { id: string
           </div>
 
           {(changeOrder.createdBy || changeOrder.approvedBy) && (
-            <div className="mt-8 pt-6 border-t border-gray-200">
+            <div className="mt-8 pt-6 border-t border-foreground/20">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {changeOrder.createdBy && (
                   <div className="flex items-center gap-3">
-                    <User className="h-5 w-5 text-gray-400" />
+                    <User className="h-5 w-5 text-foreground" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Created by</p>
-                      <p className="text-sm text-gray-700">{changeOrder.createdBy.name}</p>
+                      <p className="text-sm font-medium text-foreground">Created by</p>
+                      <p className="text-sm text-foreground/80">{changeOrder.createdBy.name}</p>
                     </div>
                   </div>
                 )}
                 {changeOrder.approvedBy && (
                   <div className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-gray-400" />
+                    <Check className="h-5 w-5 text-foreground" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Approved by</p>
-                      <p className="text-sm text-gray-700">{changeOrder.approvedBy.name}</p>
+                      <p className="text-sm font-medium text-foreground">Approved by</p>
+                      <p className="text-sm text-foreground/80">{changeOrder.approvedBy.name}</p>
                     </div>
                   </div>
                 )}
@@ -360,18 +360,18 @@ export default function ChangeOrderDetailPage({ params }: { params: { id: string
           )}
 
           {auditTrail.length > 0 && (
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Audit Trail</h2>
+            <div className="mt-8 pt-6 border-t border-foreground/20">
+              <h2 className="text-lg font-semibold text-foreground mb-4">Audit Trail</h2>
               <div className="space-y-4">
                 {auditTrail.map((entry, index) => (
                   <div key={index} className="flex items-start gap-3">
-                    <Calendar className="h-5 w-5 text-gray-400 mt-0.5" />
+                    <Calendar className="h-5 w-5 text-foreground mt-0.5" />
                     <div className="flex-1">
-                      <p className="text-sm text-gray-900">
+                      <p className="text-sm text-foreground">
                         <span className="font-medium">{entry.user}</span> {entry.action}
                       </p>
                       {entry.changes && Object.keys(entry.changes).length > 0 && (
-                        <div className="mt-1 text-sm text-gray-700">
+                        <div className="mt-1 text-sm text-foreground/80">
                           {Object.entries(entry.changes).map(([key, value]: [string, unknown]) => {
                             if (typeof value === 'object' && value !== null && 'from' in value) {
                               const val = value as { from: unknown; to: unknown }
@@ -389,7 +389,7 @@ export default function ChangeOrderDetailPage({ params }: { params: { id: string
                           })}
                         </div>
                       )}
-                      <p className="text-xs text-gray-400 mt-1">{formatDate(entry.timestamp)}</p>
+                      <p className="text-xs text-foreground mt-1">{formatDate(entry.timestamp)}</p>
                     </div>
                   </div>
                 ))}

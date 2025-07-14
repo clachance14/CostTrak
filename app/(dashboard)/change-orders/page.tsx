@@ -46,7 +46,7 @@ const statusConfig = {
   pending: { label: 'Pending', className: 'bg-yellow-100 text-yellow-800' },
   approved: { label: 'Approved', className: 'bg-green-100 text-green-800' },
   rejected: { label: 'Rejected', className: 'bg-red-100 text-red-800' },
-  cancelled: { label: 'Cancelled', className: 'bg-gray-100 text-gray-800' }
+  cancelled: { label: 'Cancelled', className: 'bg-foreground/5 text-foreground' }
 }
 
 export default function ChangeOrdersPage() {
@@ -63,7 +63,7 @@ export default function ChangeOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [projectFilter, setProjectFilter] = useState<string | null>(projectIdParam)
+  const [projectFilter] = useState<string | null>(projectIdParam)
   const [projectInfo, setProjectInfo] = useState<ProjectInfo | null>(null)
   const supabase = createClient()
 
@@ -233,7 +233,7 @@ export default function ChangeOrdersPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading change orders...</p>
+          <p className="mt-4 text-foreground">Loading change orders...</p>
         </div>
       </div>
     )
@@ -259,7 +259,7 @@ export default function ChangeOrdersPage() {
           <div className="mb-4">
             <Link
               href={`/projects/${projectInfo.id}`}
-              className="inline-flex items-center text-sm text-gray-700 hover:text-gray-700"
+              className="inline-flex items-center text-sm text-foreground/80 hover:text-foreground/80"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
               Back to Project {projectInfo.jobNumber} - {projectInfo.name}
@@ -269,9 +269,9 @@ export default function ChangeOrdersPage() {
         
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Change Orders</h1>
+            <h1 className="text-3xl font-bold text-foreground">Change Orders</h1>
             {projectInfo && (
-              <p className="text-gray-600 mt-1">
+              <p className="text-foreground mt-1">
                 For Project {projectInfo.jobNumber} - {projectInfo.name}
               </p>
             )}
@@ -293,12 +293,12 @@ export default function ChangeOrdersPage() {
             placeholder="Search by CO number or description..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 px-4 py-2 border border-foreground/30 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-4 py-2 border border-foreground/30 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="all">All Status</option>
             <option value="pending">Pending</option>
@@ -310,63 +310,63 @@ export default function ChangeOrdersPage() {
       </div>
 
       {changeOrders.length === 0 ? (
-        <div className="bg-gray-50 rounded-lg p-8 text-center">
-          <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">No change orders found</p>
+        <div className="bg-background rounded-lg p-8 text-center">
+          <FileText className="h-12 w-12 text-foreground mx-auto mb-4" />
+          <p className="text-foreground">No change orders found</p>
         </div>
       ) : (
         <>
           <div className="bg-white shadow-sm rounded-lg overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-background">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
                     CO Number
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
                     Project
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
                     Description
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
                     Amount
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
                     Schedule Impact
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
                     Submitted
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-foreground/80 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {changeOrders.map((co) => (
-                  <tr key={co.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <tr key={co.id} className="hover:bg-background">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
                       <Link href={`/change-orders/${co.id}`} className="text-blue-600 hover:text-blue-800">
                         {co.coNumber}
                       </Link>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground/80">
                       <div>
-                        <div className="font-medium text-gray-900">{co.project.jobNumber}</div>
-                        <div className="text-gray-700">{co.project.name}</div>
+                        <div className="font-medium text-foreground">{co.project.jobNumber}</div>
+                        <div className="text-foreground/80">{co.project.name}</div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
+                    <td className="px-6 py-4 text-sm text-foreground max-w-xs truncate">
                       {co.description}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                       {formatCurrency(co.amount)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground/80">
                       {co.impactScheduleDays > 0 ? `+${co.impactScheduleDays} days` : 
                        co.impactScheduleDays < 0 ? `${co.impactScheduleDays} days` : 
                        'No impact'}
@@ -376,7 +376,7 @@ export default function ChangeOrdersPage() {
                         {statusConfig[co.status].label}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground/80">
                       {formatDate(co.submittedDate)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -423,21 +423,21 @@ export default function ChangeOrdersPage() {
 
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between">
-              <div className="text-sm text-gray-700">
+              <div className="text-sm text-foreground/80">
                 Page {currentPage} of {totalPages}
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 border border-foreground/30 rounded-md text-sm font-medium text-foreground/80 bg-white hover:bg-background disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 border border-foreground/30 rounded-md text-sm font-medium text-foreground/80 bg-white hover:bg-background disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>

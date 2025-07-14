@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
 // GET /api/craft-types - List all active craft types
-export async function GET(request: NextRequest) {
+export async function GET() {
   const supabase = await createClient()
   
   // Check authentication
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
         category: craft.category
       })
       return acc
-    }, {} as Record<string, any[]>) || {}
+    }, {} as Record<string, Array<{id: string; name: string; code: string; category: string}>>) || {}
 
     return NextResponse.json({
       craftTypes: craftTypes?.map(craft => ({

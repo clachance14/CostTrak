@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
-import { Database } from '@/types/database.generated'
-
-type FinancialSnapshot = Database['public']['Tables']['financial_snapshots']['Row']
 
 // Query schema for listing snapshots
 const querySchema = z.object({

@@ -96,7 +96,7 @@ export default function ExecutiveDashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Executive Dashboard</h1>
-        <p className="text-gray-700">
+        <p className="text-foreground/80">
           Company-wide performance overview
         </p>
       </div>
@@ -143,7 +143,7 @@ export default function ExecutiveDashboard() {
       <TopProjects projects={data.topProjects} />
 
       {/* Last Updated */}
-      <div className="text-sm text-gray-700 text-right">
+      <div className="text-sm text-foreground/80 text-right">
         Last updated: {new Date(data.overview.lastUpdated).toLocaleString()}
       </div>
     </div>

@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
-import { Database } from '@/types/database.generated'
-
-type Document = Database['public']['Tables']['documents']['Row']
 
 // Query schema for listing documents
 const querySchema = z.object({

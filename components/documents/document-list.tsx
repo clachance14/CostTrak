@@ -120,7 +120,7 @@ export function DocumentList({ entityType, entityId }: DocumentListProps) {
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to download document',
@@ -153,7 +153,7 @@ export function DocumentList({ entityType, entityId }: DocumentListProps) {
       case 'invoice': return 'bg-green-100 text-green-800'
       case 'drawing': return 'bg-blue-100 text-blue-800'
       case 'report': return 'bg-orange-100 text-orange-800'
-      default: return 'bg-gray-100 text-gray-800'
+      default: return 'bg-foreground/5 text-foreground'
     }
   }
 
@@ -165,7 +165,7 @@ export function DocumentList({ entityType, entityId }: DocumentListProps) {
 
   if (documents.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-700">
+      <div className="text-center py-8 text-foreground/80">
         No documents uploaded yet
       </div>
     )
@@ -194,7 +194,7 @@ export function DocumentList({ entityType, entityId }: DocumentListProps) {
                     <div>
                       <p className="font-medium">{doc.name}</p>
                       {doc.description && (
-                        <p className="text-sm text-gray-700">
+                        <p className="text-sm text-foreground/80">
                           {doc.description}
                         </p>
                       )}

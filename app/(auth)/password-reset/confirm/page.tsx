@@ -67,7 +67,7 @@ export default function PasswordResetConfirmPage() {
       setTimeout(() => {
         router.push('/login')
       }, 3000)
-    } catch (error) {
+    } catch {
       setError('root', {
         type: 'manual',
         message: 'An unexpected error occurred. Please try again.',
@@ -98,7 +98,7 @@ export default function PasswordResetConfirmPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           {/* Company Logo */}
@@ -126,7 +126,7 @@ export default function PasswordResetConfirmPage() {
                 </div>
               </div>
               
-              <div className="text-center text-sm text-gray-800">
+              <div className="text-center text-sm text-foreground">
                 <p>Redirecting to login page...</p>
               </div>
               
@@ -153,7 +153,7 @@ export default function PasswordResetConfirmPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-800 hover:text-gray-900"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground hover:text-foreground"
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -178,7 +178,7 @@ export default function PasswordResetConfirmPage() {
                               ? passwordStrength.strength <= 2
                                 ? 'bg-warning-500'
                                 : 'bg-success-500'
-                              : 'bg-gray-200'
+                              : 'bg-foreground/10'
                           }`}
                         />
                       ))}
@@ -207,7 +207,7 @@ export default function PasswordResetConfirmPage() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-800 hover:text-gray-900"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground hover:text-foreground"
                   >
                     {showConfirmPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -222,7 +222,7 @@ export default function PasswordResetConfirmPage() {
               </div>
 
               {/* Password Requirements */}
-              <div className="rounded-md bg-gray-50 p-3 text-xs text-gray-800">
+              <div className="rounded-md bg-background p-3 text-xs text-foreground">
                 <p className="font-medium mb-1">Password must contain:</p>
                 <ul className="space-y-0.5 list-disc list-inside">
                   <li>At least 8 characters</li>
@@ -254,16 +254,16 @@ export default function PasswordResetConfirmPage() {
       </Card>
 
       {/* Footer */}
-      <div className="mt-8 text-center text-xs text-gray-700">
+      <div className="mt-8 text-center text-xs text-foreground/80">
         <p className="mb-2">© {new Date().getFullYear()} Industrial Construction Services. All rights reserved.</p>
         <div className="space-x-4">
-          <Link href="/privacy" className="hover:text-gray-700">
+          <Link href="/privacy" className="hover:text-foreground/80">
             Privacy Policy
           </Link>
-          <Link href="/terms" className="hover:text-gray-700">
+          <Link href="/terms" className="hover:text-foreground/80">
             Terms of Service
           </Link>
-          <Link href="/security" className="hover:text-gray-700">
+          <Link href="/security" className="hover:text-foreground/80">
             Security
           </Link>
         </div>

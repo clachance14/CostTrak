@@ -42,7 +42,7 @@ export default function PasswordResetPage() {
       }
 
       setIsSubmitted(true)
-    } catch (error) {
+    } catch {
       setError('root', {
         type: 'manual',
         message: 'An unexpected error occurred. Please try again.',
@@ -55,7 +55,7 @@ export default function PasswordResetPage() {
   const allowedDomain = process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN || 'ics.ac'
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           {/* Company Logo */}
@@ -68,7 +68,7 @@ export default function PasswordResetPage() {
           </CardTitle>
           <CardDescription className="text-center">
             {isSubmitted 
-              ? 'We\'ve sent password reset instructions to your email'
+              ? 'We&apos;ve sent password reset instructions to your email'
               : `Enter your @${allowedDomain} email address`
             }
           </CardDescription>
@@ -83,9 +83,9 @@ export default function PasswordResetPage() {
                 </div>
               </div>
               
-              <div className="space-y-2 text-center text-sm text-gray-800">
-                <p>If an account exists with this email, you'll receive instructions shortly.</p>
-                <p>Please check your spam folder if you don't see the email.</p>
+              <div className="space-y-2 text-center text-sm text-foreground">
+                <p>If an account exists with this email, you&apos;ll receive instructions shortly.</p>
+                <p>Please check your spam folder if you don&apos;t see the email.</p>
               </div>
               
               <div className="flex items-center gap-2 rounded-md bg-info-50 p-3 text-sm text-info-700">
@@ -148,16 +148,16 @@ export default function PasswordResetPage() {
       </Card>
 
       {/* Footer */}
-      <div className="mt-8 text-center text-xs text-gray-700">
+      <div className="mt-8 text-center text-xs text-foreground/80">
         <p className="mb-2">© {new Date().getFullYear()} Industrial Construction Services. All rights reserved.</p>
         <div className="space-x-4">
-          <Link href="/privacy" className="hover:text-gray-700">
+          <Link href="/privacy" className="hover:text-foreground/80">
             Privacy Policy
           </Link>
-          <Link href="/terms" className="hover:text-gray-700">
+          <Link href="/terms" className="hover:text-foreground/80">
             Terms of Service
           </Link>
-          <Link href="/security" className="hover:text-gray-700">
+          <Link href="/security" className="hover:text-foreground/80">
             Security
           </Link>
         </div>

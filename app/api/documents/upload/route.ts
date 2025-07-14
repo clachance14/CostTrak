@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
 }
 
 async function checkUploadPermission(
-  supabase: any,
+  supabase: ReturnType<typeof createClient>,
   userId: string,
   entityType: string,
   entityId: string

@@ -23,6 +23,7 @@ import {
 import { useState } from 'react'
 import { cn } from '@/lib/utils/cn'
 import { NotificationBell } from '@/components/notifications/notification-bell'
+import { ThemeToggle, ThemeToggleSimple } from '@/components/ui/theme-toggle-wrapper'
 
 // Navigation items based on role
 const getNavigationItems = (role: string) => {
@@ -96,13 +97,13 @@ export default function DashboardLayout({
   const navigation = getNavigationItems(user.role)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Desktop Sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex min-h-0 flex-1 flex-col bg-gray-900">
+        <div className="flex min-h-0 flex-1 flex-col bg-foreground">
           <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
             <div className="flex flex-shrink-0 items-center px-4">
-              <h1 className="text-xl font-semibold text-white">CostTrak</h1>
+              <h1 className="text-xl font-semibold text-background">CostTrak</h1>
             </div>
             <nav className="mt-8 flex-1 space-y-1 px-2">
               {navigation.map((item) => {
@@ -113,8 +114,8 @@ export default function DashboardLayout({
                     href={item.href}
                     className={cn(
                       pathname.startsWith(item.href)
-                        ? 'bg-gray-800 text-white'
-                        : 'text-gray-300 hover:bg-gray-700 hover:text-white',
+                        ? 'bg-background/20 text-background'
+                        : 'text-background/70 hover:bg-background/10 hover:text-background',
                       'group flex items-center px-2 py-2 text-sm font-medium rounded-md'
                     )}
                   >
@@ -125,26 +126,27 @@ export default function DashboardLayout({
               })}
             </nav>
           </div>
-          <div className="flex flex-shrink-0 bg-gray-800 p-4">
+          <div className="flex flex-shrink-0 bg-background/10 p-4">
             <div className="flex w-full items-center justify-between">
               <div className="flex items-center">
-                <div className="h-8 w-8 rounded-full bg-gray-700 flex items-center justify-center">
-                  <User className="h-5 w-5 text-gray-300" />
+                <div className="h-8 w-8 rounded-full bg-background/20 flex items-center justify-center">
+                  <User className="h-5 w-5 text-background/70" />
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-white">
+                  <p className="text-sm font-medium text-background">
                     {user.first_name} {user.last_name}
                   </p>
-                  <p className="text-xs font-medium text-gray-300">
+                  <p className="text-xs font-medium text-background/70">
                     {user.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <ThemeToggle />
                 <NotificationBell />
                 <button
                   onClick={() => signOut.mutate()}
-                  className="text-gray-300 hover:text-white"
+                  className="text-background/70 hover:text-background"
                 >
                   <LogOut className="h-5 w-5" />
                 </button>
@@ -155,14 +157,15 @@ export default function DashboardLayout({
       </div>
 
       {/* Mobile header */}
-      <div className="sticky top-0 z-10 bg-white shadow lg:hidden">
+      <div className="sticky top-0 z-10 bg-background shadow lg:hidden">
         <div className="flex items-center justify-between px-4 py-2">
           <h1 className="text-xl font-semibold">CostTrak</h1>
           <div className="flex items-center gap-2">
+            <ThemeToggleSimple />
             <NotificationBell />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="rounded-md p-2 text-gray-600 hover:bg-gray-100"
+              className="rounded-md p-2 text-foreground hover:bg-foreground/10"
             >
               {mobileMenuOpen ? (
                 <X className="h-6 w-6" />
@@ -177,8 +180,8 @@ export default function DashboardLayout({
       {/* Mobile menu */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setMobileMenuOpen(false)} />
-          <div className="fixed inset-y-0 left-0 flex w-full max-w-xs flex-col bg-white">
+          <div className="fixed inset-0 bg-foreground/60" onClick={() => setMobileMenuOpen(false)} />
+          <div className="fixed inset-y-0 left-0 flex w-full max-w-xs flex-col bg-background">
             <div className="flex min-h-0 flex-1 flex-col pt-5 pb-4">
               <nav className="mt-5 flex-1 space-y-1 px-2">
                 {navigation.map((item) => {
@@ -190,8 +193,8 @@ export default function DashboardLayout({
                       onClick={() => setMobileMenuOpen(false)}
                       className={cn(
                         pathname.startsWith(item.href)
-                          ? 'bg-gray-100 text-gray-900'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+                          ? 'bg-foreground/10 text-foreground'
+                          : 'text-foreground/80 hover:bg-foreground/5 hover:text-foreground',
                         'group flex items-center px-2 py-2 text-base font-medium rounded-md'
                       )}
                     >
@@ -202,16 +205,16 @@ export default function DashboardLayout({
                 })}
               </nav>
             </div>
-            <div className="flex flex-shrink-0 border-t border-gray-200 p-4">
+            <div className="flex flex-shrink-0 border-t border-foreground/20 p-4">
               <div className="flex items-center">
-                <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                  <User className="h-6 w-6 text-gray-600" />
+                <div className="h-10 w-10 rounded-full bg-foreground/10 flex items-center justify-center">
+                  <User className="h-6 w-6 text-foreground" />
                 </div>
                 <div className="ml-3">
-                  <p className="text-base font-medium text-gray-700">
+                  <p className="text-base font-medium text-foreground">
                     {user.first_name} {user.last_name}
                   </p>
-                  <p className="text-sm font-medium text-gray-700">
+                  <p className="text-sm font-medium text-foreground/70">
                     {user.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </p>
                 </div>

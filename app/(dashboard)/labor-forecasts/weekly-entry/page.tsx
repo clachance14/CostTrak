@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { 
   ArrowLeft, 
@@ -9,12 +9,9 @@ import {
   AlertTriangle, 
   TrendingUp,
   Calendar,
-  DollarSign,
-  Clock
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { getWeekEndingDate, formatWeekEnding } from '@/lib/validations/labor-forecast-v2'
-import { createClient } from '@/lib/supabase/client'
 
 interface CraftType {
   id: string
@@ -49,7 +46,6 @@ const laborCategoryLabels = {
 }
 
 export default function WeeklyLaborEntryPage() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const projectId = searchParams.get('project_id')
   const weekParam = searchParams.get('week')
@@ -71,11 +67,11 @@ export default function WeeklyLaborEntryPage() {
     return lastSunday
   })
   
-  const [craftTypes, setCraftTypes] = useState<CraftType[]>([])
+  // const [craftTypes, setCraftTypes] = useState<CraftType[]>([])
   const [laborEntries, setLaborEntries] = useState<Map<string, LaborActual>>(new Map())
   const [hasExistingData, setHasExistingData] = useState(false)
   
-  const supabase = createClient()
+  // const supabase = createClient()
 
   const fetchData = useCallback(async () => {
     if (!projectId) {
@@ -249,7 +245,7 @@ export default function WeeklyLaborEntryPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-foreground">Loading...</p>
         </div>
       </div>
     )
@@ -275,7 +271,7 @@ export default function WeeklyLaborEntryPage() {
       <div className="mb-8">
         <Link
           href={`/labor-forecasts?project_id=${projectId}`}
-          className="inline-flex items-center text-sm text-gray-700 hover:text-gray-700 mb-4"
+          className="inline-flex items-center text-sm text-foreground/80 hover:text-foreground/80 mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Labor Forecasts
@@ -283,15 +279,15 @@ export default function WeeklyLaborEntryPage() {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Weekly Labor Entry</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-3xl font-bold text-foreground">Weekly Labor Entry</h1>
+            <p className="text-foreground mt-1">
               Project {projectInfo.jobNumber} - {projectInfo.name}
             </p>
           </div>
           
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-gray-400" />
+              <Calendar className="h-5 w-5 text-foreground" />
               <input
                 type="date"
                 value={weekEnding.toISOString().split('T')[0]}
@@ -299,9 +295,9 @@ export default function WeeklyLaborEntryPage() {
                   const newDate = getWeekEndingDate(new Date(e.target.value))
                   setWeekEnding(newDate)
                 }}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-foreground/30 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-foreground">
                 Week ending {formatWeekEnding(weekEnding)}
               </span>
             </div>
@@ -343,29 +339,29 @@ export default function WeeklyLaborEntryPage() {
 
           return (
             <div key={category} className="bg-white shadow-sm rounded-lg overflow-hidden">
-              <div className="bg-gray-50 px-6 py-3 border-b">
-                <h2 className="text-lg font-semibold text-gray-900">{label}</h2>
+              <div className="bg-background px-6 py-3 border-b">
+                <h2 className="text-lg font-semibold text-foreground">{label}</h2>
               </div>
               
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-background">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
                       Craft Type
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
                       Total Cost ($)
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
                       Total Hours
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
                       Rate/Hour
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
                       Running Avg
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
                       Variance
                     </th>
                   </tr>
@@ -379,10 +375,10 @@ export default function WeeklyLaborEntryPage() {
                     return (
                       <tr key={entry.craftTypeId}>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-medium text-foreground">
                             {entry.craftName}
                           </div>
-                          <div className="text-sm text-gray-700">{entry.craftCode}</div>
+                          <div className="text-sm text-foreground/80">{entry.craftCode}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <input
@@ -390,7 +386,7 @@ export default function WeeklyLaborEntryPage() {
                             step="0.01"
                             value={entry.totalCost || ''}
                             onChange={(e) => updateEntry(entry.craftTypeId, 'totalCost', e.target.value)}
-                            className="w-32 px-3 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                            className="w-32 px-3 py-1 border border-foreground/30 rounded-md focus:ring-2 focus:ring-blue-500"
                             placeholder="0.00"
                           />
                         </td>
@@ -400,19 +396,19 @@ export default function WeeklyLaborEntryPage() {
                             step="0.5"
                             value={entry.totalHours || ''}
                             onChange={(e) => updateEntry(entry.craftTypeId, 'totalHours', e.target.value)}
-                            className="w-32 px-3 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                            className="w-32 px-3 py-1 border border-foreground/30 rounded-md focus:ring-2 focus:ring-blue-500"
                             placeholder="0.0"
                           />
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                           {entry.ratePerHour > 0 ? formatCurrency(entry.ratePerHour) : '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground/80">
                           {entry.runningAvgRate > 0 ? formatCurrency(entry.runningAvgRate) : 'No data'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           {variance !== 0 && (
-                            <div className={`flex items-center ${variance > 10 ? 'text-red-600' : variance < -10 ? 'text-green-600' : 'text-gray-600'}`}>
+                            <div className={`flex items-center ${variance > 10 ? 'text-red-600' : variance < -10 ? 'text-green-600' : 'text-foreground'}`}>
                               <TrendingUp className={`h-4 w-4 mr-1 ${variance < 0 ? 'rotate-180' : ''}`} />
                               {Math.abs(variance).toFixed(1)}%
                             </div>
@@ -429,7 +425,7 @@ export default function WeeklyLaborEntryPage() {
 
         {/* Summary totals */}
         <div className="bg-white shadow-sm rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Weekly Summary</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-4">Weekly Summary</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {Object.entries(laborCategoryLabels).map(([category, label]) => {
@@ -437,15 +433,15 @@ export default function WeeklyLaborEntryPage() {
               if (!categoryTotals || (categoryTotals.cost === 0 && categoryTotals.hours === 0)) return null
               
               return (
-                <div key={category} className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="text-sm font-medium text-gray-600 mb-2">{label}</h4>
+                <div key={category} className="bg-background rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-foreground mb-2">{label}</h4>
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700">Cost:</span>
+                      <span className="text-sm text-foreground/80">Cost:</span>
                       <span className="text-sm font-medium">{formatCurrency(categoryTotals.cost)}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700">Hours:</span>
+                      <span className="text-sm text-foreground/80">Hours:</span>
                       <span className="text-sm font-medium">{categoryTotals.hours.toFixed(1)}</span>
                     </div>
                   </div>
@@ -473,7 +469,7 @@ export default function WeeklyLaborEntryPage() {
         <div className="flex justify-end gap-4 pb-8">
           <Link
             href={`/labor-forecasts?project_id=${projectId}`}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            className="px-4 py-2 border border-foreground/30 rounded-lg text-foreground/80 hover:bg-background"
           >
             Cancel
           </Link>

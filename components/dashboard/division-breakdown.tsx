@@ -32,7 +32,7 @@ export function DivisionBreakdown({ data }: DivisionBreakdownProps) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{division.name}</span>
-                    <span className="text-sm text-gray-700">
+                    <span className="text-sm text-foreground/80">
                       ({division.projectCount} projects)
                     </span>
                   </div>

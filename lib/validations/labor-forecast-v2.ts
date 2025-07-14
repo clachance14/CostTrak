@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { endOfWeek, format } from 'date-fns'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 // Helper to get Sunday week ending date
 export const getWeekEndingDate = (date: Date): Date => {
@@ -145,7 +146,7 @@ export const runningAverageQuerySchema = z.object({
 
 // Validate unique actual entry
 export async function validateUniqueActual(
-  supabase: any,
+  supabase: SupabaseClient,
   projectId: string,
   craftTypeId: string,
   weekEnding: string,
@@ -176,7 +177,7 @@ export async function validateUniqueActual(
 
 // Get running average rate for project/craft combination
 export async function getRunningAverageRate(
-  supabase: any,
+  supabase: SupabaseClient,
   projectId: string,
   craftTypeId: string,
   weeks: number = 8
@@ -196,15 +197,14 @@ export async function getRunningAverageRate(
   if (!data || data.length === 0) return 0
 
   // Simple average for now - could add weighted average later
-  const rates = data.map((d: any) => d.rate_per_hour)
+  const rates = data.map((d: { rate_per_hour: number }) => d.rate_per_hour)
   return calculateRunningAverage(rates)
 }
 
 // Get all running averages for a project
 export async function getProjectRunningAverages(
-  supabase: any,
-  projectId: string,
-  weeks: number = 8
+  supabase: SupabaseClient,
+  projectId: string
 ): Promise<Map<string, number>> {
   const { data, error } = await supabase
     .from('labor_running_averages')
@@ -214,7 +214,7 @@ export async function getProjectRunningAverages(
   if (error) throw error
 
   const averageMap = new Map<string, number>()
-  data?.forEach((row: any) => {
+  data?.forEach((row: { craft_type_id: string; avg_rate: number }) => {
     averageMap.set(row.craft_type_id, row.avg_rate)
   })
 

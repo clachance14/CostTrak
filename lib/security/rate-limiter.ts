@@ -38,7 +38,13 @@ export class RateLimiter {
       .order('created_at', { ascending: false })
 
     // Check recent attempts by IP if provided
-    let ipAttempts: any[] = []
+    interface LoginAttempt {
+      email: string
+      ip_address: string
+      created_at: string
+      success: boolean
+    }
+    let ipAttempts: LoginAttempt[] = []
     if (ip) {
       const { data } = await supabase
         .from('login_attempts')

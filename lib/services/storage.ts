@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js'
-import { Database } from '@/types/database.generated'
+import { Database } from '@/types/database'
 
 const BUCKET_NAME = 'project-documents'
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB

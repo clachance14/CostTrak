@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js'
-import { Database } from '@/types/database.generated'
+import { Database } from '@/types/database'
 
 type FinancialSnapshot = Database['public']['Tables']['financial_snapshots']['Insert']
 
@@ -8,6 +8,19 @@ interface SnapshotOptions {
   projectId?: string
   divisionId?: string
   snapshotDate: string
+}
+
+interface Metric {
+  original_contract?: number
+  approved_change_orders?: number
+  revised_contract?: number
+  total_po_committed?: number
+  total_labor_cost?: number
+  total_other_cost?: number
+  total_committed?: number
+  forecasted_cost?: number
+  forecasted_profit?: number
+  cost_to_complete?: number
 }
 
 export async function calculateFinancialSnapshot(
@@ -90,7 +103,7 @@ async function calculateProjectSnapshot(
   // Calculate labor forecast
   const { data: laborForecasts } = await supabase
     .from('labor_headcount_forecasts')
-    .select('weekly_hours, craft_type:craft_types(id)')
+    .select('weekly_hours, craft_type_id')
     .eq('project_id', projectId)
     .gte('week_starting', new Date().toISOString())
 
@@ -103,7 +116,7 @@ async function calculateProjectSnapshot(
   const avgRateMap = new Map(runningAverages?.map(ra => [ra.craft_type_id, ra.avg_rate]) || [])
   
   const forecastedLaborCost = laborForecasts?.reduce((sum, forecast) => {
-    const rate = avgRateMap.get(forecast.craft_type?.id || '') || 0
+    const rate = avgRateMap.get(forecast.craft_type_id || '') || 0
     return sum + (forecast.weekly_hours * rate)
   }, 0) || 0
 
@@ -184,7 +197,7 @@ async function calculateDivisionSnapshot(
   )
 
   // Aggregate the metrics
-  const aggregated = metrics.reduce((acc, metric) => ({
+  const aggregated = metrics.reduce((acc: Metric, metric: Metric) => ({
     original_contract: acc.original_contract + (metric.original_contract || 0),
     approved_change_orders: acc.approved_change_orders + (metric.approved_change_orders || 0),
     revised_contract: acc.revised_contract + (metric.revised_contract || 0),
@@ -195,7 +208,7 @@ async function calculateDivisionSnapshot(
     forecasted_cost: acc.forecasted_cost + (metric.forecasted_cost || 0),
     forecasted_profit: acc.forecasted_profit + (metric.forecasted_profit || 0),
     cost_to_complete: acc.cost_to_complete + (metric.cost_to_complete || 0),
-  }), {
+  } as Metric), {
     original_contract: 0,
     approved_change_orders: 0,
     revised_contract: 0,
@@ -267,7 +280,7 @@ async function calculateCompanySnapshot(
   )
 
   // Aggregate the metrics
-  const aggregated = metrics.reduce((acc, metric) => ({
+  const aggregated = metrics.reduce((acc: Metric, metric: Metric) => ({
     original_contract: acc.original_contract + (metric.original_contract || 0),
     approved_change_orders: acc.approved_change_orders + (metric.approved_change_orders || 0),
     revised_contract: acc.revised_contract + (metric.revised_contract || 0),
@@ -278,8 +291,8 @@ async function calculateCompanySnapshot(
     forecasted_cost: acc.forecasted_cost + (metric.forecasted_cost || 0),
     forecasted_profit: acc.forecasted_profit + (metric.forecasted_profit || 0),
     cost_to_complete: acc.cost_to_complete + (metric.cost_to_complete || 0),
-    project_count: acc.project_count + ((metric.metadata as any)?.project_count || 0),
-  }), {
+    project_count: acc.project_count + ((metric as { metadata?: { project_count?: number } }).metadata?.project_count || 0),
+  } as Metric), {
     original_contract: 0,
     approved_change_orders: 0,
     revised_contract: 0,

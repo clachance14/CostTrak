@@ -130,6 +130,31 @@ export interface ProjectFormData {
   state?: string
   zip_code?: string
   description?: string
+  // New fields for enhanced project creation
+  superintendent_id?: string
+  budget?: ProjectBudget
+  contract_breakdown?: ProjectContractBreakdown
+}
+
+export interface ProjectBudget {
+  labor_budget: number
+  small_tools_consumables_budget: number
+  materials_budget: number
+  equipment_budget: number
+  subcontracts_budget: number
+  other_budget: number
+  other_budget_description?: string
+  notes?: string
+}
+
+export interface ProjectContractBreakdown {
+  client_po_number?: string
+  client_representative?: string
+  labor_po_amount: number
+  materials_po_amount: number
+  demo_po_amount: number
+  contract_date?: string
+  contract_terms?: string
 }
 
 // API Response Types

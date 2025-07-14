@@ -11,7 +11,13 @@
       "Bash(pnpm type-check:*)",
       "Bash(grep:*)",
       "Bash(node:*)",
-      "Bash(pnpm approve-builds:*)"
+      "Bash(pnpm approve-builds:*)",
+      "Bash(for file in ./app/(dashboard)/labor-forecasts/weekly-entry/page.tsx ./app/(dashboard)/labor-forecasts/forecast/page.tsx ./app/(dashboard)/labor-forecasts/page.tsx ./app/(dashboard)/labor-forecasts/page-old.tsx ./app/(dashboard)/purchase-orders/[id]/page.tsx ./app/(dashboard)/purchase-orders/import/page.tsx)",
+      "Bash(do if [ -f \"$file\" ])",
+      "Bash(then sed -i 's/text-gray-600/text-gray-800/g' \"$file\")",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(gh pr view:*)"
     ],
     "deny": []
   }

@@ -18,7 +18,7 @@ export interface AuditLogEntry {
   ipAddress?: string
   userAgent?: string
   deviceId?: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 export class AuditLogger {
@@ -57,7 +57,7 @@ export class AuditLogger {
   }
 
   // Convenience methods
-  async logLogin(userId: string, metadata?: Record<string, any>): Promise<void> {
+  async logLogin(userId: string, metadata?: Record<string, unknown>): Promise<void> {
     await this.log({
       userId,
       eventType: 'login',

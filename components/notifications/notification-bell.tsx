@@ -10,7 +10,6 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { NotificationDropdown } from './notification-dropdown'
-import { cn } from '@/lib/utils/cn'
 
 export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false)

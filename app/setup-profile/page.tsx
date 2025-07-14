@@ -12,7 +12,7 @@ export default function SetupProfilePage() {
   const supabase = createClient()
 
   // Check if profile already exists
-  const { data: profile, isLoading, error } = useQuery({
+  const { data: profile, isLoading } = useQuery({
     queryKey: ['profile-check'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -47,7 +47,7 @@ export default function SetupProfilePage() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Error Loading Profile</CardTitle>
@@ -61,7 +61,7 @@ export default function SetupProfilePage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Profile Setup Required</CardTitle>
@@ -71,11 +71,11 @@ export default function SetupProfilePage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <p className="text-sm text-gray-900">
+            <p className="text-sm text-foreground">
               Please contact your system administrator to complete your profile setup. 
               They will need to:
             </p>
-            <ul className="list-disc list-inside text-sm text-gray-900 space-y-1">
+            <ul className="list-disc list-inside text-sm text-foreground space-y-1">
               <li>Assign your role (Project Manager, Viewer, etc.)</li>
               <li>Set your division assignment if applicable</li>
               <li>Grant project access permissions</li>

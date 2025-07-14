@@ -12,7 +12,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
@@ -129,7 +129,7 @@ export default function ViewerDashboard() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Viewer Dashboard</h1>
-          <p className="text-gray-700">Project overview</p>
+          <p className="text-foreground/80">Project overview</p>
         </div>
         <Alert>
           <Info className="h-4 w-4" />
@@ -145,7 +145,7 @@ export default function ViewerDashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Viewer Dashboard</h1>
-        <p className="text-gray-700">
+        <p className="text-foreground/80">
           You have read-only access to {projects.length} project{projects.length !== 1 ? 's' : ''}
         </p>
       </div>
@@ -169,12 +169,12 @@ export default function ViewerDashboard() {
               {/* Client & Division */}
               <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-2">
-                  <Building className="h-4 w-4 text-gray-700" />
+                  <Building className="h-4 w-4 text-foreground/80" />
                   <span className="font-medium">Client:</span>
                   <span>{project.client.name}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Building className="h-4 w-4 text-gray-700" />
+                  <Building className="h-4 w-4 text-foreground/80" />
                   <span className="font-medium">Division:</span>
                   <span>{project.division.name}</span>
                 </div>
@@ -184,12 +184,12 @@ export default function ViewerDashboard() {
               {project.projectManager && (
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-gray-700" />
+                    <Users className="h-4 w-4 text-foreground/80" />
                     <span className="font-medium">Project Manager:</span>
                   </div>
                   <div className="ml-6">
                     <div>{project.projectManager.name}</div>
-                    <div className="text-gray-700">{project.projectManager.email}</div>
+                    <div className="text-foreground/80">{project.projectManager.email}</div>
                   </div>
                 </div>
               )}
@@ -197,7 +197,7 @@ export default function ViewerDashboard() {
               {/* Dates */}
               <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-700" />
+                  <Calendar className="h-4 w-4 text-foreground/80" />
                   <span className="font-medium">Timeline:</span>
                 </div>
                 <div className="ml-6">
@@ -209,7 +209,7 @@ export default function ViewerDashboard() {
               {project.address && (
                 <div className="text-sm">
                   <span className="font-medium">Location:</span>
-                  <div className="text-gray-700 mt-1">
+                  <div className="text-foreground/80 mt-1">
                     {project.address}
                     {project.city && project.state && (
                       <div>{project.city}, {project.state}</div>

@@ -4,7 +4,6 @@ import {
   laborForecastUpdateSchema,
   calculateForecastedCost,
   calculateVariance,
-  validateUniqueEntry,
   formatWeekEnding
 } from '@/lib/validations/labor-forecast'
 import { z } from 'zod'
@@ -231,7 +230,7 @@ export async function PATCH(
     }
 
     // Prepare update data
-    const updateData: any = { ...validatedData }
+    const updateData: Record<string, unknown> = { ...validatedData }
     
     // If hours or rate changed, recalculate cost
     if (validatedData.forecasted_hours !== undefined || validatedData.forecasted_rate !== undefined) {
@@ -304,12 +303,12 @@ export async function PATCH(
     }
 
     // Log changes to audit trail
-    const changes: any = {}
+    const changes: Record<string, unknown> = {}
     Object.keys(validatedData).forEach(key => {
-      if (existingForecast[key] !== (updateData as any)[key]) {
+      if ((existingForecast as Record<string, unknown>)[key] !== updateData[key]) {
         changes[key] = {
-          from: existingForecast[key],
-          to: (updateData as any)[key]
+          from: (existingForecast as Record<string, unknown>)[key],
+          to: updateData[key]
         }
       }
     })

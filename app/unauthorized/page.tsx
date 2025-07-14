@@ -5,7 +5,7 @@ import { AlertTriangle } from 'lucide-react'
 
 export default function UnauthorizedPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <div className="flex items-center space-x-2">
@@ -18,7 +18,7 @@ export default function UnauthorizedPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <p className="text-sm text-gray-800">
+            <p className="text-sm text-foreground">
               This page requires a higher access level than your current role provides.
               If you believe this is an error, please contact your system administrator.
             </p>

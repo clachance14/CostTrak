@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS public.purchase_orders (
     legacy_po_number VARCHAR(100),
     import_batch_id VARCHAR(100),
     imported_at TIMESTAMPTZ,
-    imported_by UUID REFERENCES public.users(id),
+    imported_by UUID REFERENCES public.profiles(id),
     
     -- Forecast fields
     forecast_amount DECIMAL(15, 2),
@@ -30,8 +30,8 @@ CREATE TABLE IF NOT EXISTS public.purchase_orders (
     invoice_percentage DECIMAL(5, 2) DEFAULT 0,
     last_invoice_date DATE,
     
-    created_by UUID REFERENCES public.users(id),
-    approved_by UUID REFERENCES public.users(id),
+    created_by UUID REFERENCES public.profiles(id),
+    approved_by UUID REFERENCES public.profiles(id),
     approved_date TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -85,7 +85,7 @@ CREATE POLICY "controllers_ops_manage_purchase_orders" ON public.purchase_orders
     FOR ALL
     USING (
         EXISTS (
-            SELECT 1 FROM public.users u
+            SELECT 1 FROM public.profiles u
             LEFT JOIN public.projects p ON p.id = purchase_orders.project_id
             WHERE u.id = auth.uid()
             AND (
@@ -122,7 +122,7 @@ CREATE POLICY "users_manage_po_line_items" ON public.po_line_items
         EXISTS (
             SELECT 1 FROM public.purchase_orders po
             JOIN public.projects p ON p.id = po.project_id
-            JOIN public.users u ON u.id = auth.uid()
+            JOIN public.profiles u ON u.id = auth.uid()
             WHERE po.id = po_line_items.purchase_order_id
             AND (
                 u.role = 'controller' OR
@@ -202,7 +202,7 @@ DECLARE
 BEGIN
     -- Get approver role
     SELECT role INTO v_user_role
-    FROM public.users
+    FROM public.profiles
     WHERE id = NEW.approved_by;
     
     -- Set approval limits by role
