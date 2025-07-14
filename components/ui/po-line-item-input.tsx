@@ -66,7 +66,7 @@ export function POLineItemInput({ items, onChange, className }: POLineItemInputP
 
       {/* Line Items */}
       <div className="space-y-3">
-        {items.map((item, index) => (
+        {items.map((item) => (
           <div key={item.id} className="grid grid-cols-12 gap-4 items-center">
             <div className="col-span-7">
               <Input

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { Button, Input, Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui'
 import { AlertCircle, CheckCircle, Copy, Shield, Smartphone } from 'lucide-react'
 import QRCode from 'qrcode'
@@ -147,7 +148,7 @@ export default function TwoFactorSetupPage() {
                 <h3 className="font-medium">1. Scan QR Code</h3>
                 <div className="flex justify-center">
                   {qrCodeUrl && (
-                    <img src={qrCodeUrl} alt="2FA QR Code" className="w-48 h-48" />
+                    <Image src={qrCodeUrl} alt="2FA QR Code" width={192} height={192} />
                   )}
                 </div>
                 

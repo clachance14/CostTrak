@@ -4,7 +4,6 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { 
-  Upload, 
   AlertCircle, 
   CheckCircle,
   Download,
@@ -203,7 +202,7 @@ export default function ProjectBudgetImportPage() {
         isValid: disciplineArray.length > 0,
         errors: disciplineArray.length === 0 ? ['No valid budget data found in file'] : []
       })
-    } catch (err) {
+    } catch {
       setPreview({
         disciplines: [],
         totalBudget: 0,
@@ -336,7 +335,7 @@ export default function ProjectBudgetImportPage() {
               <li>File must be in the ICS budget Excel format with disciplines and cost types</li>
               <li>Disciplines should be in merged cells (e.g., FABRICATION, PIPING, STEEL)</li>
               <li>Cost types include: DIRECT LABOR, INDIRECT LABOR, MATERIALS, EQUIPMENT, SUBCONTRACTS, etc.</li>
-              <li>Rows with "TOTAL" in the description will be automatically skipped</li>
+              <li>Rows with &quot;TOTAL&quot; in the description will be automatically skipped</li>
               <li>Values will be aggregated into the appropriate budget categories</li>
               <li>Existing budgets will be replaced with the imported data</li>
             </ul>

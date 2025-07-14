@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { z } from 'zod'
+// import { z } from 'zod' // Removed as not currently used
 import * as XLSX from 'xlsx'
 
-// Validation schema for budget breakdown row
-const budgetRowSchema = z.object({
-  discipline: z.string().min(1),
-  description: z.string(),
-  manhours: z.number().nullable(),
-  value: z.number()
-})
-
-type BudgetRow = z.infer<typeof budgetRowSchema>
+// Validation schema for budget breakdown row (defined for future use)
+// const budgetRowSchema = z.object({
+//   discipline: z.string().min(1),
+//   description: z.string(),
+//   manhours: z.number().nullable(),
+//   value: z.number()
+// })
 
 // Map cost types to budget categories
 const costTypeMapping: Record<string, keyof BudgetCategory> = {
@@ -201,7 +199,7 @@ export async function POST(request: NextRequest) {
       // Extract values from expected columns
       // A: Discipline Number, B: Discipline Name, C: Cost Code, D: Description
       // E: Manhours, F: Value, G-J: Percentages and rates
-      const disciplineNum = row[0]
+      // const disciplineNum = row[0] // Not used currently
       const disciplineName = row[1]
       const description = row[3]?.toString() || ''
       const manhours = row[4]

@@ -362,34 +362,35 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
                         </tr>
                       </thead>
                       <tbody>
-                        {Object.entries(budgetBreakdown).map(([category, data]: [string, any]) => {
-                          const actualsExceedCommitted = data.actual > data.committed && data.committed > 0
+                        {Object.entries(budgetBreakdown).map(([category, data]) => {
+                          const budgetData = data as { budget: number; committed: number; actual: number; forecasted: number; variance: number }
+                          const actualsExceedCommitted = budgetData.actual > budgetData.committed && budgetData.committed > 0
                           return (
                             <tr key={category} className="border-b">
                               <td className="py-3 font-medium">{category}</td>
-                              <td className="text-right py-3">{formatCurrency(data.budget)}</td>
-                              <td className="text-right py-3">{formatCurrency(data.committed)}</td>
+                              <td className="text-right py-3">{formatCurrency(budgetData.budget)}</td>
+                              <td className="text-right py-3">{formatCurrency(budgetData.committed)}</td>
                               <td className={`text-right py-3 ${actualsExceedCommitted ? 'text-orange-600 font-semibold' : ''}`}>
-                                {formatCurrency(data.actual)}
+                                {formatCurrency(budgetData.actual)}
                                 {actualsExceedCommitted && (
                                   <span className="ml-1 text-xs">⚠️</span>
                                 )}
                               </td>
-                              <td className="text-right py-3">{formatCurrency(data.forecasted)}</td>
-                              <td className={`text-right py-3 font-medium ${data.variance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {data.variance >= 0 ? '+' : ''}{formatCurrency(data.variance)}
+                              <td className="text-right py-3">{formatCurrency(budgetData.forecasted)}</td>
+                              <td className={`text-right py-3 font-medium ${budgetData.variance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {budgetData.variance >= 0 ? '+' : ''}{formatCurrency(budgetData.variance)}
                               </td>
                             </tr>
                           )
                         })}
                         <tr className="border-t-2 font-bold">
                           <td className="py-3">Total</td>
-                          <td className="text-right py-3">{formatCurrency(Object.values(budgetBreakdown).reduce((sum: number, data: any) => sum + data.budget, 0))}</td>
-                          <td className="text-right py-3">{formatCurrency(Object.values(budgetBreakdown).reduce((sum: number, data: any) => sum + data.committed, 0))}</td>
-                          <td className="text-right py-3">{formatCurrency(Object.values(budgetBreakdown).reduce((sum: number, data: any) => sum + data.actual, 0))}</td>
-                          <td className="text-right py-3">{formatCurrency(Object.values(budgetBreakdown).reduce((sum: number, data: any) => sum + data.forecasted, 0))}</td>
-                          <td className={`text-right py-3 ${Object.values(budgetBreakdown).reduce((sum: number, data: any) => sum + data.variance, 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {Object.values(budgetBreakdown).reduce((sum: number, data: any) => sum + data.variance, 0) >= 0 ? '+' : ''}{formatCurrency(Object.values(budgetBreakdown).reduce((sum: number, data: any) => sum + data.variance, 0))}
+                          <td className="text-right py-3">{formatCurrency(Object.values(budgetBreakdown).reduce((sum: number, data: unknown) => sum + (data as { budget: number }).budget, 0))}</td>
+                          <td className="text-right py-3">{formatCurrency(Object.values(budgetBreakdown).reduce((sum: number, data: unknown) => sum + (data as { committed: number }).committed, 0))}</td>
+                          <td className="text-right py-3">{formatCurrency(Object.values(budgetBreakdown).reduce((sum: number, data: unknown) => sum + (data as { actual: number }).actual, 0))}</td>
+                          <td className="text-right py-3">{formatCurrency(Object.values(budgetBreakdown).reduce((sum: number, data: unknown) => sum + (data as { forecasted: number }).forecasted, 0))}</td>
+                          <td className={`text-right py-3 ${Object.values(budgetBreakdown).reduce((sum: number, data: unknown) => sum + (data as { variance: number }).variance, 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {Object.values(budgetBreakdown).reduce((sum: number, data: unknown) => sum + (data as { variance: number }).variance, 0) >= 0 ? '+' : ''}{formatCurrency(Object.values(budgetBreakdown).reduce((sum: number, data: unknown) => sum + (data as { variance: number }).variance, 0))}
                           </td>
                         </tr>
                       </tbody>
@@ -457,7 +458,7 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
                         </tr>
                       </thead>
                       <tbody>
-                        {changeOrders.map((co: any) => (
+                        {changeOrders.map((co) => (
                           <tr key={co.id} className="border-b">
                             <td className="py-3 font-medium">{co.co_number}</td>
                             <td className="py-3">{co.description}</td>
@@ -494,7 +495,7 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
               <CardContent>
                 {riskFactors.length > 0 ? (
                   <div className="space-y-4">
-                    {riskFactors.map((risk: any, index: number) => (
+                    {riskFactors.map((risk, index: number) => (
                       <div key={index} className="flex items-start gap-3 p-4 rounded-lg border border-gray-200">
                         <AlertTriangle className={`h-5 w-5 mt-0.5 ${risk.severity === 'high' ? 'text-red-600' : risk.severity === 'medium' ? 'text-yellow-600' : 'text-blue-600'}`} />
                         <div className="flex-1">

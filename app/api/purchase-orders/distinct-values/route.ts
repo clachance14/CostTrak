@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
     const valueMap = new Map<string, number>()
     
     if (results) {
-      results.forEach((row: Record<string, any>) => {
+      results.forEach((row: Record<string, unknown>) => {
         let value: string | null = null
         
         switch (column) {

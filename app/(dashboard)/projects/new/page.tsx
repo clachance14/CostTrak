@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useCallback } from "react"
 import { useRouter } from 'next/navigation'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -310,8 +310,8 @@ export default function ProjectSetupForm() {
       }
 
       // Process budget data
-      const disciplines = new Map<string, Array<any>>()
-      const budgetBreakdowns: any[] = []
+      const disciplines = new Map<string, Array<{cost_type: string; manhours: number | null; value: number}>>()
+      const budgetBreakdowns: Array<{discipline: string; cost_type: string; manhours: number | null; value: number}> = []
       let currentDiscipline = ''
       let totalBudget = 0
       const categoryTotals = {
@@ -406,7 +406,7 @@ export default function ProjectSetupForm() {
           budgetBreakdowns
         }))
       }
-    } catch (err) {
+    } catch {
       setBudgetPreview({
         disciplines: [],
         totalBudget: 0,
@@ -578,14 +578,14 @@ export default function ProjectSetupForm() {
         <div className="mt-4 p-4 bg-gray-100 rounded-lg">
           <h4 className="font-semibold mb-2">Debug Info:</h4>
           <div className="text-sm space-y-1">
-            <div>ICS Project Number: "{formData.icsProjectNumber}"</div>
-            <div>Project Title: "{formData.projectTitle}"</div>
-            <div>Project Manager Name: "{formData.projectManagerName}"</div>
-            <div>Project Manager ID: "{formData.projectManagerId}"</div>
-            <div>Division: "{formData.division}"</div>
-            <div>Division ID: "{formData.divisionId}"</div>
-            <div>Client Name: "{formData.clientName}"</div>
-            <div>Client ID: "{formData.clientId}"</div>
+            <div>ICS Project Number: &quot;{formData.icsProjectNumber}&quot;</div>
+            <div>Project Title: &quot;{formData.projectTitle}&quot;</div>
+            <div>Project Manager Name: &quot;{formData.projectManagerName}&quot;</div>
+            <div>Project Manager ID: &quot;{formData.projectManagerId}&quot;</div>
+            <div>Division: &quot;{formData.division}&quot;</div>
+            <div>Division ID: &quot;{formData.divisionId}&quot;</div>
+            <div>Client Name: &quot;{formData.clientName}&quot;</div>
+            <div>Client ID: &quot;{formData.clientId}&quot;</div>
             <div>Can Proceed: {canProceedToNext() ? 'YES' : 'NO'}</div>
           </div>
         </div>
@@ -831,7 +831,7 @@ export default function ProjectSetupForm() {
           <div className="space-y-2">
             <p className="text-sm text-foreground/60">PO Number: {formData.clientPONumber || 'N/A'}</p>
             <div className="space-y-1">
-              {formData.poLineItems.map((item, index) => (
+              {formData.poLineItems.map((item) => (
                 <div key={item.id} className="flex justify-between text-sm">
                   <span>{item.description}</span>
                   <span className="font-medium">{formatCurrency(item.amount)}</span>
