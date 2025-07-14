@@ -271,7 +271,7 @@ export default function OpsManagerDashboard() {
       if (poError) throw poError
 
       // Process PO data
-      const poData: POTracking[] = purchaseOrders.map((po: { id: string; po_number: string; project_id: string; vendor_name: string; description: string; total_amount: number; committed_amount: number; forecasted_final_cost: number; forecasted_overrun: number; risk_status: 'normal' | 'at-risk' | 'over-budget'; status: string; projects: { id: string; name: string; job_number: string }; po_line_items: { id: string; line_number: string; invoice_ticket: string; invoice_date: string; description: string; total_amount: number }[] }) => {
+      const poData: POTracking[] = purchaseOrders.map((po) => {
         const poValue = po.committed_amount || po.total_amount || 0
         const invoicedToDate = po.po_line_items?.reduce(
           (sum: number, item: { total_amount: number }) => sum + (item.total_amount || 0), 0
@@ -281,13 +281,7 @@ export default function OpsManagerDashboard() {
         const forecastedFinal = po.forecasted_final_cost || poValue
         const forecastedOverrun = po.forecasted_overrun || (forecastedFinal - poValue)
 
-        const invoices: Invoice[] = po.po_line_items?.map((item: { 
-          id: string; 
-          invoice_ticket?: string | null; 
-          invoice_date?: string | null; 
-          description?: string | null; 
-          total_amount?: number | null 
-        }) => ({
+        const invoices: Invoice[] = po.po_line_items?.map((item) => ({
           id: item.id,
           invoiceNumber: item.invoice_ticket || '',
           date: item.invoice_date || '',
