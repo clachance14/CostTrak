@@ -87,6 +87,16 @@ export const changeOrderFormSchema = z.object({
       const num = parseFloat(val.replace(/,/g, ''))
       return !isNaN(num) && num >= 0
     }, 'Must be a valid positive amount')
+}).refine((data) => {
+  // Allow zero amounts only for Credit type change orders
+  const amount = parseFloat(data.amount)
+  if (amount === 0 && data.pricing_type !== 'Credit') {
+    return false
+  }
+  return true
+}, {
+  message: 'Amount cannot be zero unless pricing type is Credit',
+  path: ['amount']
 })
 
 // API schema (with proper types)
@@ -94,10 +104,21 @@ export const changeOrderApiSchema = z.object({
   project_id: z.string().uuid(),
   co_number: z.string().min(1).max(50),
   description: z.string().min(10).max(500),
-  amount: z.number()
-    .refine((val) => val !== 0, 'Amount cannot be zero'),
+  amount: z.number(),
   impact_schedule_days: z.number().int().default(0),
-  submitted_date: z.string().datetime().optional(),
+  submitted_date: z.string()
+    .optional()
+    .refine((val) => {
+      if (!val) return true
+      // Accept both date (YYYY-MM-DD) and datetime formats
+      return !isNaN(Date.parse(val))
+    }, 'Invalid date format')
+    .transform((val) => {
+      if (!val) return undefined
+      // If it's a date without time, convert to ISO datetime
+      const date = new Date(val)
+      return date.toISOString()
+    }),
   status: z.enum(changeOrderStatuses).default('pending'),
   pricing_type: z.enum(pricingTypes),
   reason: z.string().optional(),
@@ -108,16 +129,35 @@ export const changeOrderApiSchema = z.object({
   subcontract_amount: z.number().min(0).default(0),
   markup_amount: z.number().min(0).default(0),
   tax_amount: z.number().min(0).default(0)
+}).refine((data) => {
+  // Allow zero amounts only for Credit type change orders
+  if (data.amount === 0 && data.pricing_type !== 'Credit') {
+    return false
+  }
+  return true
+}, {
+  message: 'Amount cannot be zero unless pricing type is Credit',
+  path: ['amount']
 })
 
 // Update schema (for PATCH requests)
 export const changeOrderUpdateSchema = z.object({
   description: z.string().min(10).max(500).optional(),
-  amount: z.number()
-    .refine((val) => val !== 0, 'Amount cannot be zero')
-    .optional(),
+  amount: z.number().optional(),
   impact_schedule_days: z.number().int().optional(),
-  submitted_date: z.string().datetime().optional(),
+  submitted_date: z.string()
+    .optional()
+    .refine((val) => {
+      if (!val) return true
+      // Accept both date (YYYY-MM-DD) and datetime formats
+      return !isNaN(Date.parse(val))
+    }, 'Invalid date format')
+    .transform((val) => {
+      if (!val) return undefined
+      // If it's a date without time, convert to ISO datetime
+      const date = new Date(val)
+      return date.toISOString()
+    }),
   status: z.enum(changeOrderStatuses).optional(),
   pricing_type: z.enum(pricingTypes).optional(),
   reason: z.string().optional(),
@@ -128,6 +168,15 @@ export const changeOrderUpdateSchema = z.object({
   subcontract_amount: z.number().min(0).optional(),
   markup_amount: z.number().min(0).optional(),
   tax_amount: z.number().min(0).optional()
+}).refine((data) => {
+  // Allow zero amounts only for Credit type change orders
+  if (data.amount !== undefined && data.amount === 0 && data.pricing_type !== 'Credit') {
+    return false
+  }
+  return true
+}, {
+  message: 'Amount cannot be zero unless pricing type is Credit',
+  path: ['amount']
 })
 
 // CSV import schema

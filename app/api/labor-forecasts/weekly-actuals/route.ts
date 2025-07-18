@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
       .from('labor_actuals')
       .select(`
         *,
-        craft_type:craft_types!inner(
+        craft_type:craft_types(
           id,
           name,
           code,
@@ -98,6 +98,85 @@ export async function GET(request: NextRequest) {
     const { data: actuals, error } = await query
 
     if (error) throw error
+
+    // Also fetch employee actuals and aggregate by craft type
+    let employeeActualsQuery = supabase
+      .from('labor_employee_actuals')
+      .select(`
+        week_ending,
+        total_hours,
+        total_cost,
+        employee_id,
+        employees!inner (
+          craft_type_id,
+          craft_types (
+            id,
+            name,
+            code,
+            category
+          )
+        )
+      `)
+      .eq('project_id', projectId)
+      .order('week_ending', { ascending: false })
+
+    if (weekEnding) {
+      const weekEndingDate = getWeekEndingDate(new Date(weekEnding))
+      employeeActualsQuery = employeeActualsQuery.eq('week_ending', weekEndingDate.toISOString())
+    } else {
+      const eightWeeksAgo = new Date()
+      eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56)
+      employeeActualsQuery = employeeActualsQuery.gte('week_ending', eightWeeksAgo.toISOString())
+    }
+
+    const { data: employeeActuals } = await employeeActualsQuery
+
+    // Aggregate employee actuals by craft type and week
+    const aggregatedMap = new Map<string, any>()
+    
+    // First add any existing labor_actuals data
+    actuals?.forEach(actual => {
+      const key = `${actual.week_ending}-${actual.craft_type_id}`
+      aggregatedMap.set(key, {
+        weekEnding: actual.week_ending,
+        craftTypeId: actual.craft_type_id,
+        craftName: actual.craft_type.name,
+        craftCode: actual.craft_type.code,
+        laborCategory: actual.craft_type.category,
+        totalHours: actual.actual_hours,
+        totalCost: actual.actual_cost
+      })
+    })
+    
+    // Then aggregate employee actuals
+    employeeActuals?.forEach(empActual => {
+      if (!empActual.employees?.craft_type_id || !empActual.employees?.craft_types) return
+      
+      const craftType = empActual.employees.craft_types
+      const key = `${empActual.week_ending}-${empActual.employees.craft_type_id}`
+      
+      if (aggregatedMap.has(key)) {
+        // Add to existing entry
+        const existing = aggregatedMap.get(key)
+        existing.totalHours += empActual.total_hours || 0
+        existing.totalCost += empActual.total_cost || 0
+      } else {
+        // Create new entry
+        aggregatedMap.set(key, {
+          weekEnding: empActual.week_ending,
+          craftTypeId: empActual.employees.craft_type_id,
+          craftName: craftType.name,
+          craftCode: craftType.code,
+          laborCategory: craftType.category,
+          totalHours: empActual.total_hours || 0,
+          totalCost: empActual.total_cost || 0
+        })
+      }
+    })
+
+    // Convert map to array
+    const combinedActuals = Array.from(aggregatedMap.values())
+      .sort((a, b) => b.weekEnding.localeCompare(a.weekEnding))
 
     // Get all craft types for the form
     const { data: allCraftTypes } = await supabase
@@ -125,18 +204,18 @@ export async function GET(request: NextRequest) {
         name: project.name
       },
       weekEnding: weekEnding ? getWeekEndingDate(new Date(weekEnding)).toISOString() : null,
-      actuals: actuals?.map(actual => ({
-        id: actual.id,
-        craftTypeId: actual.craft_type_id,
-        craftName: actual.craft_type.name,
-        craftCode: actual.craft_type.code,
-        laborCategory: actual.craft_type.category,
-        weekEnding: actual.week_ending,
-        totalCost: actual.actual_cost,
-        totalHours: actual.actual_hours,
-        ratePerHour: actual.actual_hours > 0 ? actual.actual_cost / actual.actual_hours : 0,
-        runningAvgRate: avgMap.get(actual.craft_type_id) || 0
-      })) || [],
+      actuals: combinedActuals.map(actual => ({
+        id: `${actual.weekEnding}-${actual.craftTypeId}`, // Generate a composite ID
+        craftTypeId: actual.craftTypeId,
+        craftName: actual.craftName,
+        craftCode: actual.craftCode,
+        laborCategory: actual.laborCategory,
+        weekEnding: actual.weekEnding,
+        totalCost: actual.totalCost,
+        totalHours: actual.totalHours,
+        ratePerHour: actual.totalHours > 0 ? actual.totalCost / actual.totalHours : 0,
+        runningAvgRate: avgMap.get(actual.craftTypeId) || 0
+      })),
       craftTypes: allCraftTypes?.map(ct => ({
         id: ct.id,
         name: ct.name,
@@ -226,8 +305,8 @@ export async function POST(request: NextRequest) {
           const { error: updateError } = await supabase
             .from('labor_actuals')
             .update({
-              total_cost: entry.total_cost,
-              total_hours: entry.total_hours,
+              actual_cost: entry.total_cost,
+              actual_hours: entry.total_hours,
               updated_at: new Date().toISOString()
             })
             .eq('id', existing.id)
@@ -244,12 +323,12 @@ export async function POST(request: NextRequest) {
             entity_id: existing.id,
             changes: {
               before: {
-                total_cost: existing.total_cost,
-                total_hours: existing.total_hours
+                actual_cost: existing.actual_cost,
+                actual_hours: existing.actual_hours
               },
               after: {
-                total_cost: entry.total_cost,
-                total_hours: entry.total_hours
+                actual_cost: entry.total_cost,
+                actual_hours: entry.total_hours
               }
             }
           })
@@ -267,8 +346,8 @@ export async function POST(request: NextRequest) {
               project_id: validatedData.project_id,
               craft_type_id: entry.craft_type_id,
               week_ending: formattedWeekEnding,
-              total_cost: entry.total_cost,
-              total_hours: entry.total_hours,
+              actual_cost: entry.total_cost,
+              actual_hours: entry.total_hours,
               created_by: user.id
             })
             .select()

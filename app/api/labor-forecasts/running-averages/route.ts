@@ -64,12 +64,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Get running averages from the table with craft type details
-    const { data: runningAverages, error } = await supabase
+    // Try to get running averages from the table first
+    let { data: runningAverages, error } = await supabase
       .from('labor_running_averages')
       .select(`
         *,
-        craft_type:craft_types!inner(
+        craft_type:craft_types(
           id,
           name,
           code,
@@ -77,10 +77,51 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq('project_id', projectId)
-      .order('craft_type.category')
-      .order('craft_type.name')
 
-    if (error) throw error
+    // If no data or error, calculate from labor_actuals
+    if (error || !runningAverages || runningAverages.length === 0) {
+      console.log('No running averages found, calculating from actuals...')
+      
+      // Get all craft types
+      const { data: craftTypes } = await supabase
+        .from('craft_types')
+        .select('*')
+        .eq('is_active', true)
+      
+      // Calculate date range
+      const endDate = new Date()
+      const startDate = new Date()
+      startDate.setDate(startDate.getDate() - weeksBack * 7)
+      
+      // Get labor actuals for the period
+      const { data: laborActuals } = await supabase
+        .from('labor_actuals')
+        .select('*')
+        .eq('project_id', projectId)
+        .gte('week_ending', startDate.toISOString())
+        .lte('week_ending', endDate.toISOString())
+        .gt('actual_hours', 0)
+      
+      // Calculate running averages from actuals
+      runningAverages = craftTypes?.map(craft => {
+        const craftActuals = laborActuals?.filter(a => a.craft_type_id === craft.id) || []
+        const totalHours = craftActuals.reduce((sum, a) => sum + (a.actual_hours || 0), 0)
+        const totalCost = craftActuals.reduce((sum, a) => sum + (a.actual_cost || 0), 0)
+        const avgRate = totalHours > 0 ? totalCost / totalHours : 0
+        
+        return {
+          craft_type_id: craft.id,
+          craft_type: craft,
+          avg_rate: avgRate,
+          total_hours: totalHours,
+          total_cost: totalCost,
+          week_count: craftActuals.length,
+          last_updated: craftActuals.length > 0 
+            ? craftActuals.sort((a, b) => new Date(b.week_ending).getTime() - new Date(a.week_ending).getTime())[0].week_ending
+            : null
+        }
+      }) || []
+    }
 
     // Also get historical data for trend analysis
     const startDate = new Date()
@@ -126,11 +167,11 @@ export async function GET(request: NextRequest) {
         jobNumber: project.job_number,
         name: project.name
       },
-      averages: runningAverages?.map(avg => ({
+      averages: (runningAverages || []).map(avg => ({
         craftTypeId: avg.craft_type_id,
         craftName: avg.craft_type?.name || 'Unknown',
         laborCategory: avg.craft_type?.category || 'direct',
-        avgRate: avg.avg_rate || (avg.avg_hours > 0 ? avg.avg_cost / avg.avg_hours : 0),
+        avgRate: avg.avg_rate || (avg.total_hours > 0 ? avg.total_cost / avg.total_hours : 0),
         weeksOfData: avg.week_count || 0,
         lastActualWeek: avg.last_updated,
         trends: trendsMap.get(avg.craft_type_id) || []

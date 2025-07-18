@@ -65,6 +65,79 @@ Required in `.env.local`:
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN=ics.ac`
 
+### Database Connection
+
+The project uses Supabase for the database. There are two connection options:
+
+1. **Remote Database (Production)** - Contains actual project data
+   - Project ID: `gzrxhwpmtbgnngadgnse`
+   - Connection URL: `postgres://postgres.gzrxhwpmtbgnngadgnse:F1dOjRhYg9lFWSlY@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require`
+   - API URL: `https://gzrxhwpmtbgnngadgnse.supabase.co`
+
+2. **Local Database (Development)** - For local testing
+   - Connection URL: `postgresql://postgres:postgres@127.0.0.1:54322/postgres`
+   - API URL: `http://127.0.0.1:54321`
+   - Start with: `pnpm db:start`
+   - Seed data: `pnpm db:seed`
+
+### MCP Configuration for Database Queries
+
+To enable direct database queries in Claude Desktop, configure the MCP postgres server:
+
+1. Open Claude Desktop Settings → Developer → MCP Servers
+2. Edit the postgres server configuration:
+
+```json
+{
+  "postgres": {
+    "command": "npx",
+    "args": [
+      "@modelcontextprotocol/server-postgres",
+      "postgres://postgres.gzrxhwpmtbgnngadgnse:F1dOjRhYg9lFWSlY@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require"
+    ]
+  }
+}
+```
+
+3. Restart Claude Desktop completely for changes to take effect
+
+### Database Query Scripts
+
+Helpful scripts in the `/scripts` directory:
+
+- `test-db-connection.ts` - Tests both local and remote database connections
+- `show-mcp-config.ts` - Shows step-by-step MCP configuration instructions
+- `show-mcp-config-ready.ts` - Displays ready-to-use MCP configuration
+- `get-db-connection-string.ts` - Generates connection strings (use `--local` flag for local)
+- `query-database.ts` - Uses Supabase client to query and display sample data
+- `test-final-connection.ts` - Direct PostgreSQL connection test with pg client
+
+Run scripts with: `npx tsx scripts/[script-name].ts`
+
+### Database Connection Troubleshooting
+
+If you encounter database connection issues:
+
+1. **MCP Connection Fails**: The MCP postgres server might be pointing to a different database
+   - Check current MCP configuration in Claude Desktop settings
+   - Use the connection string from the Database Connection section above
+   - Restart Claude Desktop completely after configuration changes
+
+2. **Fallback Query Method**: If MCP isn't working, use the Supabase client approach:
+   - Create a script using `createClient` from '@supabase/supabase-js'
+   - Use the API URL and anon key from environment variables
+   - See `scripts/query-database.ts` for an example
+
+3. **Connection Testing**:
+   - Run `npx tsx scripts/test-db-connection.ts` to verify connectivity
+   - Run `npx tsx scripts/test-final-connection.ts` for direct PostgreSQL test
+   - Check Docker containers with `docker ps | grep supabase` for local setup
+
+4. **Common Issues**:
+   - "relation does not exist" - You may be connected to local DB without migrations
+   - "ENOTFOUND" - Check if the database host is correct in MCP config
+   - "permission denied" - Ensure using correct credentials for the environment
+
 ### Development Patterns
 
 1. **Type Safety**: Generate types from database schema when schema changes

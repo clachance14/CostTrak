@@ -95,30 +95,30 @@ export async function GET(
       .order('created_at', { ascending: false })
       .limit(10)
 
-    // Format response
+    // Format response with camelCase properties to match the frontend interface
     const response = {
       changeOrder: {
         id: changeOrder.id,
-        project_id: changeOrder.project_id,
-        co_number: changeOrder.co_number,
+        projectId: changeOrder.project_id,
+        coNumber: changeOrder.co_number,
         description: changeOrder.description,
         amount: changeOrder.amount,
         status: changeOrder.status,
-        pricing_type: changeOrder.pricing_type,
-        impact_schedule_days: changeOrder.impact_schedule_days,
+        pricingType: changeOrder.pricing_type,
+        impactScheduleDays: changeOrder.impact_schedule_days,
         reason: changeOrder.reason,
         manhours: changeOrder.manhours,
-        labor_amount: changeOrder.labor_amount,
-        equipment_amount: changeOrder.equipment_amount,
-        material_amount: changeOrder.material_amount,
-        subcontract_amount: changeOrder.subcontract_amount,
-        markup_amount: changeOrder.markup_amount,
-        tax_amount: changeOrder.tax_amount,
-        submitted_date: changeOrder.submitted_date,
-        approved_date: changeOrder.approved_date,
-        rejection_reason: changeOrder.rejection_reason,
-        created_at: changeOrder.created_at,
-        updated_at: changeOrder.updated_at,
+        laborAmount: changeOrder.labor_amount,
+        equipmentAmount: changeOrder.equipment_amount,
+        materialAmount: changeOrder.material_amount,
+        subcontractAmount: changeOrder.subcontract_amount,
+        markupAmount: changeOrder.markup_amount,
+        taxAmount: changeOrder.tax_amount,
+        submittedDate: changeOrder.submitted_date,
+        approvedDate: changeOrder.approved_date,
+        rejectionReason: changeOrder.rejection_reason,
+        createdAt: changeOrder.created_at,
+        updatedAt: changeOrder.updated_at,
         project: {
           id: changeOrder.project.id,
           jobNumber: changeOrder.project.job_number,

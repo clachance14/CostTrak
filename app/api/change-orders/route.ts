@@ -190,6 +190,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
+    console.log('Received change order data:', body)
     const validatedData = changeOrderApiSchema.parse(body)
 
     // Check if user has access to the project
@@ -292,27 +293,27 @@ export async function POST(request: NextRequest) {
       {
         changeOrder: {
           id: changeOrder.id,
-          project_id: changeOrder.project_id,
-          co_number: changeOrder.co_number,
+          projectId: changeOrder.project_id,
+          coNumber: changeOrder.co_number,
           description: changeOrder.description,
           amount: changeOrder.amount,
           status: changeOrder.status,
-          pricing_type: changeOrder.pricing_type,
-          impact_schedule_days: changeOrder.impact_schedule_days,
+          pricingType: changeOrder.pricing_type,
+          impactScheduleDays: changeOrder.impact_schedule_days,
           reason: changeOrder.reason,
           manhours: changeOrder.manhours,
-          labor_amount: changeOrder.labor_amount,
-          equipment_amount: changeOrder.equipment_amount,
-          material_amount: changeOrder.material_amount,
-          subcontract_amount: changeOrder.subcontract_amount,
-          markup_amount: changeOrder.markup_amount,
-          tax_amount: changeOrder.tax_amount,
-          submitted_date: changeOrder.submitted_date,
-          created_at: changeOrder.created_at,
-          updated_at: changeOrder.updated_at,
+          laborAmount: changeOrder.labor_amount,
+          equipmentAmount: changeOrder.equipment_amount,
+          materialAmount: changeOrder.material_amount,
+          subcontractAmount: changeOrder.subcontract_amount,
+          markupAmount: changeOrder.markup_amount,
+          taxAmount: changeOrder.tax_amount,
+          submittedDate: changeOrder.submitted_date,
+          createdAt: changeOrder.created_at,
+          updatedAt: changeOrder.updated_at,
           project: {
             id: changeOrder.project.id,
-            job_number: changeOrder.project.job_number,
+            jobNumber: changeOrder.project.job_number,
             name: changeOrder.project.name
           }
         }
@@ -322,13 +323,14 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Change order creation error:', error)
     if (error instanceof z.ZodError) {
+      console.error('Validation errors:', error.errors)
       return NextResponse.json(
         { error: 'Validation failed', details: error.errors },
         { status: 400 }
       )
     }
     return NextResponse.json(
-      { error: 'Failed to create change order' },
+      { error: error instanceof Error ? error.message : 'Failed to create change order' },
       { status: 500 }
     )
   }

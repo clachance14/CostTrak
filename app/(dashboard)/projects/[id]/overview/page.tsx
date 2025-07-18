@@ -2,7 +2,7 @@
 
 import { use, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { 
   ArrowLeft, 
   Edit, 
@@ -27,7 +27,9 @@ import { ProjectNotes } from '@/components/project/project-notes'
 import { BudgetVsActualTab } from '@/components/project/budget-vs-actual-tab'
 import { BudgetBreakdownByDiscipline } from '@/components/project/budget-breakdown-by-discipline'
 import { LaborTab } from '@/components/project/labor-tab'
+import { LaborForecastTab } from '@/components/project/labor-forecast-tab'
 import { ChangeOrderTable } from '@/components/change-orders/change-order-table'
+import { ClientPOUpdateDialog } from '@/components/projects/client-po-update-dialog'
 import { useUser } from '@/hooks/use-auth'
 import { format } from 'date-fns'
 
@@ -37,9 +39,11 @@ interface ProjectOverviewPageProps {
 
 export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const queryClient = useQueryClient()
   const { data: user } = useUser()
   const { id } = use(params)
+  const defaultTab = searchParams.get('tab') || 'financial'
   const [projectNotes] = useState<Array<{
     id: string
     content: string
@@ -47,6 +51,7 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
     created_by: { id: string; first_name: string; last_name: string }
     note_type: 'general' | 'cost_to_complete' | 'risk' | 'schedule'
   }>>([])
+  const [showClientPODialog, setShowClientPODialog] = useState(false)
   // const [showImportDialog, setShowImportDialog] = useState(false)
   // const [importType, setImportType] = useState<'labor' | 'po' | 'budget'>('labor')
 
@@ -70,6 +75,17 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
       const response = await fetch(`/api/projects/${id}/dashboard-summary`)
       if (!response.ok) return null
       return response.json()
+    }
+  })
+
+  // Fetch contract details
+  const { data: contractData } = useQuery({
+    queryKey: ['project-contract', id],
+    queryFn: async () => {
+      const response = await fetch(`/api/projects/${id}/contract`)
+      if (!response.ok) return null
+      const data = await response.json()
+      return data.contractBreakdown
     }
   })
 
@@ -272,6 +288,12 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
                 <div className="font-semibold text-lg">
                   {formatCurrency(financialMetrics.revisedContract)}
                 </div>
+                {contractData?.client_po_number && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    PO: {contractData.client_po_number}
+                    {contractData.client_po_revision && ` ${contractData.client_po_revision}`}
+                  </div>
+                )}
               </div>
               <div className="text-center">
                 <div className="text-gray-500">Forecasted Profit</div>
@@ -324,7 +346,7 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6">
-        <Tabs defaultValue="financial" className="space-y-6">
+        <Tabs defaultValue={defaultTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="financial">Financial Summary</TabsTrigger>
             <TabsTrigger value="labor">Labor</TabsTrigger>
@@ -477,6 +499,50 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
                       <span className="font-medium">Profit Margin %</span>
                       <span className={`font-bold ${financialMetrics.profitMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {formatPercent(financialMetrics.profitMargin)}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Client PO Details */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Client PO Details
+                    </span>
+                    {canEdit && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => setShowClientPODialog(true)}
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Update
+                      </Button>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Client PO Number</span>
+                      <span className="font-semibold">
+                        {contractData?.client_po_number || 'Not Set'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Revision</span>
+                      <span className="font-semibold">
+                        {contractData?.client_po_revision || 'Original'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Client Representative</span>
+                      <span className="font-semibold">
+                        {contractData?.client_representative || 'Not Set'}
                       </span>
                     </div>
                   </div>
@@ -689,30 +755,29 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
             )}
           </TabsContent>
 
-          {/* Forecast Tab - Placeholder for future enhancement */}
+          {/* Forecast Tab - Labor Forecast */}
           <TabsContent value="forecast" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Monthly Revenue Forecast</span>
-                  {canEdit && (
-                    <Button size="sm">
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit Forecast
-                    </Button>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-500 text-center py-8">
-                  Monthly revenue forecasting will be available in a future update.
-                </p>
-              </CardContent>
-            </Card>
+            <LaborForecastTab 
+              projectId={id}
+              projectName={project.name}
+              jobNumber={project.job_number}
+            />
           </TabsContent>
         </Tabs>
       </div>
 
+      {/* Client PO Update Dialog */}
+      <ClientPOUpdateDialog
+        open={showClientPODialog}
+        onOpenChange={setShowClientPODialog}
+        projectId={id}
+        currentPONumber={contractData?.client_po_number}
+        currentRevision={contractData?.client_po_revision}
+        onUpdate={() => {
+          queryClient.invalidateQueries({ queryKey: ['project-contract', id] })
+          queryClient.invalidateQueries({ queryKey: ['project-financial-summary', id] })
+        }}
+      />
     </div>
   )
 }

@@ -426,8 +426,8 @@ export type Database = {
           project_id: string
           week_ending: string
           craft_type_id: string
-          total_hours: number
-          total_cost: number
+          actual_hours: number
+          actual_cost: number
           created_at: string
           updated_at: string
         }
@@ -436,8 +436,8 @@ export type Database = {
           project_id: string
           week_ending: string
           craft_type_id: string
-          total_hours: number
-          total_cost: number
+          actual_hours: number
+          actual_cost: number
           created_at?: string
           updated_at?: string
         }
@@ -446,8 +446,8 @@ export type Database = {
           project_id?: string
           week_ending?: string
           craft_type_id?: string
-          total_hours?: number
-          total_cost?: number
+          actual_hours?: number
+          actual_cost?: number
           created_at?: string
           updated_at?: string
         }

@@ -37,28 +37,26 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
     handleSubmit,
     formState: { errors },
     setValue,
-    watch,
-    trigger
+    watch
   } = useForm({
     resolver: zodResolver(changeOrderFormSchema),
     defaultValues: {
-      project_id: '',
-      co_number: '',
-      description: '',
-      amount: '',
-      status: 'pending' as const,
-      pricing_type: 'LS' as const,
-      impact_schedule_days: '0',
-      submitted_date: new Date().toISOString().split('T')[0],
-      reason: '',
-      manhours: '0',
-      labor_amount: '0',
-      equipment_amount: '0',
-      material_amount: '0',
-      subcontract_amount: '0',
-      markup_amount: '0',
-      tax_amount: '0',
-      ...initialData
+      project_id: initialData?.project_id || '',
+      co_number: initialData?.co_number || '',
+      description: initialData?.description || '',
+      amount: initialData?.amount || '',
+      status: initialData?.status || 'pending' as const,
+      pricing_type: initialData?.pricing_type || 'LS' as const,
+      impact_schedule_days: initialData?.impact_schedule_days || '0',
+      submitted_date: initialData?.submitted_date || new Date().toISOString().split('T')[0],
+      reason: initialData?.reason || '',
+      manhours: initialData?.manhours || '0',
+      labor_amount: initialData?.labor_amount || '0',
+      equipment_amount: initialData?.equipment_amount || '0',
+      material_amount: initialData?.material_amount || '0',
+      subcontract_amount: initialData?.subcontract_amount || '0',
+      markup_amount: initialData?.markup_amount || '0',
+      tax_amount: initialData?.tax_amount || '0'
     }
   })
 
@@ -69,7 +67,8 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
   const subcontractAmount = watch('subcontract_amount')
   const markupAmount = watch('markup_amount')
   const taxAmount = watch('tax_amount')
-  // const pricingType = watch('pricing_type') // Reserved for future conditional logic
+  const pricingType = watch('pricing_type')
+  const amount = watch('amount')
 
   const fetchProjectsAndUserRole = useCallback(async () => {
     try {
@@ -175,9 +174,8 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
     }
   }, [laborAmount, equipmentAmount, materialAmount, subcontractAmount, markupAmount, taxAmount, setValue])
 
-  const onSubmit = async (data: unknown) => {
-    console.log('Form submission data:', data)
-    const formData = data as ChangeOrderFormData
+  const onSubmit = async (formData: ChangeOrderFormData) => {
+    console.log('Form submission data:', formData)
     setLoading(true)
     setError(null)
 
@@ -194,7 +192,7 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
         submitted_date: formData.submitted_date,
         status: formData.status,
         pricing_type: formData.pricing_type,
-        reason: formData.reason || null,
+        reason: formData.reason || undefined,
         manhours: parseFloat(formData.manhours || '0'),
         labor_amount: parseFloat(formData.labor_amount || '0'),
         equipment_amount: parseFloat(formData.equipment_amount || '0'),
@@ -223,11 +221,25 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
 
       if (!response.ok) {
         console.error('API error response:', result)
-        throw new Error(result.error || `Failed to ${mode} change order`)
+        
+        // Handle validation errors with more detail
+        if (result.details && Array.isArray(result.details)) {
+          // This is a Zod validation error
+          const errorMessages = result.details.map((detail: { path?: string[]; message: string }) => {
+            const field = detail.path?.join('.') || 'Field'
+            return `${field}: ${detail.message}`
+          }).join(', ')
+          throw new Error(`Validation failed: ${errorMessages}`)
+        } else if (result.error) {
+          // Regular error message
+          throw new Error(result.error)
+        } else {
+          throw new Error(`Failed to ${mode} change order`)
+        }
       }
 
-      // Redirect to detail page
-      router.push(`/change-orders/${result.changeOrder.id}`)
+      // Redirect to project overview Change Orders tab
+      router.push(`/projects/${result.changeOrder.projectId}/overview?tab=change-orders`)
     } catch (err) {
       console.error(`Error ${mode}ing change order:`, err)
       if (err instanceof Error) {
@@ -245,6 +257,10 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
   return (
     <form onSubmit={handleSubmit(onSubmit, (errors) => {
       console.error('Form validation errors:', errors)
+      // Log detailed validation errors for debugging
+      Object.entries(errors).forEach(([field, error]) => {
+        console.error(`Field '${field}' error:`, error)
+      })
       setError('Please fix the validation errors below')
     })} className="space-y-6">
       {error && (
@@ -290,6 +306,7 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
         {errors.co_number && (
           <p className="mt-1 text-sm text-red-600">{errors.co_number.message}</p>
         )}
+        <p className="mt-1 text-xs text-gray-500">Format: CO-001, CO-002, etc.</p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -376,6 +393,12 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
           </div>
           {errors.amount && (
             <p className="mt-1 text-sm text-red-600">{errors.amount.message}</p>
+          )}
+          {!errors.amount && amount === '0' && pricingType !== 'Credit' && (
+            <p className="mt-1 text-sm text-amber-600">Warning: Amount cannot be zero unless pricing type is Credit</p>
+          )}
+          {!errors.amount && amount === '0' && pricingType === 'Credit' && (
+            <p className="mt-1 text-sm text-green-600">Zero amount is allowed for Credit type change orders</p>
           )}
         </div>
 

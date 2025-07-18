@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useUser } from '@/hooks/use-auth'
 import {
   Table,
   TableBody,
@@ -26,7 +27,11 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   ChevronDown,
   ChevronUp,
@@ -36,6 +41,8 @@ import {
   MoreHorizontal,
   Download,
   Paperclip,
+  Check,
+  X,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import type { ChangeOrder } from '@/types/api'
@@ -52,13 +59,19 @@ type SortDirection = 'asc' | 'desc'
 
 export function ChangeOrderTable({ 
   changeOrders, 
-  canEdit = false
+  canEdit = false,
+  onRefresh
 }: ChangeOrderTableProps) {
   const router = useRouter()
+  const { data: user } = useUser()
   const [sortField, setSortField] = useState<SortField>('co_number')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [selectedCO, setSelectedCO] = useState<ChangeOrder | null>(null)
   const [showDetail, setShowDetail] = useState(false)
+  const [showApproveConfirm, setShowApproveConfirm] = useState(false)
+  const [showRejectDialog, setShowRejectDialog] = useState(false)
+  const [rejectReason, setRejectReason] = useState('')
+  const [processingId, setProcessingId] = useState<string | null>(null)
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -139,6 +152,64 @@ export function ChangeOrderTable({
     // TODO: Implement export functionality
     console.log('Exporting change orders...')
   }
+
+  const handleApprove = async () => {
+    if (!selectedCO) return
+    
+    setProcessingId(selectedCO.id)
+    try {
+      const response = await fetch(`/api/change-orders/${selectedCO.id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to approve change order')
+      }
+
+      // Refresh the data
+      if (onRefresh) onRefresh()
+      setShowApproveConfirm(false)
+      setSelectedCO(null)
+    } catch (error) {
+      console.error('Error approving change order:', error)
+      alert(error instanceof Error ? error.message : 'Failed to approve change order')
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  const handleReject = async () => {
+    if (!selectedCO || !rejectReason.trim()) return
+    
+    setProcessingId(selectedCO.id)
+    try {
+      const response = await fetch(`/api/change-orders/${selectedCO.id}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: rejectReason })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to reject change order')
+      }
+
+      // Refresh the data
+      if (onRefresh) onRefresh()
+      setShowRejectDialog(false)
+      setRejectReason('')
+      setSelectedCO(null)
+    } catch (error) {
+      console.error('Error rejecting change order:', error)
+      alert(error instanceof Error ? error.message : 'Failed to reject change order')
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  const canApproveReject = user && ['controller', 'ops_manager'].includes(user.role)
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return null
@@ -257,6 +328,31 @@ export function ChangeOrderTable({
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
+                        )}
+                        {canApproveReject && co.status === 'pending' && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => {
+                                setSelectedCO(co)
+                                setShowApproveConfirm(true)
+                              }}
+                              className="text-green-600"
+                            >
+                              <Check className="mr-2 h-4 w-4" />
+                              Approve
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => {
+                                setSelectedCO(co)
+                                setShowRejectDialog(true)
+                              }}
+                              className="text-red-600"
+                            >
+                              <X className="mr-2 h-4 w-4" />
+                              Reject
+                            </DropdownMenuItem>
+                          </>
                         )}
                         {co.attachments && co.attachments.length > 0 && (
                           <>
@@ -421,6 +517,68 @@ export function ChangeOrderTable({
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Approve Confirmation Dialog */}
+      <AlertDialog open={showApproveConfirm} onOpenChange={setShowApproveConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Approve Change Order</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to approve change order {selectedCO?.co_number}?
+              This will add {selectedCO && formatCurrency(selectedCO.amount)} to the contract value.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleApprove}
+              disabled={processingId === selectedCO?.id}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {processingId === selectedCO?.id ? 'Approving...' : 'Approve'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reject Dialog */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Reject Change Order</DialogTitle>
+            <DialogDescription>
+              Reject change order {selectedCO?.co_number}. Please provide a reason for rejection.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="reason">Rejection Reason</Label>
+              <Textarea
+                id="reason"
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="Enter reason for rejection (minimum 10 characters)"
+                className="min-h-[100px]"
+              />
+              {rejectReason.length > 0 && rejectReason.length < 10 && (
+                <p className="text-sm text-red-600">Reason must be at least 10 characters</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleReject}
+              disabled={rejectReason.length < 10 || processingId === selectedCO?.id}
+            >
+              {processingId === selectedCO?.id ? 'Rejecting...' : 'Reject'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

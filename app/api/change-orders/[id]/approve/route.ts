@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { 
-  changeOrderActionSchema,
-  validateChangeOrderAmount 
-} from '@/lib/validations/change-order'
-import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
-// POST /api/change-orders/[id]/approve - Approve a change order
+// POST /api/change-orders/[id]/approve
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -34,128 +29,128 @@ export async function POST(
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
-  // Only controllers and ops managers can approve
+  // Only controllers and ops managers can approve change orders
   if (!['controller', 'ops_manager'].includes(userDetails.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   try {
-    const body = await request.json()
-    const validatedData = changeOrderActionSchema.parse({ ...body, action: 'approve' })
-
-    // Get existing change order
+    // Get the change order details
     const { data: changeOrder, error: fetchError } = await supabase
       .from('change_orders')
       .select(`
         *,
         project:projects!inner(
           id,
-          job_number,
-          name,
-          project_manager_id
+          original_contract,
+          revised_contract
         )
       `)
       .eq('id', changeOrderId)
-      .is('deleted_at', null)
       .single()
 
     if (fetchError || !changeOrder) {
       return NextResponse.json({ error: 'Change order not found' }, { status: 404 })
     }
 
-    // Check current status
+    // Check if already approved
+    if (changeOrder.status === 'approved') {
+      return NextResponse.json({ error: 'Change order already approved' }, { status: 400 })
+    }
+
+    // Only pending change orders can be approved
     if (changeOrder.status !== 'pending') {
-      return NextResponse.json(
-        { error: `Cannot approve change order with status: ${changeOrder.status}` },
-        { status: 400 }
-      )
+      return NextResponse.json({ 
+        error: `Cannot approve change order with status: ${changeOrder.status}` 
+      }, { status: 400 })
     }
 
-    // Validate amount based on user role
-    const amountValidation = validateChangeOrderAmount(changeOrder.amount, userDetails.role)
-    if (!amountValidation.valid) {
-      return NextResponse.json(
-        { error: amountValidation.message },
-        { status: 403 }
-      )
-    }
-
-    // Update change order status
-    const approvedDate = validatedData.approved_date || new Date().toISOString()
-    
-    const { data: updatedCO, error: updateError } = await supabase
+    // Start a transaction-like operation
+    // 1. Update change order status
+    const { error: updateCOError } = await supabase
       .from('change_orders')
       .update({
         status: 'approved',
         approved_by: user.id,
-        approved_date: approvedDate
+        approved_date: new Date().toISOString()
       })
       .eq('id', changeOrderId)
-      .select()
-      .single()
 
-    if (updateError) throw updateError
+    if (updateCOError) throw updateCOError
 
-    // The database trigger will automatically update the project's revised_contract
+    // 2. Calculate the correct revised contract amount
+    // Get all approved change orders for this project to ensure correct total
+    const { data: allApprovedCOs } = await supabase
+      .from('change_orders')
+      .select('amount')
+      .eq('project_id', changeOrder.project_id)
+      .eq('status', 'approved')
+    
+    // Sum all approved change orders (including the one we're about to approve)
+    const totalApprovedCOs = (allApprovedCOs || []).reduce((sum, co) => sum + co.amount, 0) + changeOrder.amount
+    
+    // Revised contract = original contract + all approved change orders
+    const newRevisedContract = (changeOrder.project.original_contract || 0) + totalApprovedCOs
+    
+    const { error: updateProjectError } = await supabase
+      .from('projects')
+      .update({
+        revised_contract: newRevisedContract
+      })
+      .eq('id', changeOrder.project_id)
 
-    // Log to audit trail
+    if (updateProjectError) throw updateProjectError
+
+    // 3. Log to audit trail
     await supabase.from('audit_log').insert({
-      user_id: user.id,
-      action: 'approve',
       entity_type: 'change_order',
       entity_id: changeOrderId,
+      action: 'approve',
       changes: {
-        status: { from: 'pending', to: 'approved' },
+        status: { from: changeOrder.status, to: 'approved' },
         approved_by: user.id,
-        approved_date: approvedDate,
-        reason: validatedData.reason
-      }
+        approved_date: new Date().toISOString(),
+        contract_impact: {
+          previous_revised_contract: changeOrder.project.revised_contract || changeOrder.project.original_contract,
+          new_revised_contract: newRevisedContract,
+          change_amount: changeOrder.amount
+        }
+      },
+      performed_by: user.id
     })
 
-    // Create notification for project manager
-    if (changeOrder.project.project_manager_id && 
-        changeOrder.project.project_manager_id !== user.id) {
-      await supabase.from('notifications').insert({
-        user_id: changeOrder.project.project_manager_id,
-        type: 'large_change_order',
-        title: 'Change Order Approved',
-        message: `Change order ${changeOrder.co_number} for ${changeOrder.project.name} has been approved`,
-        priority: 'medium',
-        related_entity_type: 'change_order',
-        related_entity_id: changeOrderId
-      })
-    }
-
-    // Get updated project info
-    const { data: updatedProject } = await supabase
-      .from('projects')
-      .select('original_contract, revised_contract')
-      .eq('id', changeOrder.project_id)
-      .single()
+    // Also log the project contract update
+    await supabase.from('audit_log').insert({
+      entity_type: 'project',
+      entity_id: changeOrder.project_id,
+      action: 'update_contract',
+      changes: {
+        revised_contract: {
+          from: changeOrder.project.revised_contract || changeOrder.project.original_contract,
+          to: newRevisedContract
+        },
+        change_order_id: changeOrderId,
+        change_order_number: changeOrder.co_number
+      },
+      performed_by: user.id
+    })
 
     return NextResponse.json({
-      message: 'Change order approved successfully',
+      success: true,
       changeOrder: {
-        id: updatedCO.id,
-        coNumber: updatedCO.co_number,
-        status: updatedCO.status,
-        approvedDate: updatedCO.approved_date,
-        approvedBy: user.id
+        id: changeOrder.id,
+        co_number: changeOrder.co_number,
+        status: 'approved',
+        approved_by: user.id,
+        approved_date: new Date().toISOString()
       },
-      projectUpdate: {
-        originalContract: updatedProject?.original_contract,
-        revisedContract: updatedProject?.revised_contract,
-        changeOrderImpact: changeOrder.amount
+      project: {
+        id: changeOrder.project_id,
+        revised_contract: newRevisedContract
       }
     })
   } catch (error) {
     console.error('Change order approval error:', error)
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
-        { status: 400 }
-      )
-    }
     return NextResponse.json(
       { error: 'Failed to approve change order' },
       { status: 500 }

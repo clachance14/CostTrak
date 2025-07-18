@@ -117,7 +117,6 @@ export async function GET(
       `)
       .eq('project_id', id)
 
-    console.log('Budget query result:', { id, budgets, budgetsError })
 
     // Get labor actuals with craft type details
     const { data: laborActuals } = await supabase
@@ -324,15 +323,6 @@ export async function GET(
       budgetBreakdown['INDIRECT LABOR'].variance = budgetBreakdown['INDIRECT LABOR'].budget - budgetBreakdown['INDIRECT LABOR'].forecasted
     }
 
-    console.log('Budget breakdown processing:', { 
-      budgetsCount: budgets?.length || 0, 
-      budgetBreakdown,
-      sampleBudget: budgets?.[0],
-      totalLaborActual,
-      directLaborActual,
-      indirectLaborActual,
-      futureLaborCost
-    })
 
     // Identify risk factors
     const riskFactors = []

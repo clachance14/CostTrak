@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { changeOrderActionSchema } from '@/lib/validations/change-order'
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
-// POST /api/change-orders/[id]/reject - Reject a change order
+// Schema for rejection request
+const rejectSchema = z.object({
+  reason: z.string().min(10, 'Rejection reason must be at least 10 characters')
+})
+
+// POST /api/change-orders/[id]/reject
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -31,109 +35,87 @@ export async function POST(
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
-  // Only controllers and ops managers can reject
+  // Only controllers and ops managers can reject change orders
   if (!['controller', 'ops_manager'].includes(userDetails.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   try {
+    // Parse and validate request body
     const body = await request.json()
-    const validatedData = changeOrderActionSchema.parse({ ...body, action: 'reject' })
+    const validatedData = rejectSchema.parse(body)
 
-    // Reason is required for rejections
-    if (!validatedData.reason) {
-      return NextResponse.json(
-        { error: 'Reason is required for rejections' },
-        { status: 400 }
-      )
-    }
-
-    // Get existing change order
+    // Get the change order details
     const { data: changeOrder, error: fetchError } = await supabase
       .from('change_orders')
-      .select(`
-        *,
-        project:projects!inner(
-          id,
-          job_number,
-          name,
-          project_manager_id
-        )
-      `)
+      .select('*')
       .eq('id', changeOrderId)
-      .is('deleted_at', null)
       .single()
 
     if (fetchError || !changeOrder) {
       return NextResponse.json({ error: 'Change order not found' }, { status: 404 })
     }
 
-    // Check current status
+    // Check if already rejected
+    if (changeOrder.status === 'rejected') {
+      return NextResponse.json({ error: 'Change order already rejected' }, { status: 400 })
+    }
+
+    // Only pending change orders can be rejected
     if (changeOrder.status !== 'pending') {
-      return NextResponse.json(
-        { error: `Cannot reject change order with status: ${changeOrder.status}` },
-        { status: 400 }
-      )
+      return NextResponse.json({ 
+        error: `Cannot reject change order with status: ${changeOrder.status}` 
+      }, { status: 400 })
     }
 
     // Update change order status
-    const { data: updatedCO, error: updateError } = await supabase
+    const { error: updateError } = await supabase
       .from('change_orders')
       .update({
         status: 'rejected',
+        rejection_reason: validatedData.reason,
         approved_by: user.id, // Track who rejected it
-        approved_date: null // Clear any approved date
+        approved_date: new Date().toISOString() // Track when it was rejected
       })
       .eq('id', changeOrderId)
-      .select()
-      .single()
 
     if (updateError) throw updateError
 
-    // Log to audit trail with reason
+    // Log to audit trail
     await supabase.from('audit_log').insert({
-      user_id: user.id,
-      action: 'reject',
       entity_type: 'change_order',
       entity_id: changeOrderId,
+      action: 'reject',
       changes: {
-        status: { from: 'pending', to: 'rejected' },
+        status: { from: changeOrder.status, to: 'rejected' },
+        rejection_reason: validatedData.reason,
         rejected_by: user.id,
-        rejection_reason: validatedData.reason
-      }
+        rejected_date: new Date().toISOString()
+      },
+      performed_by: user.id
     })
 
-    // Create notification for project manager
-    if (changeOrder.project.project_manager_id && 
-        changeOrder.project.project_manager_id !== user.id) {
-      await supabase.from('notifications').insert({
-        user_id: changeOrder.project.project_manager_id,
-        type: 'large_change_order',
-        title: 'Change Order Rejected',
-        message: `Change order ${changeOrder.co_number} for ${changeOrder.project.name} has been rejected. Reason: ${validatedData.reason}`,
-        priority: 'high',
-        related_entity_type: 'change_order',
-        related_entity_id: changeOrderId
-      })
-    }
-
     return NextResponse.json({
-      message: 'Change order rejected successfully',
+      success: true,
       changeOrder: {
-        id: updatedCO.id,
-        coNumber: updatedCO.co_number,
-        status: updatedCO.status,
-        rejectionReason: validatedData.reason
+        id: changeOrder.id,
+        co_number: changeOrder.co_number,
+        status: 'rejected',
+        rejection_reason: validatedData.reason,
+        rejected_by: user.id,
+        rejected_date: new Date().toISOString()
       }
     })
   } catch (error) {
     console.error('Change order rejection error:', error)
+    
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Validation failed', details: error.errors },
         { status: 400 }
       )
     }
+    
     return NextResponse.json(
       { error: 'Failed to reject change order' },
       { status: 500 }

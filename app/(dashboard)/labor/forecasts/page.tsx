@@ -199,7 +199,7 @@ export default function LaborForecastsMainPage() {
 
       {/* Quick Actions */}
       {canEdit && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           <Link
             href={`/labor/forecasts/weekly-entry?project_id=${projectId}`}
             className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow group"
@@ -248,6 +248,23 @@ export default function LaborForecastsMainPage() {
                 </p>
               </div>
               <Users className="h-8 w-8 text-foreground group-hover:text-blue-600" />
+            </div>
+          </Link>
+
+          <Link
+            href={`/labor/forecasts/comprehensive?project_id=${projectId}`}
+            className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow group"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-foreground group-hover:text-blue-600">
+                  Comprehensive Forecast
+                </h3>
+                <p className="text-sm text-foreground mt-1">
+                  Full actuals & forecast view
+                </p>
+              </div>
+              <FileSpreadsheet className="h-8 w-8 text-foreground group-hover:text-blue-600" />
             </div>
           </Link>
 
