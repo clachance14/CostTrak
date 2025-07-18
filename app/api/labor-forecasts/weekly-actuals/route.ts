@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
           id,
           name,
           code,
-          labor_category
+          category
         )
       `)
       .eq('project_id', projectId)
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
     // Get all craft types for the form
     const { data: allCraftTypes } = await supabase
       .from('craft_types')
-      .select('id, name, code, labor_category')
+      .select('id, name, code, category')
       .eq('is_active', true)
       .order('labor_category')
       .order('name')
@@ -130,18 +130,18 @@ export async function GET(request: NextRequest) {
         craftTypeId: actual.craft_type_id,
         craftName: actual.craft_type.name,
         craftCode: actual.craft_type.code,
-        laborCategory: actual.craft_type.labor_category,
+        laborCategory: actual.craft_type.category,
         weekEnding: actual.week_ending,
-        totalCost: actual.total_cost,
-        totalHours: actual.total_hours,
-        ratePerHour: actual.rate_per_hour,
+        totalCost: actual.actual_cost,
+        totalHours: actual.actual_hours,
+        ratePerHour: actual.actual_hours > 0 ? actual.actual_cost / actual.actual_hours : 0,
         runningAvgRate: avgMap.get(actual.craft_type_id) || 0
       })) || [],
       craftTypes: allCraftTypes?.map(ct => ({
         id: ct.id,
         name: ct.name,
         code: ct.code,
-        laborCategory: ct.labor_category,
+        laborCategory: ct.category,
         runningAvgRate: avgMap.get(ct.id) || 0
       })) || []
     }

@@ -132,7 +132,7 @@ export async function PATCH(
       original_contract: z.number().min(0).optional(),
       start_date: z.string().datetime().optional(),
       end_date: z.string().datetime().optional(),
-      status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']).optional(),
+      status: z.enum(['active', 'on_hold', 'completed', 'cancelled']).optional(),
       address: z.string().optional(),
       city: z.string().optional(),
       state: z.string().max(2).optional(),

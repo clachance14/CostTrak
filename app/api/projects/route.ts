@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
         division:divisions!projects_division_id_fkey(id, name, code),
         project_manager:profiles!projects_project_manager_id_fkey(id, first_name, last_name, email)
       `, { count: 'exact' })
+      .is('deleted_at', null)
 
     // Apply filters
     if (status) {
@@ -197,7 +198,7 @@ export async function POST(request: NextRequest) {
       original_contract: z.number().min(0),
       start_date: z.string().datetime(),
       end_date: z.string().datetime(),
-      status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']).default('planning'),
+      status: z.enum(['active', 'on_hold', 'completed', 'cancelled']).default('active'),
       address: z.string().optional(),
       city: z.string().optional(),
       state: z.string().max(2).optional(),

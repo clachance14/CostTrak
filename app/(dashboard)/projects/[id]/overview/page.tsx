@@ -1,7 +1,7 @@
 'use client'
 
-import { use } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { use, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { 
   ArrowLeft, 
@@ -12,13 +12,22 @@ import {
   TrendingUp, 
   DollarSign,
   FileText,
-  BarChart3
+  BarChart3,
+  Shield
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { POLogTable } from '@/components/purchase-orders/po-log-table'
+import { ActionRequiredBanner } from '@/components/project/action-required-banner'
+import { ClickableProgressBar } from '@/components/project/clickable-progress-bar'
+import { FinancialMetricCard } from '@/components/project/financial-metric-card'
+import { ProjectNotes } from '@/components/project/project-notes'
+import { BudgetVsActualTab } from '@/components/project/budget-vs-actual-tab'
+import { BudgetBreakdownByDiscipline } from '@/components/project/budget-breakdown-by-discipline'
+import { LaborTab } from '@/components/project/labor-tab'
+import { ChangeOrderTable } from '@/components/change-orders/change-order-table'
 import { useUser } from '@/hooks/use-auth'
 import { format } from 'date-fns'
 
@@ -28,8 +37,18 @@ interface ProjectOverviewPageProps {
 
 export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { data: user } = useUser()
   const { id } = use(params)
+  const [projectNotes] = useState<Array<{
+    id: string
+    content: string
+    created_at: string
+    created_by: { id: string; first_name: string; last_name: string }
+    note_type: 'general' | 'cost_to_complete' | 'risk' | 'schedule'
+  }>>([])
+  // const [showImportDialog, setShowImportDialog] = useState(false)
+  // const [importType, setImportType] = useState<'labor' | 'po' | 'budget'>('labor')
 
   // Fetch comprehensive financial summary
   const { data: summary, isLoading, error } = useQuery({
@@ -41,6 +60,16 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
       }
       const data = await response.json()
       return data.summary
+    }
+  })
+
+  // Fetch project dashboard summary for data health
+  const { data: dashboardSummary } = useQuery({
+    queryKey: ['project-dashboard-summary', id],
+    queryFn: async () => {
+      const response = await fetch(`/api/projects/${id}/dashboard-summary`)
+      if (!response.ok) return null
+      return response.json()
     }
   })
 
@@ -125,8 +154,88 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
 
   const { project, financialMetrics, budgetBreakdown, purchaseOrders, changeOrders, riskFactors } = summary
 
+  // Calculate action items
+  const actionItems = []
+  
+  // Check for stale labor data
+  if (dashboardSummary?.data_health?.last_labor_import) {
+    const daysSince = Math.floor((new Date().getTime() - new Date(dashboardSummary.data_health.last_labor_import).getTime()) / (1000 * 60 * 60 * 24))
+    if (daysSince > 7) {
+      actionItems.push({
+        type: 'stale_labor' as const,
+        severity: 'critical' as const,
+        message: `Labor data is ${daysSince} days old`,
+        actionLabel: 'Import Labor',
+        onAction: () => {
+          // TODO: Implement labor import
+          router.push(`/labor/import?project_id=${id}`)
+        }
+      })
+    } else if (daysSince > 3) {
+      actionItems.push({
+        type: 'stale_labor' as const,
+        severity: 'warning' as const,
+        message: `Labor data is ${daysSince} days old`,
+        actionLabel: 'Import Labor',
+        onAction: () => {
+          // TODO: Implement labor import
+          router.push(`/labor/import?project_id=${id}`)
+        }
+      })
+    }
+  } else {
+    actionItems.push({
+      type: 'missing_labor' as const,
+      severity: 'critical' as const,
+      message: 'No labor data imported',
+      actionLabel: 'Import Labor',
+      onAction: () => {
+        // TODO: Implement labor import
+        router.push(`/labor/import?project_id=${id}`)
+      }
+    })
+  }
+  
+  // Check for low margin
+  if (financialMetrics.profitMargin < 5 && financialMetrics.profitMargin >= 0) {
+    actionItems.push({
+      type: 'low_margin' as const,
+      severity: 'warning' as const,
+      message: `Low profit margin: ${financialMetrics.profitMargin.toFixed(1)}%`,
+      actionLabel: 'Review Costs',
+      onAction: () => {
+        const budgetTab = document.querySelector('[value="budget"]')
+        if (budgetTab) (budgetTab as HTMLElement).click()
+      }
+    })
+  } else if (financialMetrics.profitMargin < 0) {
+    actionItems.push({
+      type: 'low_margin' as const,
+      severity: 'critical' as const,
+      message: `Negative margin: ${financialMetrics.profitMargin.toFixed(1)}%`,
+      actionLabel: 'Review Costs',
+      onAction: () => {
+        const budgetTab = document.querySelector('[value="budget"]')
+        if (budgetTab) (budgetTab as HTMLElement).click()
+      }
+    })
+  }
+
+  // Progress breakdown for clickable progress bar
+  const progressBreakdown = budgetBreakdown && Object.keys(budgetBreakdown).length > 0 ? 
+    Object.entries(budgetBreakdown).map(([category, data]) => {
+      const budgetData = data as { actual: number; budget: number }
+      return {
+        label: category,
+        value: budgetData.actual,
+        percentage: budgetData.budget > 0 ? (budgetData.actual / budgetData.budget) * 100 : 0
+      }
+    }) : []
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Action Required Banner */}
+      <ActionRequiredBanner actions={actionItems} />
       {/* Sticky Header Bar */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
@@ -185,7 +294,7 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               {canEdit && (
                 <Button
                   variant="outline"
@@ -195,13 +304,13 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
                   Edit
                 </Button>
               )}
-              {canEdit && (
+              {(user?.role === 'controller' || summary?.project?.project_manager_id === user?.id) && (
                 <Button
                   variant="outline"
-                  onClick={() => router.push(`/projects/${id}/budget-import`)}
+                  onClick={() => router.push(`/projects/${id}/team`)}
                 >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Import Budget
+                  <Shield className="h-4 w-4 mr-2" />
+                  Team
                 </Button>
               )}
               <Button variant="outline">
@@ -216,10 +325,12 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="financial" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="financial">Financial Summary</TabsTrigger>
+            <TabsTrigger value="labor">Labor</TabsTrigger>
             <TabsTrigger value="forecast">Forecast</TabsTrigger>
-            <TabsTrigger value="budget">Budget Breakdown</TabsTrigger>
+            <TabsTrigger value="budget">Budget vs Actual</TabsTrigger>
+            <TabsTrigger value="budget-detail">Budget Detail</TabsTrigger>
             <TabsTrigger value="purchase-orders">Purchase Orders</TabsTrigger>
             <TabsTrigger value="change-orders">Change Orders</TabsTrigger>
             <TabsTrigger value="alerts">Issues & Alerts</TabsTrigger>
@@ -227,6 +338,94 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
 
           {/* Financial Summary Tab */}
           <TabsContent value="financial" className="space-y-6">
+            {/* Key Financial Metrics */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <FinancialMetricCard
+                title="Current Contract"
+                value={formatCurrency(financialMetrics.revisedContract)}
+                icon={DollarSign}
+                helpText="Original contract plus approved change orders"
+                details={[
+                  {
+                    label: 'Contract Breakdown',
+                    value: formatCurrency(financialMetrics.revisedContract),
+                    subItems: [
+                      { label: 'Original Contract', value: formatCurrency(financialMetrics.originalContract) },
+                      { label: 'Approved COs', value: formatCurrency(financialMetrics.approvedChangeOrders), isPositive: true }
+                    ]
+                  }
+                ]}
+              />
+              <FinancialMetricCard
+                title="Current Cost"
+                value={formatCurrency(financialMetrics.actualCostToDate)}
+                icon={BarChart3}
+                status={financialMetrics.actualCostToDate <= financialMetrics.revisedContract * 0.9 ? 'good' : 
+                        financialMetrics.actualCostToDate <= financialMetrics.revisedContract ? 'warning' : 'danger'}
+                helpText="Total costs incurred to date"
+                details={[
+                  {
+                    label: 'Cost Progress',
+                    value: formatCurrency(financialMetrics.actualCostToDate),
+                    subItems: [
+                      { label: 'Percent of Contract', value: formatPercent((financialMetrics.actualCostToDate / financialMetrics.revisedContract) * 100) },
+                      { label: 'Remaining Budget', value: formatCurrency(financialMetrics.revisedContract - financialMetrics.actualCostToDate) }
+                    ]
+                  }
+                ]}
+              />
+              <FinancialMetricCard
+                title="Forecasted Profit & Margin"
+                value={formatCurrency(financialMetrics.forecastedProfit)}
+                status={financialMetrics.forecastedProfit >= 0 ? 'good' : 'danger'}
+                icon={TrendingUp}
+                trend={{
+                  value: financialMetrics.profitMargin,
+                  isPositive: financialMetrics.profitMargin >= 5
+                }}
+                helpText="Expected profit and margin at project completion"
+                details={[
+                  {
+                    label: 'Profit Breakdown',
+                    value: formatCurrency(financialMetrics.forecastedProfit),
+                    subItems: [
+                      { label: 'Profit Margin', value: formatPercent(financialMetrics.profitMargin), isPositive: financialMetrics.profitMargin >= 5 }
+                    ]
+                  }
+                ]}
+              />
+              <FinancialMetricCard
+                title="Cost Variance"
+                value={formatCurrency(financialMetrics.varianceAtCompletion)}
+                status={financialMetrics.varianceAtCompletion >= 0 ? 'good' : 'danger'}
+                helpText="Difference between budget and forecast"
+                details={[
+                  {
+                    label: 'Variance Analysis',
+                    value: formatCurrency(financialMetrics.varianceAtCompletion),
+                    subItems: [
+                      { label: 'Budget (EAC)', value: formatCurrency(financialMetrics.estimateAtCompletion) },
+                      { label: 'Actual to Date', value: formatCurrency(financialMetrics.actualCostToDate) },
+                      { label: 'Est. to Complete', value: formatCurrency(financialMetrics.estimateToComplete) }
+                    ]
+                  }
+                ]}
+              />
+            </div>
+
+            {/* Progress Bar */}
+            <Card>
+              <CardContent className="pt-6">
+                <ClickableProgressBar
+                  value={financialMetrics.percentComplete}
+                  label="Project Progress"
+                  progressMethod={project.physical_progress_method as 'labor_hours' | 'cost' | 'milestones'}
+                  breakdown={progressBreakdown}
+                  className="mb-4"
+                />
+              </CardContent>
+            </Card>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Financial Metrics Table */}
               <Card>
@@ -294,19 +493,13 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
-                    {/* Progress Bar */}
-                    <div>
-                      <div className="flex justify-between mb-2">
-                        <span className="text-sm text-gray-600">Project Progress</span>
-                        <span className="text-sm font-medium">{formatPercent(financialMetrics.percentComplete)}</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div 
-                          className="bg-blue-600 h-3 rounded-full transition-all"
-                          style={{ width: `${Math.min(financialMetrics.percentComplete, 100)}%` }}
-                        />
-                      </div>
-                    </div>
+                    {/* Progress Bar in this card */}
+                    <ClickableProgressBar
+                      value={financialMetrics.percentComplete}
+                      label="Overall Progress"
+                      progressMethod={project.physical_progress_method as 'labor_hours' | 'cost' | 'milestones'}
+                      breakdown={progressBreakdown}
+                    />
 
                     {/* Key Performance Indicators */}
                     <div className="grid grid-cols-2 gap-4">
@@ -315,7 +508,7 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
                         <div className="text-sm text-gray-600">Purchase Orders</div>
                       </div>
                       <div className="text-center p-3 bg-green-50 rounded-lg">
-                        <div className="text-2xl font-bold text-green-600">{changeOrders.filter(co => co.status === 'approved').length}</div>
+                        <div className="text-2xl font-bold text-green-600">{changeOrders.filter((co: any) => co.status === 'approved').length}</div>
                         <div className="text-sm text-gray-600">Approved COs</div>
                       </div>
                     </div>
@@ -339,68 +532,42 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
                 </CardContent>
               </Card>
             </div>
+
+            {/* Project Notes */}
+            <ProjectNotes
+              notes={projectNotes}
+              canEdit={canEdit || false}
+              onNoteAdded={async (note) => {
+                // TODO: Implement note creation API
+                console.log('Add note:', note)
+              }}
+              onNoteUpdated={async (noteId, content) => {
+                // TODO: Implement note update API
+                console.log('Update note:', noteId, content)
+              }}
+            />
           </TabsContent>
 
-          {/* Budget Breakdown Tab */}
+          {/* Labor Tab */}
+          <TabsContent value="labor" className="space-y-6">
+            <LaborTab 
+              projectId={id}
+              projectName={project.name}
+              jobNumber={project.jobNumber}
+            />
+          </TabsContent>
+
+          {/* Budget vs Actual Tab */}
           <TabsContent value="budget" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Budget vs Actual by Category</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {Object.keys(budgetBreakdown).length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left py-2">Budget Category</th>
-                          <th className="text-right py-2">Budget</th>
-                          <th className="text-right py-2">Committed</th>
-                          <th className="text-right py-2">Actuals</th>
-                          <th className="text-right py-2">Forecasted Final</th>
-                          <th className="text-right py-2">Variance</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {Object.entries(budgetBreakdown).map(([category, data]) => {
-                          const budgetData = data as { budget: number; committed: number; actual: number; forecasted: number; variance: number }
-                          const actualsExceedCommitted = budgetData.actual > budgetData.committed && budgetData.committed > 0
-                          return (
-                            <tr key={category} className="border-b">
-                              <td className="py-3 font-medium">{category}</td>
-                              <td className="text-right py-3">{formatCurrency(budgetData.budget)}</td>
-                              <td className="text-right py-3">{formatCurrency(budgetData.committed)}</td>
-                              <td className={`text-right py-3 ${actualsExceedCommitted ? 'text-orange-600 font-semibold' : ''}`}>
-                                {formatCurrency(budgetData.actual)}
-                                {actualsExceedCommitted && (
-                                  <span className="ml-1 text-xs">⚠️</span>
-                                )}
-                              </td>
-                              <td className="text-right py-3">{formatCurrency(budgetData.forecasted)}</td>
-                              <td className={`text-right py-3 font-medium ${budgetData.variance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {budgetData.variance >= 0 ? '+' : ''}{formatCurrency(budgetData.variance)}
-                              </td>
-                            </tr>
-                          )
-                        })}
-                        <tr className="border-t-2 font-bold">
-                          <td className="py-3">Total</td>
-                          <td className="text-right py-3">{formatCurrency(Object.values(budgetBreakdown).reduce((sum: number, data: unknown) => sum + (data as { budget: number }).budget, 0))}</td>
-                          <td className="text-right py-3">{formatCurrency(Object.values(budgetBreakdown).reduce((sum: number, data: unknown) => sum + (data as { committed: number }).committed, 0))}</td>
-                          <td className="text-right py-3">{formatCurrency(Object.values(budgetBreakdown).reduce((sum: number, data: unknown) => sum + (data as { actual: number }).actual, 0))}</td>
-                          <td className="text-right py-3">{formatCurrency(Object.values(budgetBreakdown).reduce((sum: number, data: unknown) => sum + (data as { forecasted: number }).forecasted, 0))}</td>
-                          <td className={`text-right py-3 ${Object.values(budgetBreakdown).reduce((sum: number, data: unknown) => sum + (data as { variance: number }).variance, 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {Object.values(budgetBreakdown).reduce((sum: number, data: unknown) => sum + (data as { variance: number }).variance, 0) >= 0 ? '+' : ''}{formatCurrency(Object.values(budgetBreakdown).reduce((sum: number, data: unknown) => sum + (data as { variance: number }).variance, 0))}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-center py-8">No budget data available</p>
-                )}
-              </CardContent>
-            </Card>
+            <BudgetVsActualTab 
+              projectId={id} 
+              contractValue={financialMetrics.revisedContract}
+            />
+          </TabsContent>
+
+          {/* Budget Detail Tab */}
+          <TabsContent value="budget-detail" className="space-y-6">
+            <BudgetBreakdownByDiscipline projectId={id} />
           </TabsContent>
 
           {/* Purchase Orders Tab */}
@@ -422,7 +589,7 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
               </CardHeader>
               <CardContent>
                 {purchaseOrders.length > 0 ? (
-                  <POLogTable purchaseOrders={purchaseOrders} />
+                  <POLogTable purchaseOrders={purchaseOrders} projectId={id} />
                 ) : (
                   <p className="text-gray-500 text-center py-8">No purchase orders found</p>
                 )}
@@ -437,7 +604,13 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
                 <CardTitle className="flex items-center justify-between">
                   <span>Change Orders</span>
                   {canEdit && (
-                    <Button size="sm">
+                    <Button 
+                      size="sm"
+                      onClick={() => {
+                        console.log('Navigating to change order form with project_id:', id)
+                        router.push(`/change-orders/new?project_id=${id}`)
+                      }}
+                    >
                       <Plus className="h-4 w-4 mr-2" />
                       Add Change Order
                     </Button>
@@ -446,36 +619,12 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
               </CardHeader>
               <CardContent>
                 {changeOrders.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left py-2">CO #</th>
-                          <th className="text-left py-2">Description</th>
-                          <th className="text-center py-2">Status</th>
-                          <th className="text-right py-2">Amount</th>
-                          <th className="text-right py-2">Approved Date</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {changeOrders.map((co) => (
-                          <tr key={co.id} className="border-b">
-                            <td className="py-3 font-medium">{co.co_number}</td>
-                            <td className="py-3">{co.description}</td>
-                            <td className="text-center py-3">
-                              <Badge variant={co.status === 'approved' ? 'default' : co.status === 'pending' ? 'secondary' : 'outline'}>
-                                {co.status}
-                              </Badge>
-                            </td>
-                            <td className="text-right py-3 font-medium">{formatCurrency(co.amount)}</td>
-                            <td className="text-right py-3">
-                              {co.approved_date ? format(new Date(co.approved_date), 'MMM d, yyyy') : '—'}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <ChangeOrderTable 
+                    changeOrders={changeOrders}
+                    projectId={id}
+                    canEdit={canEdit || false}
+                    onRefresh={() => queryClient.invalidateQueries({ queryKey: ['project-financial-summary', id] })}
+                  />
                 ) : (
                   <p className="text-gray-500 text-center py-8">No change orders found</p>
                 )}
@@ -495,7 +644,7 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
               <CardContent>
                 {riskFactors.length > 0 ? (
                   <div className="space-y-4">
-                    {riskFactors.map((risk, index: number) => (
+                    {riskFactors.map((risk: any, index: number) => (
                       <div key={index} className="flex items-start gap-3 p-4 rounded-lg border border-gray-200">
                         <AlertTriangle className={`h-5 w-5 mt-0.5 ${risk.severity === 'high' ? 'text-red-600' : risk.severity === 'medium' ? 'text-yellow-600' : 'text-blue-600'}`} />
                         <div className="flex-1">
@@ -563,6 +712,7 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
           </TabsContent>
         </Tabs>
       </div>
+
     </div>
   )
 }

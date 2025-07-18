@@ -45,13 +45,22 @@ export default function EditChangeOrderPage({ params }: EditChangeOrderPageProps
 
       // Transform API data to form data
       const formData: ChangeOrderFormData = {
-        project_id: data.changeOrder.projectId,
-        co_number: data.changeOrder.coNumber,
+        project_id: data.changeOrder.project_id,
+        co_number: data.changeOrder.co_number,
         description: data.changeOrder.description,
         amount: data.changeOrder.amount.toString(),
-        impact_schedule_days: data.changeOrder.impactScheduleDays.toString(),
-        submitted_date: data.changeOrder.submittedDate?.split('T')[0] || '',
-        status: data.changeOrder.status
+        status: data.changeOrder.status,
+        pricing_type: data.changeOrder.pricing_type,
+        impact_schedule_days: data.changeOrder.impact_schedule_days?.toString() || '0',
+        submitted_date: data.changeOrder.submitted_date?.split('T')[0] || '',
+        reason: data.changeOrder.reason || '',
+        manhours: data.changeOrder.manhours?.toString() || '0',
+        labor_amount: data.changeOrder.labor_amount?.toString() || '0',
+        equipment_amount: data.changeOrder.equipment_amount?.toString() || '0',
+        material_amount: data.changeOrder.material_amount?.toString() || '0',
+        subcontract_amount: data.changeOrder.subcontract_amount?.toString() || '0',
+        markup_amount: data.changeOrder.markup_amount?.toString() || '0',
+        tax_amount: data.changeOrder.tax_amount?.toString() || '0'
       }
 
       setInitialData(formData)

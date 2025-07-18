@@ -42,7 +42,7 @@ export interface Project {
   revised_contract: number
   start_date: string
   end_date: string
-  status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
+  status: 'active' | 'on_hold' | 'completed' | 'cancelled'
   address?: string
   city?: string
   state?: string
@@ -83,11 +83,42 @@ export interface ChangeOrder {
   co_number: string
   description: string
   amount: number
-  status: 'pending' | 'approved' | 'rejected'
+  status: 'draft' | 'pending' | 'approved' | 'rejected' | 'cancelled'
+  pricing_type: 'LS' | 'T&M' | 'Estimate' | 'Credit'
+  impact_schedule_days: number
+  reason?: string
+  manhours?: number
+  labor_amount?: number
+  equipment_amount?: number
+  material_amount?: number
+  subcontract_amount?: number
+  markup_amount?: number
+  tax_amount?: number
+  submitted_date?: string
+  approved_date?: string
+  rejection_reason?: string
   created_at: string
   created_by: string
   approved_by?: string
-  approved_at?: string
+  updated_at: string
+  // Relations
+  project?: Project
+  created_by_user?: User
+  approved_by_user?: User
+  attachments?: ChangeOrderAttachment[]
+}
+
+export interface ChangeOrderAttachment {
+  id: string
+  change_order_id: string
+  file_url: string
+  file_name: string
+  file_size?: number
+  mime_type?: string
+  uploaded_by: string
+  uploaded_at: string
+  // Relations
+  uploaded_by_user?: User
 }
 
 export interface LaborForecast {
@@ -124,7 +155,7 @@ export interface ProjectFormData {
   original_contract: number
   start_date: string
   end_date: string
-  status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
+  status: 'active' | 'on_hold' | 'completed' | 'cancelled'
   address?: string
   city?: string
   state?: string

@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
     // Get all craft types
     const { data: craftTypes } = await supabase
       .from('craft_types')
-      .select('id, name, code, labor_category')
+      .select('id, name, code, category')
       .eq('is_active', true)
       .order('labor_category')
       .order('name')
@@ -92,8 +92,8 @@ export async function GET(request: NextRequest) {
       .from('labor_headcount_forecasts')
       .select('*')
       .eq('project_id', projectId)
-      .gte('week_ending', weeks[0].toISOString())
-      .lte('week_ending', weeks[weeks.length - 1].toISOString())
+      .gte('week_starting', weeks[0].toISOString())
+      .lte('week_starting', weeks[weeks.length - 1].toISOString())
 
     // Get running averages for cost calculations
     const { data: runningAverages } = await supabase
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
     // Create headcount map for easy lookup
     const headcountMap = new Map<string, number>()
     headcounts?.forEach(hc => {
-      const key = `${hc.week_ending}_${hc.craft_type_id}`
+      const key = `${hc.week_starting}_${hc.craft_type_id}`
       headcountMap.set(key, hc.headcount)
     })
 
@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
           craftTypeId: craft.id,
           craftName: craft.name,
           craftCode: craft.code,
-          laborCategory: craft.labor_category,
+          laborCategory: craft.category,
           headcount,
           hoursPerPerson,
           totalHours,
@@ -170,7 +170,7 @@ export async function GET(request: NextRequest) {
         id: ct.id,
         name: ct.name,
         code: ct.code,
-        laborCategory: ct.labor_category,
+        laborCategory: ct.category,
         avgRate: avgMap.get(ct.id) || 0
       })) || []
     })

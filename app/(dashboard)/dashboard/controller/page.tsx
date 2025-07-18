@@ -203,10 +203,10 @@ export default function ControllerDashboard() {
                 Change Orders
               </Button>
             </Link>
-            <Link href="/labor-forecasts">
+            <Link href="/labor">
               <Button variant="outline">
                 <Users className="mr-2 h-4 w-4" />
-                Labor Forecasts
+                Labor
               </Button>
             </Link>
           </div>

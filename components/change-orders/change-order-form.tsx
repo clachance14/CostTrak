@@ -37,7 +37,8 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
     handleSubmit,
     formState: { errors },
     setValue,
-    watch
+    watch,
+    trigger
   } = useForm({
     resolver: zodResolver(changeOrderFormSchema),
     defaultValues: {
@@ -46,13 +47,29 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
       description: '',
       amount: '',
       status: 'pending' as const,
+      pricing_type: 'LS' as const,
       impact_schedule_days: '0',
-      submitted_date: '',
+      submitted_date: new Date().toISOString().split('T')[0],
+      reason: '',
+      manhours: '0',
+      labor_amount: '0',
+      equipment_amount: '0',
+      material_amount: '0',
+      subcontract_amount: '0',
+      markup_amount: '0',
+      tax_amount: '0',
       ...initialData
     }
   })
 
   const selectedProjectId = watch('project_id')
+  const laborAmount = watch('labor_amount')
+  const equipmentAmount = watch('equipment_amount')
+  const materialAmount = watch('material_amount')
+  const subcontractAmount = watch('subcontract_amount')
+  const markupAmount = watch('markup_amount')
+  const taxAmount = watch('tax_amount')
+  // const pricingType = watch('pricing_type') // Reserved for future conditional logic
 
   const fetchProjectsAndUserRole = useCallback(async () => {
     try {
@@ -135,12 +152,38 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
     }
   }, [selectedProjectId, projects, mode, generateCoNumber])
 
+  // Calculate total from breakdown amounts
+  useEffect(() => {
+    const amounts = [
+      laborAmount,
+      equipmentAmount,
+      materialAmount,
+      subcontractAmount,
+      markupAmount,
+      taxAmount
+    ]
+    
+    const hasBreakdown = amounts.some(amt => amt && parseFloat(amt) > 0)
+    
+    if (hasBreakdown) {
+      const total = amounts.reduce((sum, amt) => {
+        const value = parseFloat(amt || '0')
+        return sum + (isNaN(value) ? 0 : value)
+      }, 0)
+      
+      setValue('amount', total.toFixed(2))
+    }
+  }, [laborAmount, equipmentAmount, materialAmount, subcontractAmount, markupAmount, taxAmount, setValue])
+
   const onSubmit = async (data: unknown) => {
+    console.log('Form submission data:', data)
     const formData = data as ChangeOrderFormData
     setLoading(true)
     setError(null)
 
     try {
+      // Log the data being sent
+      console.log('Submitting form data:', formData)
       // Transform form data to API format
       const apiData = {
         project_id: formData.project_id,
@@ -149,7 +192,16 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
         amount: parseFloat(formData.amount),
         impact_schedule_days: parseInt(formData.impact_schedule_days || '0'),
         submitted_date: formData.submitted_date,
-        status: formData.status
+        status: formData.status,
+        pricing_type: formData.pricing_type,
+        reason: formData.reason || null,
+        manhours: parseFloat(formData.manhours || '0'),
+        labor_amount: parseFloat(formData.labor_amount || '0'),
+        equipment_amount: parseFloat(formData.equipment_amount || '0'),
+        material_amount: parseFloat(formData.material_amount || '0'),
+        subcontract_amount: parseFloat(formData.subcontract_amount || '0'),
+        markup_amount: parseFloat(formData.markup_amount || '0'),
+        tax_amount: parseFloat(formData.tax_amount || '0')
       }
 
       const url = mode === 'create' 
@@ -158,6 +210,8 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
       
       const method = mode === 'create' ? 'POST' : 'PATCH'
 
+      console.log('API data to send:', apiData)
+      
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -165,8 +219,10 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
       })
 
       const result = await response.json()
+      console.log('API response:', result)
 
       if (!response.ok) {
+        console.error('API error response:', result)
         throw new Error(result.error || `Failed to ${mode} change order`)
       }
 
@@ -174,7 +230,11 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
       router.push(`/change-orders/${result.changeOrder.id}`)
     } catch (err) {
       console.error(`Error ${mode}ing change order:`, err)
-      setError(err instanceof Error ? err.message : `Failed to ${mode} change order`)
+      if (err instanceof Error) {
+        setError(err.message)
+      } else {
+        setError(`Failed to ${mode} change order`)
+      }
     } finally {
       setLoading(false)
     }
@@ -183,7 +243,10 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
   const canEditStatus = userRole && ['controller', 'ops_manager'].includes(userRole)
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit, (errors) => {
+      console.error('Form validation errors:', errors)
+      setError('Please fix the validation errors below')
+    })} className="space-y-6">
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex items-center">
@@ -229,18 +292,69 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
         )}
       </div>
 
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div>
+          <label htmlFor="pricing_type" className="block text-sm font-medium text-foreground/80">
+            Pricing Type *
+          </label>
+          <select
+            {...register('pricing_type')}
+            className="mt-1 block w-full rounded-md border-foreground/30 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          >
+            <option value="LS">Lump Sum (LS)</option>
+            <option value="T&M">Time & Materials (T&M)</option>
+            <option value="Estimate">Estimate</option>
+            <option value="Credit">Credit</option>
+          </select>
+          {errors.pricing_type && (
+            <p className="mt-1 text-sm text-red-600">{errors.pricing_type.message}</p>
+          )}
+        </div>
+
+        <div>
+          <label htmlFor="manhours" className="block text-sm font-medium text-foreground/80">
+            Manhours
+          </label>
+          <input
+            type="number"
+            {...register('manhours')}
+            className="mt-1 block w-full rounded-md border-foreground/30 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            placeholder="0"
+            step="0.5"
+          />
+          {errors.manhours && (
+            <p className="mt-1 text-sm text-red-600">{errors.manhours.message}</p>
+          )}
+        </div>
+      </div>
+
       <div>
         <label htmlFor="description" className="block text-sm font-medium text-foreground/80">
-          Description *
+          Description of Work *
         </label>
         <textarea
           {...register('description')}
           rows={4}
           className="mt-1 block w-full rounded-md border-foreground/30 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          placeholder="Describe the change order..."
+          placeholder="Describe the change order work..."
         />
         {errors.description && (
           <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
+        )}
+      </div>
+
+      <div>
+        <label htmlFor="reason" className="block text-sm font-medium text-foreground/80">
+          Reason/Justification
+        </label>
+        <textarea
+          {...register('reason')}
+          rows={3}
+          className="mt-1 block w-full rounded-md border-foreground/30 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          placeholder="Explain the reason for this change order..."
+        />
+        {errors.reason && (
+          <p className="mt-1 text-sm text-red-600">{errors.reason.message}</p>
         )}
       </div>
 
@@ -316,6 +430,136 @@ export default function ChangeOrderForm({ mode, initialData, changeOrderId }: Ch
             )}
           </div>
         )}
+      </div>
+
+      {/* Cost Breakdown Section */}
+      <div className="border-t pt-6">
+        <h3 className="text-lg font-medium text-foreground/90 mb-4">Cost Breakdown (Optional)</h3>
+        <p className="text-sm text-foreground/70 mb-4">
+          Enter individual cost components below. The total will be calculated automatically.
+        </p>
+        
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <label htmlFor="labor_amount" className="block text-sm font-medium text-foreground/80">
+              Labor
+            </label>
+            <div className="mt-1 relative rounded-md shadow-sm">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span className="text-foreground/80 sm:text-sm">$</span>
+              </div>
+              <input
+                type="text"
+                {...register('labor_amount')}
+                className="block w-full pl-7 pr-3 rounded-md border-foreground/30 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                placeholder="0.00"
+              />
+            </div>
+            {errors.labor_amount && (
+              <p className="mt-1 text-sm text-red-600">{errors.labor_amount.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="material_amount" className="block text-sm font-medium text-foreground/80">
+              Materials
+            </label>
+            <div className="mt-1 relative rounded-md shadow-sm">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span className="text-foreground/80 sm:text-sm">$</span>
+              </div>
+              <input
+                type="text"
+                {...register('material_amount')}
+                className="block w-full pl-7 pr-3 rounded-md border-foreground/30 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                placeholder="0.00"
+              />
+            </div>
+            {errors.material_amount && (
+              <p className="mt-1 text-sm text-red-600">{errors.material_amount.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="equipment_amount" className="block text-sm font-medium text-foreground/80">
+              Equipment
+            </label>
+            <div className="mt-1 relative rounded-md shadow-sm">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span className="text-foreground/80 sm:text-sm">$</span>
+              </div>
+              <input
+                type="text"
+                {...register('equipment_amount')}
+                className="block w-full pl-7 pr-3 rounded-md border-foreground/30 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                placeholder="0.00"
+              />
+            </div>
+            {errors.equipment_amount && (
+              <p className="mt-1 text-sm text-red-600">{errors.equipment_amount.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="subcontract_amount" className="block text-sm font-medium text-foreground/80">
+              Subcontractor
+            </label>
+            <div className="mt-1 relative rounded-md shadow-sm">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span className="text-foreground/80 sm:text-sm">$</span>
+              </div>
+              <input
+                type="text"
+                {...register('subcontract_amount')}
+                className="block w-full pl-7 pr-3 rounded-md border-foreground/30 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                placeholder="0.00"
+              />
+            </div>
+            {errors.subcontract_amount && (
+              <p className="mt-1 text-sm text-red-600">{errors.subcontract_amount.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="markup_amount" className="block text-sm font-medium text-foreground/80">
+              Markup/Overhead
+            </label>
+            <div className="mt-1 relative rounded-md shadow-sm">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span className="text-foreground/80 sm:text-sm">$</span>
+              </div>
+              <input
+                type="text"
+                {...register('markup_amount')}
+                className="block w-full pl-7 pr-3 rounded-md border-foreground/30 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                placeholder="0.00"
+              />
+            </div>
+            {errors.markup_amount && (
+              <p className="mt-1 text-sm text-red-600">{errors.markup_amount.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="tax_amount" className="block text-sm font-medium text-foreground/80">
+              Tax
+            </label>
+            <div className="mt-1 relative rounded-md shadow-sm">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span className="text-foreground/80 sm:text-sm">$</span>
+              </div>
+              <input
+                type="text"
+                {...register('tax_amount')}
+                className="block w-full pl-7 pr-3 rounded-md border-foreground/30 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                placeholder="0.00"
+              />
+            </div>
+            {errors.tax_amount && (
+              <p className="mt-1 text-sm text-red-600">{errors.tax_amount.message}</p>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="flex justify-end gap-4">

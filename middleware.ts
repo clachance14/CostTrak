@@ -45,6 +45,30 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
+  // Handle legacy labor-related redirects
+  if (pathname.startsWith('/labor-forecasts') || pathname === '/labor-import') {
+    const url = request.nextUrl.clone()
+    
+    // Map old routes to new routes
+    if (pathname === '/labor-forecasts') {
+      url.pathname = '/labor/forecasts'
+    } else if (pathname === '/labor-forecasts/weekly-entry') {
+      url.pathname = '/labor/forecasts/weekly-entry'
+    } else if (pathname === '/labor-forecasts/forecast') {
+      url.pathname = '/labor/forecasts/headcount'
+    } else if (pathname === '/labor-forecasts/analytics') {
+      url.pathname = '/labor/analytics'
+    } else if (pathname === '/labor-import') {
+      url.pathname = '/labor/import'
+    } else if (pathname.startsWith('/labor-forecasts/')) {
+      // Generic redirect for any other labor-forecasts paths
+      url.pathname = pathname.replace('/labor-forecasts', '/labor/forecasts')
+    }
+    
+    // Preserve query parameters
+    return NextResponse.redirect(url)
+  }
+
   // Allow public routes and auth API routes
   if (publicRoutes.some(route => pathname === route) || pathname.startsWith('/api/auth/')) {
     return supabaseResponse

@@ -25,7 +25,7 @@ export interface Project {
   job_number: string
   division_id: string
   project_manager_id?: string
-  status: 'planning' | 'active' | 'completed' | 'on_hold'
+  status: 'active' | 'completed' | 'on_hold' | 'cancelled'
   original_contract: number
   revised_contract?: number
   start_date: string

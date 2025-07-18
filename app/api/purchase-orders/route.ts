@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const project_id = searchParams.get('project_id')
     const sort_by = searchParams.get('sort_by')
     const sort_direction = searchParams.get('sort_direction')
+    const category = searchParams.get('category') // For budget category filtering
     
     // Get column filters
     const columnFilters = new Map<string, string[]>()
@@ -39,6 +40,13 @@ export async function GET(request: NextRequest) {
           job_number,
           name,
           division:divisions(id, name, code)
+        ),
+        cost_code:cost_codes(
+          id,
+          code,
+          description,
+          category,
+          discipline
         )
       `, { count: 'exact' })
 
@@ -74,6 +82,52 @@ export async function GET(request: NextRequest) {
     // Apply filters
     if (project_id) {
       query = query.eq('project_id', project_id)
+    }
+    
+    // Apply category filter (maps budget categories to cost code categories and cost centers)
+    if (category) {
+      // Map budget categories to cost centers and cost code categories
+      const categoryMapping: Record<string, { costCenters: string[], costCodeCategories: string[] }> = {
+        'materials': { costCenters: ['3000'], costCodeCategories: ['material'] },
+        'equipment': { costCenters: ['2000'], costCodeCategories: ['equipment'] },
+        'subcontracts': { costCenters: ['4000'], costCodeCategories: ['subcontract'] },
+        'small tools & consumables': { costCenters: ['5000'], costCodeCategories: ['material', 'other'] },
+        'add ons': { costCenters: [], costCodeCategories: ['other'] },
+        'other': { costCenters: [], costCodeCategories: ['other'] }
+      }
+      
+      const mapping = categoryMapping[category.toLowerCase()]
+      
+      if (mapping) {
+        // Build OR conditions for category filtering
+        const orConditions = []
+        
+        // Add cost center conditions
+        if (mapping.costCenters.length > 0) {
+          orConditions.push(`cost_center.in.(${mapping.costCenters.join(',')})`)
+        }
+        
+        // Add budget category condition
+        orConditions.push(`budget_category.ilike.%${category}%`)
+        
+        // If we have cost code categories, we need to filter by them too
+        if (mapping.costCodeCategories.length > 0) {
+          const { data: matchingCodes } = await supabase
+            .from('cost_codes')
+            .select('id')
+            .in('category', mapping.costCodeCategories)
+          
+          if (matchingCodes && matchingCodes.length > 0) {
+            const codeIds = matchingCodes.map(c => c.id)
+            orConditions.push(`cost_code_id.in.(${codeIds.join(',')})`)
+          }
+        }
+        
+        // Apply the OR filter
+        if (orConditions.length > 0) {
+          query = query.or(orConditions.join(','))
+        }
+      }
     }
     
     // Apply column filters
@@ -249,6 +303,46 @@ export async function GET(request: NextRequest) {
     // Apply the same filters to summary query
     if (project_id) {
       summaryQuery = summaryQuery.eq('project_id', project_id)
+    }
+    
+    // Apply category filter to summary query
+    if (category) {
+      const categoryMapping: Record<string, { costCenters: string[], costCodeCategories: string[] }> = {
+        'materials': { costCenters: ['3000'], costCodeCategories: ['material'] },
+        'equipment': { costCenters: ['2000'], costCodeCategories: ['equipment'] },
+        'subcontracts': { costCenters: ['4000'], costCodeCategories: ['subcontract'] },
+        'small tools & consumables': { costCenters: ['5000'], costCodeCategories: ['material', 'other'] },
+        'add ons': { costCenters: [], costCodeCategories: ['other'] },
+        'other': { costCenters: [], costCodeCategories: ['other'] }
+      }
+      
+      const mapping = categoryMapping[category.toLowerCase()]
+      
+      if (mapping) {
+        const orConditions = []
+        
+        if (mapping.costCenters.length > 0) {
+          orConditions.push(`cost_center.in.(${mapping.costCenters.join(',')})`)
+        }
+        
+        orConditions.push(`budget_category.ilike.%${category}%`)
+        
+        if (mapping.costCodeCategories.length > 0) {
+          const { data: matchingCodes } = await supabase
+            .from('cost_codes')
+            .select('id')
+            .in('category', mapping.costCodeCategories)
+          
+          if (matchingCodes && matchingCodes.length > 0) {
+            const codeIds = matchingCodes.map(c => c.id)
+            orConditions.push(`cost_code_id.in.(${codeIds.join(',')})`)
+          }
+        }
+        
+        if (orConditions.length > 0) {
+          summaryQuery = summaryQuery.or(orConditions.join(','))
+        }
+      }
     }
     
     // Apply column filters to summary query

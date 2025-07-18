@@ -55,7 +55,7 @@ export type Database = {
           project_manager_id: string | null
           original_contract: number
           revised_contract: number
-          status: 'planning' | 'active' | 'completed' | 'on_hold' | 'cancelled'
+          status: 'active' | 'completed' | 'on_hold' | 'cancelled'
           start_date: string
           end_date: string | null
           address: string | null
@@ -77,7 +77,7 @@ export type Database = {
           project_manager_id?: string | null
           original_contract?: number
           revised_contract?: number
-          status?: 'planning' | 'active' | 'completed' | 'on_hold' | 'cancelled'
+          status?: 'active' | 'completed' | 'on_hold' | 'cancelled'
           start_date: string
           end_date?: string | null
           address?: string | null
@@ -99,7 +99,7 @@ export type Database = {
           project_manager_id?: string | null
           original_contract?: number
           revised_contract?: number
-          status?: 'planning' | 'active' | 'completed' | 'on_hold' | 'cancelled'
+          status?: 'active' | 'completed' | 'on_hold' | 'cancelled'
           start_date?: string
           end_date?: string | null
           address?: string | null
@@ -318,7 +318,22 @@ export type Database = {
           co_number: string
           description: string
           amount: number
-          status: string
+          status: 'draft' | 'pending' | 'approved' | 'rejected' | 'cancelled'
+          pricing_type: 'LS' | 'T&M' | 'Estimate' | 'Credit'
+          impact_schedule_days: number
+          reason: string | null
+          manhours: number | null
+          labor_amount: number | null
+          equipment_amount: number | null
+          material_amount: number | null
+          subcontract_amount: number | null
+          markup_amount: number | null
+          tax_amount: number | null
+          submitted_date: string | null
+          approved_date: string | null
+          approved_by: string | null
+          rejection_reason: string | null
+          created_by: string | null
           created_at: string
           updated_at: string
         }
@@ -328,7 +343,22 @@ export type Database = {
           co_number: string
           description: string
           amount: number
-          status?: string
+          status?: 'draft' | 'pending' | 'approved' | 'rejected' | 'cancelled'
+          pricing_type: 'LS' | 'T&M' | 'Estimate' | 'Credit'
+          impact_schedule_days?: number
+          reason?: string | null
+          manhours?: number | null
+          labor_amount?: number | null
+          equipment_amount?: number | null
+          material_amount?: number | null
+          subcontract_amount?: number | null
+          markup_amount?: number | null
+          tax_amount?: number | null
+          submitted_date?: string | null
+          approved_date?: string | null
+          approved_by?: string | null
+          rejection_reason?: string | null
+          created_by?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -338,9 +368,56 @@ export type Database = {
           co_number?: string
           description?: string
           amount?: number
-          status?: string
+          status?: 'draft' | 'pending' | 'approved' | 'rejected' | 'cancelled'
+          pricing_type?: 'LS' | 'T&M' | 'Estimate' | 'Credit'
+          impact_schedule_days?: number
+          reason?: string | null
+          manhours?: number | null
+          labor_amount?: number | null
+          equipment_amount?: number | null
+          material_amount?: number | null
+          subcontract_amount?: number | null
+          markup_amount?: number | null
+          tax_amount?: number | null
+          submitted_date?: string | null
+          approved_date?: string | null
+          approved_by?: string | null
+          rejection_reason?: string | null
+          created_by?: string | null
           created_at?: string
           updated_at?: string
+        }
+      }
+      co_attachments: {
+        Row: {
+          id: string
+          change_order_id: string
+          file_url: string
+          file_name: string
+          file_size: number | null
+          mime_type: string | null
+          uploaded_by: string | null
+          uploaded_at: string
+        }
+        Insert: {
+          id?: string
+          change_order_id: string
+          file_url: string
+          file_name: string
+          file_size?: number | null
+          mime_type?: string | null
+          uploaded_by?: string | null
+          uploaded_at?: string
+        }
+        Update: {
+          id?: string
+          change_order_id?: string
+          file_url?: string
+          file_name?: string
+          file_size?: number | null
+          mime_type?: string | null
+          uploaded_by?: string | null
+          uploaded_at?: string
         }
       }
       labor_actuals: {
@@ -449,7 +526,9 @@ export type Database = {
         Row: {
           id: string
           name: string
-          category: string
+          code: string
+          category: 'direct' | 'indirect' | 'staff'
+          default_rate?: number | null
           is_active: boolean
           created_at: string
           updated_at: string
@@ -457,7 +536,9 @@ export type Database = {
         Insert: {
           id?: string
           name: string
-          category: string
+          code: string
+          category: 'direct' | 'indirect' | 'staff'
+          default_rate?: number | null
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -465,7 +546,9 @@ export type Database = {
         Update: {
           id?: string
           name?: string
-          category?: string
+          code?: string
+          category?: 'direct' | 'indirect' | 'staff'
+          default_rate?: number | null
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -614,6 +697,106 @@ export type Database = {
           updated_at?: string
         }
       }
+      project_assignments: {
+        Row: {
+          id: string
+          project_id: string
+          user_id: string
+          role: 'primary_pm' | 'delegate_pm' | 'viewer'
+          permissions: Record<string, any>
+          assigned_by: string
+          assigned_at: string
+          expires_at: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          user_id: string
+          role?: 'primary_pm' | 'delegate_pm' | 'viewer'
+          permissions?: Record<string, any>
+          assigned_by: string
+          assigned_at?: string
+          expires_at?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          user_id?: string
+          role?: 'primary_pm' | 'delegate_pm' | 'viewer'
+          permissions?: Record<string, any>
+          assigned_by?: string
+          assigned_at?: string
+          expires_at?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      employees: {
+        Row: {
+          id: string
+          employee_number: string
+          first_name: string
+          last_name: string
+          payroll_name?: string | null
+          legal_middle_name?: string | null
+          craft_type_id: string
+          base_rate: number
+          category: 'Direct' | 'Indirect' | 'Staff'
+          class?: string | null
+          job_title_description?: string | null
+          location_code?: string | null
+          location_description?: string | null
+          is_direct: boolean
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          employee_number: string
+          first_name: string
+          last_name: string
+          payroll_name?: string | null
+          legal_middle_name?: string | null
+          craft_type_id: string
+          base_rate: number
+          category: 'Direct' | 'Indirect' | 'Staff'
+          class?: string | null
+          job_title_description?: string | null
+          location_code?: string | null
+          location_description?: string | null
+          is_direct?: boolean
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          employee_number?: string
+          first_name?: string
+          last_name?: string
+          payroll_name?: string | null
+          legal_middle_name?: string | null
+          craft_type_id?: string
+          base_rate?: number
+          category?: 'Direct' | 'Indirect' | 'Staff'
+          class?: string | null
+          job_title_description?: string | null
+          location_code?: string | null
+          location_description?: string | null
+          is_direct?: boolean
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {}
     Functions: {
@@ -624,6 +807,13 @@ export type Database = {
       user_has_project_access: {
         Args: {
           project_id: string
+        }
+        Returns: boolean
+      }
+      user_has_project_permission: {
+        Args: {
+          p_project_id: string
+          p_permission: string
         }
         Returns: boolean
       }
@@ -646,8 +836,11 @@ export type Database = {
     Enums: {
       user_role: 'controller' | 'executive' | 'ops_manager' | 'project_manager' | 'accounting' | 'viewer'
       project_status: 'planning' | 'active' | 'completed' | 'on_hold' | 'cancelled'
+      change_order_status: 'draft' | 'pending' | 'approved' | 'rejected' | 'cancelled'
+      pricing_type: 'LS' | 'T&M' | 'Estimate' | 'Credit'
       notification_type: 'system' | 'project' | 'change_order' | 'purchase_order' | 'labor' | 'financial' | 'document' | 'user'
       risk_status: 'normal' | 'at-risk' | 'over-budget'
+      assignment_role: 'primary_pm' | 'delegate_pm' | 'viewer'
     }
     CompositeTypes: {}
   }

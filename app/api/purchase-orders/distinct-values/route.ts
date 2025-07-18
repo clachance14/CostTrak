@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const column = searchParams.get('column')
     const search = searchParams.get('search')
+    const projectId = searchParams.get('projectId')
 
     if (!column) {
       return NextResponse.json({ error: 'Column parameter is required' }, { status: 400 })
@@ -29,6 +30,10 @@ export async function GET(request: NextRequest) {
       'order_date': 'order_date',
       'description': 'description',
       'committed_amount': 'committed_amount',
+      'forecast_amount': 'forecast_amount',
+      'invoiced_amount': 'invoiced_amount',
+      'cost_center': 'cost_center',
+      'cost_code': 'cost_codes.code',
       'project_name': 'projects.name',
       'project_job_number': 'projects.job_number',
       'division_name': 'divisions.name'
@@ -54,11 +59,26 @@ export async function GET(request: NextRequest) {
             divisions!inner(name)
           )
         `)
+    } else if (column === 'cost_code') {
+      // For cost code, join with cost_codes table
+      query = supabase
+        .from('purchase_orders')
+        .select(`
+          cost_code:cost_codes(
+            code,
+            description
+          )
+        `)
     } else {
       // For direct fields on purchase_orders table
       query = supabase
         .from('purchase_orders')
         .select(column)
+    }
+
+    // Apply project filter if provided
+    if (projectId) {
+      query = query.eq('project_id', projectId)
     }
 
     const { data: results, error } = await query
@@ -95,12 +115,41 @@ export async function GET(request: NextRequest) {
           case 'division_name':
             value = row.projects?.divisions?.name || null
             break
+          case 'cost_code':
+            value = row.cost_code?.code || null
+            break
+          case 'cost_center':
+            // Map cost center codes to meaningful labels
+            const costCenter = row.cost_center
+            if (!costCenter) {
+              value = null
+            } else {
+              switch (costCenter) {
+                case '2000':
+                  value = 'Equipment'
+                  break
+                case '3000':
+                  value = 'Materials'
+                  break
+                case '4000':
+                  value = 'Subcontracts'
+                  break
+                case '5000':
+                  value = 'Small Tools'
+                  break
+                default:
+                  value = costCenter
+              }
+            }
+            break
           case 'order_date':
             value = row.order_date ? new Date(row.order_date as string).toLocaleDateString() : null
             break
           case 'committed_amount':
+          case 'forecast_amount':
+          case 'invoiced_amount':
             // For amounts, we'll create ranges instead of exact values
-            const amount = Number(row.committed_amount || row.total_amount || 0)
+            const amount = Number(row[column] || 0)
             if (amount === 0) {
               value = '$0'
             } else if (amount < 10000) {
@@ -140,7 +189,7 @@ export async function GET(request: NextRequest) {
 
     // Sort alphabetically, with blanks at the end
     // Special sorting for amount ranges
-    if (column === 'committed_amount') {
+    if (column === 'committed_amount' || column === 'forecast_amount' || column === 'invoiced_amount') {
       const amountOrder = ['$0', '< $10K', '$10K - $50K', '$50K - $100K', '$100K - $500K', '> $500K', '(Blank)']
       distinctValues.sort((a, b) => {
         const aIndex = amountOrder.indexOf(a.label)

@@ -138,7 +138,8 @@ export default function ProjectBudgetImportPage() {
         for (let C = range.s.c; C <= range.e.c; ++C) {
           const cellAddress = XLSX.utils.encode_cell({ r: R, c: C })
           const cell = worksheet[cellAddress]
-          row.push(cell ? cell.v : undefined)
+          // Use formatted value (w) if available, otherwise raw value (v)
+          row.push(cell ? (cell.w || cell.v) : undefined)
         }
         rows.push(row)
       }
@@ -154,19 +155,20 @@ export default function ProjectBudgetImportPage() {
       let totalBudget = 0
       
       // Skip header row
-      for (let i = 1; i < Math.min(rows.length, 50); i++) { // Preview first 50 rows
+      for (let i = 1; i < rows.length; i++) { // Process all rows
         const row = rows[i]
-        const disciplineName = row[1]
-        const description = row[3]?.toString() || ''
+        const disciplineName = row[1] ? String(row[1]).trim() : ''
+        const description = row[3] ? String(row[3]).trim() : ''
         const manhours = row[4]
         const value = row[5]
         
-        if (!description || !value) continue
-        
-        // Update discipline if found
-        if (disciplineName && typeof disciplineName === 'string' && disciplineName.trim()) {
-          currentDiscipline = disciplineName.trim().toUpperCase()
+        // Update discipline immediately if found
+        if (disciplineName) {
+          currentDiscipline = disciplineName.toUpperCase()
         }
+        
+        // Skip rows without critical data
+        if (!description || value === undefined || value === null || value === '') continue
         
         if (!currentDiscipline) continue
         
@@ -174,8 +176,17 @@ export default function ProjectBudgetImportPage() {
         if (description.toUpperCase().includes('TOTAL') || 
             description.toUpperCase() === 'ALL LABOR') continue
         
-        const numericValue = typeof value === 'number' ? value : parseFloat(value.toString().replace(/[$,]/g, '') || '0')
-        const numericManhours = manhours ? (typeof manhours === 'number' ? manhours : parseFloat(manhours.toString() || '0')) : null
+        // Parse numeric values more robustly
+        let numericValue = 0
+        if (typeof value === 'number') {
+          numericValue = value
+        } else if (value) {
+          // Handle formats like " $-   " or "$0.00"
+          const cleaned = String(value).replace(/[$,\s]/g, '').replace(/-+$/, '0')
+          numericValue = parseFloat(cleaned) || 0
+        }
+        
+        const numericManhours = manhours ? (typeof manhours === 'number' ? manhours : parseFloat(String(manhours).replace(/[$,]/g, '') || '0')) : null
         
         if (!disciplines.has(currentDiscipline)) {
           disciplines.set(currentDiscipline, [])
@@ -190,17 +201,19 @@ export default function ProjectBudgetImportPage() {
         totalBudget += numericValue
       }
 
-      const disciplineArray = Array.from(disciplines.entries()).map(([name, items]) => ({
-        name,
-        items,
-        total: items.reduce((sum, item) => sum + item.value, 0)
-      }))
+      const disciplineArray = Array.from(disciplines.entries())
+        .map(([name, items]) => ({
+          name,
+          items,
+          total: items.reduce((sum, item) => sum + item.value, 0)
+        }))
+        .filter(discipline => discipline.total > 0) // Only show disciplines with non-zero totals
 
       setPreview({
         disciplines: disciplineArray,
         totalBudget,
         isValid: disciplineArray.length > 0,
-        errors: disciplineArray.length === 0 ? ['No valid budget data found in file'] : []
+        errors: disciplineArray.length === 0 ? ['No budget data with values found in file'] : []
       })
     } catch {
       setPreview({
@@ -429,17 +442,12 @@ export default function ProjectBudgetImportPage() {
                   <div key={i} className="border border-foreground/20 rounded-lg p-4">
                     <h4 className="font-semibold text-foreground mb-2">{discipline.name}</h4>
                     <div className="grid grid-cols-3 gap-4 text-sm">
-                      {discipline.items.slice(0, 5).map((item, j) => (
+                      {discipline.items.map((item, j) => (
                         <div key={j} className="flex justify-between">
                           <span className="text-foreground/80">{item.cost_type}:</span>
                           <span className="font-medium">{formatCurrency(item.value)}</span>
                         </div>
                       ))}
-                      {discipline.items.length > 5 && (
-                        <div className="col-span-3 text-foreground/60 text-xs">
-                          ... and {discipline.items.length - 5} more items
-                        </div>
-                      )}
                     </div>
                     <div className="mt-2 pt-2 border-t border-foreground/10">
                       <div className="flex justify-between font-semibold">
@@ -492,7 +500,7 @@ export default function ProjectBudgetImportPage() {
                     </Button>
                   </div>
                   <div className="bg-red-50 rounded-md p-3 max-h-40 overflow-y-auto">
-                    {importResult.errors.slice(0, 5).map((error, i) => (
+                    {importResult.errors.map((error, i) => (
                       <div key={i} className="text-xs mb-1">
                         Row {error.row}: {error.message}
                       </div>

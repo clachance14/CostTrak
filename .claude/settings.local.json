@@ -18,7 +18,8 @@
       "Bash(fi)",
       "Bash(done)",
       "Bash(gh pr view:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(mv:*)"
     ],
     "deny": []
   }

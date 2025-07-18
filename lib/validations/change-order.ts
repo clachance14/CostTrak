@@ -1,8 +1,12 @@
 import { z } from 'zod'
 
 // Status enum matching database
-export const changeOrderStatuses = ['pending', 'approved', 'rejected', 'cancelled'] as const
+export const changeOrderStatuses = ['draft', 'pending', 'approved', 'rejected', 'cancelled'] as const
 export type ChangeOrderStatus = typeof changeOrderStatuses[number]
+
+// Pricing type enum
+export const pricingTypes = ['LS', 'T&M', 'Estimate', 'Credit'] as const
+export type PricingType = typeof pricingTypes[number]
 
 // Base change order schema (for forms)
 export const changeOrderFormSchema = z.object({
@@ -31,7 +35,58 @@ export const changeOrderFormSchema = z.object({
   submitted_date: z.string()
     .optional()
     .refine((val) => !val || !isNaN(Date.parse(val)), 'Invalid date format'),
-  status: z.enum(changeOrderStatuses).default('pending')
+  status: z.enum(changeOrderStatuses).default('pending'),
+  pricing_type: z.enum(pricingTypes).default('LS'),
+  reason: z.string().optional(),
+  manhours: z.string()
+    .optional()
+    .transform((val) => val || '0')
+    .refine((val) => {
+      const num = parseFloat(val)
+      return !isNaN(num) && num >= 0
+    }, 'Must be a valid positive number'),
+  labor_amount: z.string()
+    .optional()
+    .transform((val) => val || '0')
+    .refine((val) => {
+      const num = parseFloat(val.replace(/,/g, ''))
+      return !isNaN(num) && num >= 0
+    }, 'Must be a valid positive amount'),
+  equipment_amount: z.string()
+    .optional()
+    .transform((val) => val || '0')
+    .refine((val) => {
+      const num = parseFloat(val.replace(/,/g, ''))
+      return !isNaN(num) && num >= 0
+    }, 'Must be a valid positive amount'),
+  material_amount: z.string()
+    .optional()
+    .transform((val) => val || '0')
+    .refine((val) => {
+      const num = parseFloat(val.replace(/,/g, ''))
+      return !isNaN(num) && num >= 0
+    }, 'Must be a valid positive amount'),
+  subcontract_amount: z.string()
+    .optional()
+    .transform((val) => val || '0')
+    .refine((val) => {
+      const num = parseFloat(val.replace(/,/g, ''))
+      return !isNaN(num) && num >= 0
+    }, 'Must be a valid positive amount'),
+  markup_amount: z.string()
+    .optional()
+    .transform((val) => val || '0')
+    .refine((val) => {
+      const num = parseFloat(val.replace(/,/g, ''))
+      return !isNaN(num) && num >= 0
+    }, 'Must be a valid positive amount'),
+  tax_amount: z.string()
+    .optional()
+    .transform((val) => val || '0')
+    .refine((val) => {
+      const num = parseFloat(val.replace(/,/g, ''))
+      return !isNaN(num) && num >= 0
+    }, 'Must be a valid positive amount')
 })
 
 // API schema (with proper types)
@@ -43,7 +98,16 @@ export const changeOrderApiSchema = z.object({
     .refine((val) => val !== 0, 'Amount cannot be zero'),
   impact_schedule_days: z.number().int().default(0),
   submitted_date: z.string().datetime().optional(),
-  status: z.enum(changeOrderStatuses).default('pending')
+  status: z.enum(changeOrderStatuses).default('pending'),
+  pricing_type: z.enum(pricingTypes),
+  reason: z.string().optional(),
+  manhours: z.number().min(0).default(0),
+  labor_amount: z.number().min(0).default(0),
+  equipment_amount: z.number().min(0).default(0),
+  material_amount: z.number().min(0).default(0),
+  subcontract_amount: z.number().min(0).default(0),
+  markup_amount: z.number().min(0).default(0),
+  tax_amount: z.number().min(0).default(0)
 })
 
 // Update schema (for PATCH requests)
@@ -54,7 +118,16 @@ export const changeOrderUpdateSchema = z.object({
     .optional(),
   impact_schedule_days: z.number().int().optional(),
   submitted_date: z.string().datetime().optional(),
-  status: z.enum(changeOrderStatuses).optional()
+  status: z.enum(changeOrderStatuses).optional(),
+  pricing_type: z.enum(pricingTypes).optional(),
+  reason: z.string().optional(),
+  manhours: z.number().min(0).optional(),
+  labor_amount: z.number().min(0).optional(),
+  equipment_amount: z.number().min(0).optional(),
+  material_amount: z.number().min(0).optional(),
+  subcontract_amount: z.number().min(0).optional(),
+  markup_amount: z.number().min(0).optional(),
+  tax_amount: z.number().min(0).optional()
 })
 
 // CSV import schema
@@ -112,6 +185,7 @@ export const validateStatusTransition = (
 ): { valid: boolean; message?: string } => {
   // Only certain transitions are allowed
   const allowedTransitions: Record<ChangeOrderStatus, ChangeOrderStatus[]> = {
+    draft: ['pending', 'cancelled'],
     pending: ['approved', 'rejected', 'cancelled'],
     approved: [], // No transitions from approved
     rejected: ['pending'], // Can resubmit
@@ -156,6 +230,28 @@ export const generateCoNumber = (existingNumbers: string[]): string => {
   return `CO-${nextNumber.toString().padStart(3, '0')}`
 }
 
+// Attachment schema
+export const changeOrderAttachmentSchema = z.object({
+  file: z.instanceof(File).refine((file) => file.size <= 10 * 1024 * 1024, 'File size must be less than 10MB'),
+  change_order_id: z.string().uuid()
+})
+
+// Helper to validate file types
+export const ALLOWED_FILE_TYPES = [
+  'application/pdf',
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+]
+
+export const validateFileType = (file: File): boolean => {
+  return ALLOWED_FILE_TYPES.includes(file.type)
+}
+
 // Type exports
 export type ChangeOrderFormData = z.infer<typeof changeOrderFormSchema>
 export type ChangeOrderApiData = z.infer<typeof changeOrderApiSchema>
@@ -163,3 +259,4 @@ export type ChangeOrderUpdateData = z.infer<typeof changeOrderUpdateSchema>
 export type ChangeOrderCsvRow = z.infer<typeof changeOrderCsvRowSchema>
 export type ChangeOrderQuery = z.infer<typeof changeOrderQuerySchema>
 export type ChangeOrderAction = z.infer<typeof changeOrderActionSchema>
+export type ChangeOrderAttachment = z.infer<typeof changeOrderAttachmentSchema>

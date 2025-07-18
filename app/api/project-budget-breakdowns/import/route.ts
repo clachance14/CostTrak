@@ -133,7 +133,8 @@ export async function POST(request: NextRequest) {
         for (let C = range.s.c; C <= range.e.c; ++C) {
           const cellAddress = XLSX.utils.encode_cell({ r: R, c: C })
           const cell = worksheet[cellAddress]
-          row.push(cell ? cell.v : undefined)
+          // Use formatted value (w) if available, otherwise raw value (v)
+          row.push(cell ? (cell.w || cell.v) : undefined)
         }
         rows.push(row)
       }
@@ -154,45 +155,68 @@ export async function POST(request: NextRequest) {
       
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i]
-        const disciplineName = row[1]
-        const description = row[3]?.toString() || ''
+        // Clean and extract cell values
+        const disciplineName = row[1] ? String(row[1]).trim() : ''
+        const description = row[3] ? String(row[3]).trim() : ''
         const manhours = row[4]
         const value = row[5]
         
-        if (!description || !value) continue
-        
-        if (disciplineName && typeof disciplineName === 'string' && disciplineName.trim()) {
-          currentDiscipline = disciplineName.trim().toUpperCase()
+        // Update current discipline immediately when found
+        if (disciplineName) {
+          currentDiscipline = disciplineName.toUpperCase()
+          console.log(`Row ${i + 1}: Found discipline: "${currentDiscipline}"`)
         }
+        
+        // Skip rows without critical data
+        if (!description || value === undefined || value === null || value === '') continue
         
         if (!currentDiscipline) continue
         
         if (description.toUpperCase().includes('TOTAL') || 
             description.toUpperCase() === 'ALL LABOR') continue
         
-        const numericValue = typeof value === 'number' ? value : parseFloat(value.toString().replace(/[$,]/g, '') || '0')
-        const numericManhours = manhours ? (typeof manhours === 'number' ? manhours : parseFloat(manhours.toString() || '0')) : null
+        // Parse numeric values more robustly
+        let numericValue = 0
+        if (typeof value === 'number') {
+          numericValue = value
+        } else if (value) {
+          // Handle formats like " $-   " or "$0.00"
+          const cleaned = String(value).replace(/[$,\s]/g, '').replace(/-+$/, '0')
+          numericValue = parseFloat(cleaned) || 0
+        }
+        
+        const numericManhours = manhours ? (typeof manhours === 'number' ? manhours : parseFloat(String(manhours).replace(/[$,]/g, '') || '0')) : null
         
         if (numericValue < 0) continue
         
         const costType = description.trim().toUpperCase()
         const key = `${projectId}_${currentDiscipline}_${costType}`
         
-        // If duplicate exists, log it and keep the last one
+        // If duplicate exists, sum the values
         if (rowsMap.has(key)) {
-          console.log(`Duplicate found for: ${currentDiscipline} - ${costType}, keeping latest value`)
+          console.log(`Duplicate found for: ${currentDiscipline} - ${costType}, summing values`)
+          const existing = rowsMap.get(key)!
+          rowsMap.set(key, {
+            ...existing,
+            value: existing.value + numericValue,
+            manhours: (existing.manhours || 0) + (numericManhours || 0) || null
+          })
+        } else {
+          rowsMap.set(key, {
+            project_id: projectId,
+            discipline: currentDiscipline,
+            cost_type: costType,
+            manhours: numericManhours,
+            value: numericValue,
+            import_source: 'excel_import',
+            import_batch_id: importBatchId,
+            created_by: user.id
+          })
+          
+          if (numericValue === 0) {
+            console.log(`Row ${i + 1}: Added zero-value item: ${costType} for ${currentDiscipline}`)
+          }
         }
-        
-        rowsMap.set(key, {
-          project_id: projectId,
-          discipline: currentDiscipline,
-          cost_type: costType,
-          manhours: numericManhours,
-          value: numericValue,
-          import_source: 'excel_import',
-          import_batch_id: importBatchId,
-          created_by: user.id
-        })
       }
       
       // Convert map to array
@@ -304,22 +328,29 @@ export async function POST(request: NextRequest) {
         const costType = validatedRow.costType.toUpperCase()
         const key = `${projectId}_${discipline}_${costType}`
 
-        // If duplicate exists, log it and keep the last one
+        // If duplicate exists, sum the values
         if (rowsMap.has(key)) {
-          console.log(`Duplicate found for: ${discipline} - ${costType}, keeping latest value`)
+          console.log(`Duplicate found for: ${discipline} - ${costType}, summing values`)
+          const existing = rowsMap.get(key)!
+          rowsMap.set(key, {
+            ...existing,
+            value: existing.value + validatedRow.value,
+            manhours: (existing.manhours || 0) + (validatedRow.manhours || 0) || null,
+            description: existing.description || validatedRow.description
+          })
+        } else {
+          rowsMap.set(key, {
+            project_id: projectId,
+            discipline: discipline,
+            cost_type: costType,
+            manhours: validatedRow.manhours,
+            value: validatedRow.value,
+            description: validatedRow.description,
+            import_source: 'excel_import',
+            import_batch_id: importBatchId,
+            created_by: user.id
+          })
         }
-
-        rowsMap.set(key, {
-          project_id: projectId,
-          discipline: discipline,
-          cost_type: costType,
-          manhours: validatedRow.manhours,
-          value: validatedRow.value,
-          description: validatedRow.description,
-          import_source: 'excel_import',
-          import_batch_id: importBatchId,
-          created_by: user.id
-        })
       } catch (error) {
         result.errors.push({
           row: rowNumber,

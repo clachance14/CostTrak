@@ -100,26 +100,42 @@ export async function GET(request: NextRequest) {
     // Format response
     const formattedChangeOrders = changeOrders?.map(co => ({
       id: co.id,
-      projectId: co.project_id,
-      coNumber: co.co_number,
+      project_id: co.project_id,
+      co_number: co.co_number,
       description: co.description,
       amount: co.amount,
       status: co.status,
-      impactScheduleDays: co.impact_schedule_days,
-      submittedDate: co.submitted_date,
-      approvedDate: co.approved_date,
-      createdAt: co.created_at,
-      updatedAt: co.updated_at,
+      pricing_type: co.pricing_type,
+      impact_schedule_days: co.impact_schedule_days,
+      reason: co.reason,
+      manhours: co.manhours,
+      labor_amount: co.labor_amount,
+      equipment_amount: co.equipment_amount,
+      material_amount: co.material_amount,
+      subcontract_amount: co.subcontract_amount,
+      markup_amount: co.markup_amount,
+      tax_amount: co.tax_amount,
+      submitted_date: co.submitted_date,
+      approved_date: co.approved_date,
+      rejection_reason: co.rejection_reason,
+      created_at: co.created_at,
+      updated_at: co.updated_at,
       project: {
         id: co.project.id,
-        jobNumber: co.project.job_number,
+        job_number: co.project.job_number,
         name: co.project.name,
         division: co.project.division?.name
       },
-      createdBy: co.created_by_user ? 
-        `${co.created_by_user.first_name} ${co.created_by_user.last_name}` : null,
-      approvedBy: co.approved_by_user ? 
-        `${co.approved_by_user.first_name} ${co.approved_by_user.last_name}` : null
+      created_by_user: co.created_by_user ? {
+        id: co.created_by_user.id,
+        first_name: co.created_by_user.first_name,
+        last_name: co.created_by_user.last_name
+      } : null,
+      approved_by_user: co.approved_by_user ? {
+        id: co.approved_by_user.id,
+        first_name: co.approved_by_user.first_name,
+        last_name: co.approved_by_user.last_name
+      } : null
     })) || []
 
     return NextResponse.json({
@@ -240,6 +256,15 @@ export async function POST(request: NextRequest) {
         impact_schedule_days: validatedData.impact_schedule_days,
         submitted_date: validatedData.submitted_date || new Date().toISOString(),
         status: validatedData.status,
+        pricing_type: validatedData.pricing_type,
+        reason: validatedData.reason || null,
+        manhours: validatedData.manhours || 0,
+        labor_amount: validatedData.labor_amount || 0,
+        equipment_amount: validatedData.equipment_amount || 0,
+        material_amount: validatedData.material_amount || 0,
+        subcontract_amount: validatedData.subcontract_amount || 0,
+        markup_amount: validatedData.markup_amount || 0,
+        tax_amount: validatedData.tax_amount || 0,
         created_by: user.id
       })
       .select(`
@@ -267,16 +292,27 @@ export async function POST(request: NextRequest) {
       {
         changeOrder: {
           id: changeOrder.id,
-          projectId: changeOrder.project_id,
-          coNumber: changeOrder.co_number,
+          project_id: changeOrder.project_id,
+          co_number: changeOrder.co_number,
           description: changeOrder.description,
           amount: changeOrder.amount,
           status: changeOrder.status,
-          impactScheduleDays: changeOrder.impact_schedule_days,
-          submittedDate: changeOrder.submitted_date,
+          pricing_type: changeOrder.pricing_type,
+          impact_schedule_days: changeOrder.impact_schedule_days,
+          reason: changeOrder.reason,
+          manhours: changeOrder.manhours,
+          labor_amount: changeOrder.labor_amount,
+          equipment_amount: changeOrder.equipment_amount,
+          material_amount: changeOrder.material_amount,
+          subcontract_amount: changeOrder.subcontract_amount,
+          markup_amount: changeOrder.markup_amount,
+          tax_amount: changeOrder.tax_amount,
+          submitted_date: changeOrder.submitted_date,
+          created_at: changeOrder.created_at,
+          updated_at: changeOrder.updated_at,
           project: {
             id: changeOrder.project.id,
-            jobNumber: changeOrder.project.job_number,
+            job_number: changeOrder.project.job_number,
             name: changeOrder.project.name
           }
         }

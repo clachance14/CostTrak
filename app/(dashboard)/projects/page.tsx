@@ -134,7 +134,6 @@ export default function ProjectsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800'
-      case 'planning': return 'bg-blue-100 text-blue-800'
       case 'on_hold': return 'bg-yellow-100 text-yellow-800'
       case 'completed': return 'bg-foreground/5 text-foreground'
       case 'cancelled': return 'bg-red-100 text-red-800'
@@ -317,7 +316,6 @@ export default function ProjectsPage() {
             className="w-full px-3 py-2 border-2 border-foreground/40 text-foreground bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
           >
             <option value="">All Statuses</option>
-            <option value="planning">Planning</option>
             <option value="active">Active</option>
             <option value="on_hold">On Hold</option>
             <option value="completed">Completed</option>

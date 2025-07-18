@@ -323,6 +323,11 @@ export default function ProjectSetupForm() {
         other: 0
       }
       
+      // Debug: Track all disciplines found
+      const debugInfo: string[] = []
+      const disciplinesFound = new Set<string>()
+      let skippedRows = 0
+      
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i]
         const disciplineName = row[1]
@@ -330,16 +335,38 @@ export default function ProjectSetupForm() {
         const manhours = row[4]
         const value = row[5]
         
-        if (!description || !value) continue
+        // Debug: Log row details
+        if (disciplineName && typeof disciplineName === 'string' && disciplineName.trim()) {
+          const newDiscipline = disciplineName.trim().toUpperCase()
+          console.log(`Row ${i + 1}: Found discipline: "${newDiscipline}" (raw: "${disciplineName}")`)
+          debugInfo.push(`Row ${i + 1}: New discipline detected: ${newDiscipline}`)
+          disciplinesFound.add(newDiscipline)
+        }
+        
+        if (!description || !value) {
+          if (description || value) {
+            debugInfo.push(`Row ${i + 1}: Skipped - missing ${!description ? 'description' : 'value'} (discipline: ${currentDiscipline || 'none'})`)
+          }
+          skippedRows++
+          continue
+        }
         
         if (disciplineName && typeof disciplineName === 'string' && disciplineName.trim()) {
           currentDiscipline = disciplineName.trim().toUpperCase()
         }
         
-        if (!currentDiscipline) continue
+        if (!currentDiscipline) {
+          debugInfo.push(`Row ${i + 1}: Skipped - no current discipline set`)
+          skippedRows++
+          continue
+        }
         
         if (description.toUpperCase().includes('TOTAL') || 
-            description.toUpperCase() === 'ALL LABOR') continue
+            description.toUpperCase() === 'ALL LABOR') {
+          debugInfo.push(`Row ${i + 1}: Skipped - total row (${description})`)
+          skippedRows++
+          continue
+        }
         
         const numericValue = typeof value === 'number' ? value : parseFloat(value.toString().replace(/[$,]/g, '') || '0')
         const numericManhours = manhours ? (typeof manhours === 'number' ? manhours : parseFloat(manhours.toString() || '0')) : null
@@ -385,11 +412,34 @@ export default function ProjectSetupForm() {
         total: items.reduce((sum, item) => sum + item.value, 0)
       }))
 
+      // Add debug summary
+      const debugSummary = [
+        `Total rows processed: ${rows.length - 1}`,
+        `Disciplines found: ${Array.from(disciplinesFound).join(', ')}`,
+        `Valid items: ${budgetBreakdowns.length}`,
+        `Skipped rows: ${skippedRows}`,
+        ...debugInfo.slice(0, 10) // Show first 10 debug messages
+      ]
+      
+      if (debugInfo.length > 10) {
+        debugSummary.push(`... and ${debugInfo.length - 10} more debug messages`)
+      }
+      
+      console.log('Budget Import Debug Summary:', {
+        totalRows: rows.length - 1,
+        disciplinesFound: Array.from(disciplinesFound),
+        validItems: budgetBreakdowns.length,
+        skippedRows,
+        disciplineBreakdown: Object.fromEntries(
+          Array.from(disciplines.entries()).map(([name, items]) => [name, items.length])
+        )
+      })
+      
       setBudgetPreview({
         disciplines: disciplineArray,
         totalBudget,
         isValid: disciplineArray.length > 0,
-        errors: disciplineArray.length === 0 ? ['No valid budget data found'] : []
+        errors: disciplineArray.length === 0 ? ['No valid budget data found'] : debugSummary
       })
       
       // Update form data with imported values
@@ -419,49 +469,65 @@ export default function ProjectSetupForm() {
   const handleSubmit = async () => {
     setIsSubmitting(true)
     
+    const submissionData = {
+      name: formData.projectTitle,
+      job_number: formData.icsProjectNumber,
+      client_id: formData.clientId,
+      division_id: formData.divisionId,
+      project_manager_id: formData.projectManagerId,
+      superintendent_id: formData.projectManagerId,
+      original_contract: totalContractAmount,
+      start_date: new Date().toISOString(),
+      end_date: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(),
+      status: 'active',
+      budget: {
+        labor_budget: formData.labor,
+        small_tools_consumables_budget: formData.smallToolsConsumables,
+        materials_budget: formData.materials,
+        equipment_budget: formData.equipment,
+        subcontracts_budget: formData.subcontracts,
+        other_budget: formData.otherBudget,
+      },
+      contract_breakdown: {
+        client_po_number: formData.clientPONumber,
+        client_representative: formData.clientRepresentative,
+        uses_line_items: true,
+      },
+      po_line_items: formData.poLineItems.map((item, index) => ({
+        line_number: index + 1,
+        description: item.description,
+        amount: item.amount
+      })),
+      budget_breakdowns: formData.budgetSource === 'import' ? formData.budgetBreakdowns : [],
+      budget_source: formData.budgetSource
+    }
+    
+    console.log('Submitting project data:', submissionData)
+    
     try {
       const response = await fetch('/api/projects', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: formData.projectTitle,
-          job_number: formData.icsProjectNumber,
-          client_id: formData.clientId,
-          division_id: formData.divisionId,
-          project_manager_id: formData.projectManagerId,
-          superintendent_id: formData.projectManagerId,
-          original_contract: totalContractAmount,
-          start_date: new Date().toISOString(),
-          end_date: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'planning',
-          budget: {
-            labor_budget: formData.labor,
-            small_tools_consumables_budget: formData.smallToolsConsumables,
-            materials_budget: formData.materials,
-            equipment_budget: formData.equipment,
-            subcontracts_budget: formData.subcontracts,
-            other_budget: formData.otherBudget,
-          },
-          contract_breakdown: {
-            client_po_number: formData.clientPONumber,
-            client_representative: formData.clientRepresentative,
-            uses_line_items: true,
-          },
-          po_line_items: formData.poLineItems.map((item, index) => ({
-            line_number: index + 1,
-            description: item.description,
-            amount: item.amount
-          })),
-          budget_breakdowns: formData.budgetSource === 'import' ? formData.budgetBreakdowns : [],
-          budget_source: formData.budgetSource
-        }),
+        body: JSON.stringify(submissionData),
       })
 
       if (!response.ok) {
         const error = await response.json()
-        alert(error.error || 'Failed to create project')
+        console.error('Project creation error:', error)
+        
+        let errorMessage = error.error || 'Failed to create project'
+        
+        // Show specific validation errors if available
+        if (error.details && Array.isArray(error.details)) {
+          const validationErrors = error.details.map((detail: any) => 
+            `${detail.path?.join?.('.') || 'Field'}: ${detail.message}`
+          ).join('\n')
+          errorMessage = `Validation Error:\n${validationErrors}`
+        }
+        
+        alert(errorMessage)
         return
       }
 

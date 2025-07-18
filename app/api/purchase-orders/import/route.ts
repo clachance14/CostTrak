@@ -95,6 +95,8 @@ function mapStatus(icsStatus: string): 'draft' | 'approved' | 'cancelled' | 'com
 
 // POST /api/purchase-orders/import - Import ICS PO Log CSV
 export async function POST(request: NextRequest) {
+  const importRecord: any = null
+  
   try {
     const supabase = await createClient()
     const adminSupabase = createAdminClient()
@@ -124,6 +126,7 @@ export async function POST(request: NextRequest) {
     // Parse form data
     const formData = await request.formData()
     const file = formData.get('file') as File
+    const projectIdOverride = formData.get('project_id') as string | null // Optional project override
 
     if (!file) {
       return NextResponse.json(
@@ -203,6 +206,7 @@ export async function POST(request: NextRequest) {
 
     // Group rows by Job No. + PO Number to aggregate line items
     const poGroups = new Map<string, ICSRow[]>()
+    const projectsInImport = new Set<string>() // Track all projects in this import
     
     for (let i = 0; i < data.length; i++) {
       const row = data[i]
@@ -246,18 +250,27 @@ export async function POST(request: NextRequest) {
       const cleanedPONumber = cleanPONumber(firstRow['PO Number'])
 
       try {
-        // Find project by job number
-        const projectId = projectMap.get(jobNo)
-        if (!projectId) {
-          result.errors.push({
-            row: 0,
-            field: 'Job No.',
-            message: `Project with job number '${jobNo}' not found`,
-            data: { groupKey, jobNo }
-          })
-          result.skipped++
-          continue
+        // Determine project ID - use override if provided, otherwise look up by job number
+        let projectId: string
+        if (projectIdOverride) {
+          projectId = projectIdOverride
+        } else {
+          const foundProjectId = projectMap.get(jobNo)
+          if (!foundProjectId) {
+            result.errors.push({
+              row: 0,
+              field: 'Job No.',
+              message: `Project with job number '${jobNo}' not found`,
+              data: { groupKey, jobNo }
+            })
+            result.skipped++
+            continue
+          }
+          projectId = foundProjectId
         }
+        
+        // Track this project
+        projectsInImport.add(projectId)
 
         // Calculate total estimated value for the PO (this is the committed amount)
         const estimatedValue = parseNumericValue(firstRow['Est. PO Value'])
@@ -442,6 +455,60 @@ export async function POST(request: NextRequest) {
     result.success = result.errors.length === 0 || 
                     (result.imported + result.updated) > 0
 
+    // Create import records for each project affected
+    const importStatus = result.errors.length === 0 ? 'success' : 
+                        (result.imported + result.updated) > 0 ? 'completed_with_errors' : 'failed'
+    
+    const importRecordIds: string[] = []
+    
+    // If we have projects that were imported to, create import records
+    if (projectsInImport.size > 0) {
+      for (const projectId of projectsInImport) {
+        const { data: importData, error: importError } = await adminSupabase
+          .from('data_imports')
+          .insert({
+            project_id: projectId,
+            import_type: 'po',
+            import_status: importStatus,
+            imported_by: user.id,
+            file_name: file.name,
+            records_processed: result.imported + result.updated,
+            records_failed: result.skipped,
+            error_details: result.errors.length > 0 ? { 
+              errors: result.errors.slice(0, 100), // Limit stored errors
+              total_errors: result.errors.length,
+              line_items_created: result.lineItemsCreated
+            } : null,
+            metadata: {
+              file_size: file.size,
+              import_source: 'ics_po_log',
+              total_rows: data.length,
+              total_pos: poGroups.size,
+              imported: result.imported,
+              updated: result.updated,
+              line_items_created: result.lineItemsCreated,
+              project_override: projectIdOverride ? true : false
+            }
+          })
+          .select()
+          .single()
+
+        if (!importError && importData) {
+          importRecordIds.push(importData.id)
+          
+          // Update project's last PO import timestamp and data health status
+          await adminSupabase
+            .from('projects')
+            .update({
+              last_po_import_at: new Date().toISOString(),
+              data_health_status: 'current',
+              data_health_checked_at: new Date().toISOString()
+            })
+            .eq('id', projectId)
+        }
+      }
+    }
+
     // Log import activity
     await adminSupabase.from('audit_log').insert({
       table_name: 'purchase_orders',
@@ -455,16 +522,20 @@ export async function POST(request: NextRequest) {
         skipped: result.skipped,
         line_items_created: result.lineItemsCreated,
         errors: result.errors.length,
-        filename: file.name
+        filename: file.name,
+        import_record_ids: importRecordIds,
+        projects_affected: Array.from(projectsInImport)
       },
       changed_by: user.id
     })
 
     return NextResponse.json({
-      data: result
+      data: result,
+      import_ids: importRecordIds
     })
   } catch (error) {
     console.error('Import ICS purchase orders error:', error)
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

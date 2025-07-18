@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useUser } from '@/hooks/use-auth'
 import * as XLSX from 'xlsx'
+import { z } from 'zod'
 import { BudgetBreakdownImportResult, BudgetBreakdownImportRow } from '@/types/budget-breakdown'
 
 interface PreviewData {
@@ -24,6 +25,52 @@ interface PreviewData {
   errors: string[]
   totalValue: number
   totalManhours: number
+}
+
+// Zod schema for validating Excel/CSV row data
+const budgetImportRowSchema = z.object({
+  // Handle various field name variations from Excel
+  Discipline: z.string().optional(),
+  discipline: z.string().optional(),
+  'Cost Type': z.string().optional(),
+  cost_type: z.string().optional(),
+  costType: z.string().optional(),
+  Manhours: z.union([z.string(), z.number()]).optional(),
+  manhours: z.union([z.string(), z.number()]).optional(),
+  Hours: z.union([z.string(), z.number()]).optional(),
+  Value: z.union([z.string(), z.number()]).optional(),
+  value: z.union([z.string(), z.number()]).optional(),
+  Amount: z.union([z.string(), z.number()]).optional(),
+  amount: z.union([z.string(), z.number()]).optional(),
+  Description: z.string().optional(),
+  description: z.string().optional(),
+}).transform((val) => {
+  // Transform to match database schema (cost_type, not costType)
+  const discipline = val.Discipline || val.discipline || ''
+  const cost_type = val['Cost Type'] || val.cost_type || val.costType || ''
+  const manhours = Number(val.Manhours || val.manhours || val.Hours || 0) || 0
+  const value = Number(val.Value || val.value || val.Amount || val.amount || 0) || 0
+  const description = val.Description || val.description || ''
+  
+  return {
+    discipline,
+    cost_type,
+    manhours,
+    value,
+    description
+  }
+})
+
+// Type for validated row data matching DB schema
+type ValidatedBudgetRow = z.infer<typeof budgetImportRowSchema>
+
+// Keep the UI type for display purposes
+interface BudgetBreakdownImportRowUI {
+  discipline: string
+  costType: string  // UI uses costType
+  manhours?: number | string
+  value: number | string
+  description?: string
 }
 
 interface BudgetImportPageProps {
@@ -39,8 +86,32 @@ export default function BudgetImportPage({ params }: BudgetImportPageProps) {
   const [importResult, setImportResult] = useState<BudgetBreakdownImportResult | null>(null)
   const [clearExisting, setClearExisting] = useState(false)
 
-  // Check permissions
-  const canImport = user?.role === 'controller'
+  // Check permissions - controller or delegated user with import_budget permission
+  const [canImport, setCanImport] = useState(false)
+  
+  // Check if user has permission to import budget
+  useQuery({
+    queryKey: ['project-permission', projectId, 'import_budget'],
+    queryFn: async () => {
+      // Controllers always have permission
+      if (user?.role === 'controller') {
+        setCanImport(true)
+        return true
+      }
+      
+      // Check delegation permissions
+      const response = await fetch(`/api/projects/${projectId}/check-permission?permission=import_budget`)
+      if (response.ok) {
+        const { hasPermission } = await response.json()
+        setCanImport(hasPermission)
+        return hasPermission
+      }
+      
+      setCanImport(false)
+      return false
+    },
+    enabled: !!user && !!projectId
+  })
 
   // Fetch project details
   const { data: project } = useQuery({
@@ -116,40 +187,94 @@ export default function BudgetImportPage({ params }: BudgetImportPageProps) {
           for (let C = range.s.c; C <= range.e.c; ++C) {
             const cellAddress = XLSX.utils.encode_cell({ r: R, c: C })
             const cell = worksheet[cellAddress]
-            row.push(cell ? cell.v : undefined)
+            // Use formatted value (w) if available, otherwise raw value (v)
+            row.push(cell ? (cell.w || cell.v) : undefined)
           }
           rows.push(row)
         }
         
-        // Process ALL budget data using positional format
+        // Process ALL budget data using positional format (same as project creation)
         const allRows: BudgetBreakdownImportRow[] = []
         let currentDiscipline = ''
         const disciplineCounts: Record<string, number> = {}
         
-        // First pass: process ALL rows to capture all disciplines
+        // Debug: Track parsing progress
+        const debugInfo: string[] = []
+        const disciplinesFound = new Set<string>()
+        let skippedRows = 0
+        let rowsWithData = 0
+        
+        // Process ALL rows without deduplication
         for (let i = 1; i < rows.length; i++) {
           const row = rows[i]
-          const disciplineName = row[1]
-          const description = row[3]?.toString() || ''
+          // Clean and extract cell values
+          const disciplineName = row[1] ? String(row[1]).trim() : ''
+          const description = row[3] ? String(row[3]).trim() : ''
           const manhours = row[4]
           const value = row[5]
           
-          if (!description || !value) continue
-          
-          if (disciplineName && typeof disciplineName === 'string' && disciplineName.trim()) {
-            currentDiscipline = disciplineName.trim().toUpperCase()
+          // Debug: Log discipline detection
+          if (disciplineName) {
+            const newDiscipline = disciplineName.toUpperCase()
+            // Update current discipline immediately when found
+            currentDiscipline = newDiscipline
+            console.log(`Row ${i + 1}: Found discipline: "${newDiscipline}" (raw: "${disciplineName}")`)
+            debugInfo.push(`Row ${i + 1}: New discipline detected: ${newDiscipline}`)
+            disciplinesFound.add(newDiscipline)
           }
           
-          if (!currentDiscipline) continue
+          // Check if row has any data
+          if (row.some(cell => cell !== undefined && cell !== null && cell !== '')) {
+            rowsWithData++
+          }
+          
+          // Skip rows without both description and value, but be more lenient
+          if (!description && !value) {
+            skippedRows++
+            continue
+          }
+          
+          // Skip if we still don't have a discipline set
+          if (!currentDiscipline) {
+            debugInfo.push(`Row ${i + 1}: Skipped - no discipline set yet`)
+            skippedRows++
+            continue
+          }
+          
+          // Skip if missing critical data
+          if (!description || value === undefined || value === null || value === '') {
+            debugInfo.push(`Row ${i + 1}: Skipped - missing ${!description ? 'description' : 'value'} (discipline: ${currentDiscipline})`)
+            skippedRows++
+            continue
+          }
+          
           
           if (description.toUpperCase().includes('TOTAL') || 
-              description.toUpperCase() === 'ALL LABOR') continue
+              description.toUpperCase() === 'ALL LABOR') {
+            debugInfo.push(`Row ${i + 1}: Skipped - total row (${description})`)
+            skippedRows++
+            continue
+          }
           
-          const numericValue = typeof value === 'number' ? value : parseFloat(value.toString().replace(/[$,]/g, '') || '0')
-          const numericManhours = manhours ? (typeof manhours === 'number' ? manhours : parseFloat(manhours.toString() || '0')) : null
+          // Parse numeric values more robustly
+          let numericValue = 0
+          if (typeof value === 'number') {
+            numericValue = value
+          } else if (value) {
+            // Handle formats like " $-   " or "$0.00"
+            const cleaned = String(value).replace(/[$,\s]/g, '').replace(/-+$/, '0')
+            numericValue = parseFloat(cleaned) || 0
+          }
           
-          if (numericValue < 0) continue
+          const numericManhours = manhours ? (typeof manhours === 'number' ? manhours : parseFloat(String(manhours).replace(/[$,]/g, '') || '0')) : null
           
+          if (numericValue < 0) {
+            debugInfo.push(`Row ${i + 1}: Skipped - negative value`)
+            skippedRows++
+            continue
+          }
+          
+          // Add all rows without deduplication
           allRows.push({
             discipline: currentDiscipline,
             costType: description.trim().toUpperCase(),
@@ -160,6 +285,11 @@ export default function BudgetImportPage({ params }: BudgetImportPageProps) {
           
           // Track count per discipline
           disciplineCounts[currentDiscipline] = (disciplineCounts[currentDiscipline] || 0) + 1
+          
+          // Debug successful addition
+          if (numericValue === 0) {
+            debugInfo.push(`Row ${i + 1}: Added zero-value item: ${description} for ${currentDiscipline}`)
+          }
         }
         
         // Show all items in preview
@@ -181,11 +311,35 @@ export default function BudgetImportPage({ params }: BudgetImportPageProps) {
           .map(([discipline, count]) => `${discipline}: ${count} items`)
           .join(', ')
         
+        // Create detailed debug summary
+        const debugSummary = [
+          `Found ${allRows.length} total items across disciplines: ${summaryInfo}`,
+          `Total rows in sheet: ${rows.length - 1}`,
+          `Rows with data: ${rowsWithData}`,
+          `Disciplines detected: ${Array.from(disciplinesFound).join(', ')}`,
+          `Skipped rows: ${skippedRows}`,
+          ...debugInfo.slice(0, 5) // Show first 5 debug messages
+        ]
+        
+        if (debugInfo.length > 5) {
+          debugSummary.push(`... and ${debugInfo.length - 5} more debug messages`)
+        }
+        
+        console.log('Budget Import Debug:', {
+          totalRows: rows.length - 1,
+          rowsWithData,
+          disciplinesFound: Array.from(disciplinesFound),
+          validItems: allRows.length,
+          skippedRows,
+          disciplineBreakdown: disciplineCounts,
+          range: worksheet['!ref']
+        })
+        
         setPreview({
           headers: ['Row', 'Discipline', 'Blank', 'Cost Type', 'Manhours', 'Value'],
           rows: previewRows,
           isValid: allRows.length > 0,
-          errors: allRows.length === 0 ? ['No valid budget data found in BUDGETS sheet'] : [`Found ${allRows.length} total items across disciplines: ${summaryInfo}`],
+          errors: allRows.length === 0 ? ['No valid budget data found in BUDGETS sheet'] : debugSummary,
           totalValue,
           totalManhours
         })
@@ -208,17 +362,32 @@ export default function BudgetImportPage({ params }: BudgetImportPageProps) {
         // Get headers from first row
         const headers = Object.keys(jsonData[0] as Record<string, unknown>)
         
-        // Process ALL rows to calculate totals
-        const allRows: BudgetBreakdownImportRow[] = jsonData.map((row: Record<string, unknown>) => ({
-          discipline: String(row.Discipline || row.discipline || ''),
-          costType: String(row['Cost Type'] || row.cost_type || row.costType || ''),
-          manhours: Number(row.Manhours || row.manhours || row.Hours || 0),
-          value: Number(row.Value || row.value || row.Amount || row.amount || 0),
-          description: String(row.Description || row.description || '')
+        // Process ALL rows with validation
+        const validationResults = jsonData.map((row, index) => {
+          const result = budgetImportRowSchema.safeParse(row)
+          return { result, index }
+        })
+        
+        // Separate valid and invalid rows
+        const validRows = validationResults
+          .filter(({ result }) => result.success)
+          .map(({ result }) => result.data as ValidatedBudgetRow)
+        
+        const errors = validationResults
+          .filter(({ result }) => !result.success)
+          .map(({ result, index }) => `Row ${index + 1}: ${result.error?.message || 'Invalid data'}`)
+        
+        // Transform validated rows to UI format (cost_type -> costType)
+        const allRows: BudgetBreakdownImportRowUI[] = validRows.map(row => ({
+          discipline: row.discipline,
+          costType: row.cost_type,  // Transform back to UI field name
+          manhours: row.manhours,
+          value: row.value,
+          description: row.description
         }))
 
-        // Get preview rows (first 10)
-        const rows = allRows.slice(0, 10)
+        // Show all rows in preview
+        const rows = allRows
 
         // Calculate totals
         const totalValue = allRows.reduce((sum, row) => {
@@ -227,26 +396,26 @@ export default function BudgetImportPage({ params }: BudgetImportPageProps) {
         }, 0)
         
         const totalManhours = allRows.reduce((sum, row) => {
-          const manhours = typeof row.manhours === 'number' ? row.manhours : parseFloat(row.manhours.toString() || '0')
+          const manhours = typeof row.manhours === 'number' ? row.manhours : (row.manhours ? parseFloat(row.manhours.toString() || '0') : 0)
           return sum + manhours
         }, 0)
 
-        // Validate preview
-        const errors: string[] = []
+        // Combine validation errors with header errors
+        const allErrors: string[] = [...errors]
         const requiredHeaders = ['discipline', 'cost_type', 'value']
         const normalizedHeaders = headers.map(h => h.toLowerCase().replace(/[\s_-]+/g, '_'))
         
         for (const required of requiredHeaders) {
           if (!normalizedHeaders.some(h => h.includes(required.replace('_', '')))) {
-            errors.push(`Missing required column: ${required}`)
+            allErrors.push(`Missing required column: ${required}`)
           }
         }
 
         setPreview({
           headers,
           rows,
-          isValid: errors.length === 0,
-          errors,
+          isValid: allErrors.length === 0 && allRows.length > 0,
+          errors: allErrors.length > 0 ? allErrors : allRows.length === 0 ? ['No valid data found in file'] : [],
           totalValue,
           totalManhours
         })
@@ -300,7 +469,7 @@ export default function BudgetImportPage({ params }: BudgetImportPageProps) {
         <Card className="p-6">
           <div className="flex items-center gap-2 text-red-600">
             <AlertCircle className="h-5 w-5" />
-            <p>Only controllers can import budget breakdowns</p>
+            <p>You don't have permission to import budget breakdowns for this project</p>
           </div>
         </Card>
       </div>

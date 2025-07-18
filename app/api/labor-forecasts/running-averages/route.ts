@@ -64,13 +64,21 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Get running averages from the view
+    // Get running averages from the table with craft type details
     const { data: runningAverages, error } = await supabase
       .from('labor_running_averages')
-      .select('*')
+      .select(`
+        *,
+        craft_type:craft_types!inner(
+          id,
+          name,
+          code,
+          category
+        )
+      `)
       .eq('project_id', projectId)
-      .order('labor_category')
-      .order('craft_name')
+      .order('craft_type.category')
+      .order('craft_type.name')
 
     if (error) throw error
 
@@ -83,13 +91,12 @@ export async function GET(request: NextRequest) {
       .select(`
         week_ending,
         craft_type_id,
-        rate_per_hour,
-        total_hours,
-        total_cost
+        actual_hours,
+        actual_cost
       `)
       .eq('project_id', projectId)
       .gte('week_ending', startDate.toISOString())
-      .gt('total_hours', 0)
+      .gt('actual_hours', 0)
       .order('week_ending', { ascending: true })
 
     // Group historical data by craft type
@@ -106,9 +113,9 @@ export async function GET(request: NextRequest) {
       }
       trendsMap.get(row.craft_type_id)?.push({
         weekEnding: row.week_ending,
-        rate: row.rate_per_hour,
-        hours: row.total_hours,
-        cost: row.total_cost
+        rate: row.actual_hours > 0 ? row.actual_cost / row.actual_hours : 0,
+        hours: row.actual_hours,
+        cost: row.actual_cost
       })
     })
 
@@ -121,18 +128,18 @@ export async function GET(request: NextRequest) {
       },
       averages: runningAverages?.map(avg => ({
         craftTypeId: avg.craft_type_id,
-        craftName: avg.craft_name,
-        laborCategory: avg.labor_category,
-        avgRate: avg.avg_rate,
-        weeksOfData: avg.weeks_of_data,
-        lastActualWeek: avg.last_actual_week,
+        craftName: avg.craft_type?.name || 'Unknown',
+        laborCategory: avg.craft_type?.category || 'direct',
+        avgRate: avg.avg_rate || (avg.avg_hours > 0 ? avg.avg_cost / avg.avg_hours : 0),
+        weeksOfData: avg.week_count || 0,
+        lastActualWeek: avg.last_updated,
         trends: trendsMap.get(avg.craft_type_id) || []
       })) || [],
       summary: {
         totalCraftTypes: runningAverages?.length || 0,
-        craftTypesWithData: runningAverages?.filter(a => a.weeks_of_data > 0).length || 0,
+        craftTypesWithData: runningAverages?.filter(a => a.week_count > 0).length || 0,
         avgWeeksOfData: runningAverages?.length 
-          ? Math.round(runningAverages.reduce((sum, a) => sum + a.weeks_of_data, 0) / runningAverages.length)
+          ? Math.round(runningAverages.reduce((sum, a) => sum + (a.week_count || 0), 0) / runningAverages.length)
           : 0
       }
     }

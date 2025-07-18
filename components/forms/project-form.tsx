@@ -20,7 +20,7 @@ const projectSchema = z.object({
   original_contract: z.string().min(1, 'Contract amount is required'),
   start_date: z.string().min(1, 'Start date is required'),
   end_date: z.string().min(1, 'End date is required'),
-  status: z.enum(['planning', 'active', 'on_hold', 'completed', 'cancelled']),
+  status: z.enum(['active', 'on_hold', 'completed', 'cancelled']),
   address: z.string().optional(),
   city: z.string().optional(),
   state: z.string().max(2).optional(),
@@ -206,7 +206,6 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
               {...register('status')}
               className="w-full px-3 py-2 border border-foreground/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="planning">Planning</option>
               <option value="active">Active</option>
               <option value="on_hold">On Hold</option>
               <option value="completed">Completed</option>

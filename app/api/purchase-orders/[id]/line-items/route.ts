@@ -39,6 +39,7 @@ export async function GET(
         unit_price,
         total_amount,
         category,
+        invoice_date,
         created_at,
         updated_at
       `)

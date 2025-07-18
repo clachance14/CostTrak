@@ -58,7 +58,13 @@ export async function GET(
         risk_status,
         status,
         budget_category,
+        cost_center,
         created_at,
+        cost_code:cost_codes(
+          id,
+          code,
+          description
+        ),
         po_line_items(
           id,
           description,
@@ -78,8 +84,21 @@ export async function GET(
         description,
         amount,
         status,
+        pricing_type,
+        impact_schedule_days,
+        reason,
+        manhours,
+        labor_amount,
+        equipment_amount,
+        material_amount,
+        subcontract_amount,
+        markup_amount,
+        tax_amount,
+        submitted_date,
         approved_date,
-        created_at
+        rejection_reason,
+        created_at,
+        updated_at
       `)
       .eq('project_id', id)
 
@@ -100,17 +119,20 @@ export async function GET(
 
     console.log('Budget query result:', { id, budgets, budgetsError })
 
-    // Get labor actuals
+    // Get labor actuals with craft type details
     const { data: laborActuals } = await supabase
       .from('labor_actuals')
       .select(`
         id,
         week_ending,
-        craft_type,
         actual_cost,
         actual_hours,
-        running_average_rate,
-        created_at
+        craft_type:craft_types!inner(
+          id,
+          name,
+          code,
+          category
+        )
       `)
       .eq('project_id', id)
       .order('week_ending', { ascending: false })
@@ -165,9 +187,10 @@ export async function GET(
     // Step 2: Calculate future labor forecast costs
     // Get running average rates from latest labor actuals by craft type
     const latestRatesByCraft = laborActuals?.reduce((rates, labor) => {
-      if (!rates[labor.craft_type] || new Date(labor.week_ending) > new Date(rates[labor.craft_type].week_ending)) {
-        rates[labor.craft_type] = {
-          rate: labor.running_average_rate || (labor.actual_hours > 0 ? labor.actual_cost / labor.actual_hours : 0),
+      const craftTypeId = labor.craft_type?.id
+      if (craftTypeId && (!rates[craftTypeId] || new Date(labor.week_ending) > new Date(rates[craftTypeId].week_ending))) {
+        rates[craftTypeId] = {
+          rate: labor.actual_hours > 0 ? labor.actual_cost / labor.actual_hours : 0,
           week_ending: labor.week_ending
         }
       }
@@ -247,10 +270,19 @@ export async function GET(
       }
     })
 
-    // Add labor actuals to budget breakdown
-    // Create or update a Labor category if it doesn't exist
-    if (!budgetBreakdown['Labor']) {
-      budgetBreakdown['Labor'] = {
+    // Add labor actuals to budget breakdown by category
+    // Initialize labor categories if they don't exist
+    if (!budgetBreakdown['DIRECT LABOR']) {
+      budgetBreakdown['DIRECT LABOR'] = {
+        budget: 0,
+        committed: 0,
+        actual: 0,
+        forecasted: 0,
+        variance: 0
+      }
+    }
+    if (!budgetBreakdown['INDIRECT LABOR']) {
+      budgetBreakdown['INDIRECT LABOR'] = {
         budget: 0,
         committed: 0,
         actual: 0,
@@ -259,21 +291,46 @@ export async function GET(
       }
     }
     
-    // Add labor actual costs to the Labor category
-    budgetBreakdown['Labor'].actual += totalLaborActual
-    budgetBreakdown['Labor'].committed += totalLaborActual + futureLaborCost // Labor commitment includes actuals + forecast
-    budgetBreakdown['Labor'].forecasted = Math.max(
-      budgetBreakdown['Labor'].budget,
-      budgetBreakdown['Labor'].committed,
-      budgetBreakdown['Labor'].actual
-    )
-    budgetBreakdown['Labor'].variance = budgetBreakdown['Labor'].budget - budgetBreakdown['Labor'].forecasted
+    // Sum labor actuals by category
+    const directLaborActual = laborActuals?.reduce((sum, labor) => {
+      return labor.craft_type?.category === 'direct' ? sum + (labor.actual_cost || 0) : sum
+    }, 0) || 0
+    
+    const indirectLaborActual = laborActuals?.reduce((sum, labor) => {
+      return labor.craft_type?.category === 'indirect' ? sum + (labor.actual_cost || 0) : sum
+    }, 0) || 0
+    
+    // Add direct labor costs
+    if (directLaborActual > 0) {
+      budgetBreakdown['DIRECT LABOR'].actual += directLaborActual
+      budgetBreakdown['DIRECT LABOR'].committed += directLaborActual
+      budgetBreakdown['DIRECT LABOR'].forecasted = Math.max(
+        budgetBreakdown['DIRECT LABOR'].budget,
+        budgetBreakdown['DIRECT LABOR'].committed,
+        budgetBreakdown['DIRECT LABOR'].actual
+      )
+      budgetBreakdown['DIRECT LABOR'].variance = budgetBreakdown['DIRECT LABOR'].budget - budgetBreakdown['DIRECT LABOR'].forecasted
+    }
+    
+    // Add indirect labor costs
+    if (indirectLaborActual > 0) {
+      budgetBreakdown['INDIRECT LABOR'].actual += indirectLaborActual
+      budgetBreakdown['INDIRECT LABOR'].committed += indirectLaborActual
+      budgetBreakdown['INDIRECT LABOR'].forecasted = Math.max(
+        budgetBreakdown['INDIRECT LABOR'].budget,
+        budgetBreakdown['INDIRECT LABOR'].committed,
+        budgetBreakdown['INDIRECT LABOR'].actual
+      )
+      budgetBreakdown['INDIRECT LABOR'].variance = budgetBreakdown['INDIRECT LABOR'].budget - budgetBreakdown['INDIRECT LABOR'].forecasted
+    }
 
     console.log('Budget breakdown processing:', { 
       budgetsCount: budgets?.length || 0, 
       budgetBreakdown,
       sampleBudget: budgets?.[0],
       totalLaborActual,
+      directLaborActual,
+      indirectLaborActual,
       futureLaborCost
     })
 

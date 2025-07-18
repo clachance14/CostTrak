@@ -3,15 +3,17 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronRight, Loader2 } from 'lucide-react'
+import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 
 interface ExpandableRowProps {
   purchaseOrderId: string
   children: React.ReactNode
   onExpand?: (isExpanded: boolean) => void
+  colSpan?: number
 }
 
-export function ExpandableRow({ purchaseOrderId, children, onExpand }: ExpandableRowProps) {
+export function ExpandableRow({ purchaseOrderId, children, onExpand, colSpan = 10 }: ExpandableRowProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
   // Fetch line items when expanded
@@ -68,7 +70,7 @@ export function ExpandableRow({ purchaseOrderId, children, onExpand }: Expandabl
       
       {isExpanded && (
         <tr className="transition-all duration-300">
-          <td colSpan={10} className="px-0 py-0">
+          <td colSpan={colSpan} className="px-0 py-0">
             <div className="bg-background border-t border-b border-foreground/20 animate-in fade-in slide-in-from-top-1">
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
@@ -98,6 +100,9 @@ export function ExpandableRow({ purchaseOrderId, children, onExpand }: Expandabl
                           Description
                         </th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-foreground/80 uppercase">
+                          Invoice Date
+                        </th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-foreground/80 uppercase">
                           Category
                         </th>
                         <th className="px-4 py-2 text-right text-xs font-medium text-foreground/80 uppercase">
@@ -122,6 +127,9 @@ export function ExpandableRow({ purchaseOrderId, children, onExpand }: Expandabl
                         quantity: number
                         unit_price: number
                         total_amount: number
+                        invoice_date?: string | null
+                        category?: string
+                        unit_of_measure?: string
                       }) => (
                         <tr key={item.id} className="hover:bg-foreground/5">
                           <td className="px-4 py-3 text-sm text-foreground">
@@ -129,6 +137,9 @@ export function ExpandableRow({ purchaseOrderId, children, onExpand }: Expandabl
                           </td>
                           <td className="px-4 py-3 text-sm text-foreground">
                             {item.description}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-foreground/70">
+                            {item.invoice_date ? format(new Date(item.invoice_date), 'MMM d, yyyy') : '-'}
                           </td>
                           <td className="px-4 py-3 text-sm text-foreground/70">
                             {item.category || '-'}
