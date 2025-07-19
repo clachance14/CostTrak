@@ -16,6 +16,7 @@ const roleRoutes: Record<string, string[]> = {
 }
 
 export async function middleware(request: NextRequest) {
+  // Create a response that we'll modify as needed
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -31,9 +32,10 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set({ name, value })
             response.cookies.set(name, value, options)
-          )
+          })
         },
       },
     }
@@ -71,16 +73,18 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check authentication
-  const { data: { user } } = await supabase.auth.getUser()
-  const { data: { session } } = await supabase.auth.getSession()
-
-  if (!user) {
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  
+  if (userError || !user) {
     // Redirect to login if not authenticated
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(url)
   }
+
+  // Get session for timeout check
+  const { data: { session } } = await supabase.auth.getSession()
 
   // Check session timeout (30 minutes of inactivity)
   if (session) {
