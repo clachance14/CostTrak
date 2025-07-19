@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { ForecastCalculationService } from '@/lib/services/forecast-calculations'
 
 interface CategoryResult {
   category: string
@@ -121,30 +122,14 @@ export async function GET(
             `)
             .eq('project_id', projectId)
 
-          // Calculate subcategory totals
-          let directActuals = 0
-          let indirectActuals = 0
-          let staffActuals = 0
-
-          if (laborActuals) {
-            laborActuals.forEach(la => {
-              // Use the cost with burden included
-              const cost = la.actual_cost_with_burden || la.actual_cost || 0
-              switch (la.craft_type?.category) {
-                case 'direct':
-                  directActuals += cost
-                  break
-                case 'indirect':
-                  indirectActuals += cost
-                  break
-                case 'staff':
-                  staffActuals += cost
-                  break
-              }
-            })
-            actuals = directActuals + indirectActuals + staffActuals
-            committed = actuals // For labor, committed = actuals
-          }
+          // Use centralized service for labor calculations
+          const laborTotals = ForecastCalculationService.calculateTotalLaborActuals(laborActuals || [])
+          const directActuals = laborTotals.byCategory.direct || 0
+          const indirectActuals = laborTotals.byCategory.indirect || 0
+          const staffActuals = laborTotals.byCategory.staff || 0
+          
+          actuals = laborTotals.total
+          committed = actuals // For labor, committed = actuals
 
           // Get labor forecast from headcount with categories
           const { data: laborForecast } = await supabase
@@ -152,38 +137,40 @@ export async function GET(
             .select(`
               headcount,
               weekly_hours,
-              craft_type:craft_types(
-                default_rate,
-                category
-              )
+              craft_type,
+              week_starting
             `)
             .eq('project_id', projectId)
             .gte('week_starting', new Date().toISOString())
 
-          let directForecast = 0
-          let indirectForecast = 0
-          let staffForecast = 0
+          // Get craft types for mapping
+          const { data: craftTypes } = await supabase
+            .from('craft_types')
+            .select('id, default_rate, category')
 
-          if (laborForecast && laborForecast.length > 0) {
-            laborForecast.forEach(forecast => {
-              const rate = forecast.craft_type?.default_rate || 50
-              const weeklyHours = forecast.weekly_hours * forecast.headcount
-              const cost = weeklyHours * rate
-              
-              switch (forecast.craft_type?.category) {
-                case 'direct':
-                  directForecast += cost
-                  break
-                case 'indirect':
-                  indirectForecast += cost
-                  break
-                case 'staff':
-                  staffForecast += cost
-                  break
-              }
-            })
-            const futureLabor = directForecast + indirectForecast + staffForecast
-            forecastedFinal = actuals + futureLabor
+          // Calculate future labor using centralized service
+          const runningAverageRates = ForecastCalculationService.calculateLaborRatesByCraft(laborActuals || [])
+          const futureLaborCosts = await ForecastCalculationService.calculateFutureLaborCost(
+            projectId,
+            laborForecast?.map(f => ({
+              forecasted_headcount: f.headcount,
+              weekly_hours: f.weekly_hours,
+              craft_type: f.craft_type,
+              week_starting: f.week_starting
+            })) || [],
+            runningAverageRates,
+            craftTypes || []
+          )
+
+          const directForecast = futureLaborCosts.byCategory.direct || 0
+          const indirectForecast = futureLaborCosts.byCategory.indirect || 0
+          const staffForecast = futureLaborCosts.byCategory.staff || 0
+
+          if (futureLaborCosts.total > 0) {
+            forecastedFinal = actuals + futureLaborCosts.total
+          } else {
+            // No future forecast exists, so forecasted final should at least be actuals
+            forecastedFinal = actuals
           }
 
           // Tax & insurance is now included in the burdened labor costs
@@ -205,11 +192,11 @@ export async function GET(
 
           laborBudgetBreakdowns?.forEach(breakdown => {
             if (breakdown.cost_type === 'DIRECT LABOR') {
-              laborBudgets['DIRECT LABOR'] += breakdown.value
+              laborBudgets['DIRECT LABOR'] += breakdown.value || 0
             } else if (breakdown.cost_type === 'INDIRECT LABOR') {
-              laborBudgets['INDIRECT LABOR'] += breakdown.value
+              laborBudgets['INDIRECT LABOR'] += breakdown.value || 0
             } else if (breakdown.cost_type === 'PERDIEM' || breakdown.cost_type === 'PER DIEM') {
-              laborBudgets['STAFF LABOR'] += breakdown.value
+              laborBudgets['STAFF LABOR'] += breakdown.value || 0
             }
           })
 
@@ -220,35 +207,38 @@ export async function GET(
               budget: laborBudgets['DIRECT LABOR'],
               committed: directActuals,
               actuals: directActuals,
-              forecastedFinal: directActuals + directForecast,
-              variance: laborBudgets['DIRECT LABOR'] - (directActuals + directForecast)
+              forecastedFinal: Math.max(directActuals, directActuals + directForecast),
+              variance: laborBudgets['DIRECT LABOR'] - Math.max(directActuals, directActuals + directForecast)
             },
             {
               category: 'INDIRECT LABOR',
               budget: laborBudgets['INDIRECT LABOR'],
               committed: indirectActuals,
               actuals: indirectActuals,
-              forecastedFinal: indirectActuals + indirectForecast,
-              variance: laborBudgets['INDIRECT LABOR'] - (indirectActuals + indirectForecast)
+              forecastedFinal: Math.max(indirectActuals, indirectActuals + indirectForecast),
+              variance: laborBudgets['INDIRECT LABOR'] - Math.max(indirectActuals, indirectActuals + indirectForecast)
             },
             {
               category: 'STAFF LABOR',
               budget: laborBudgets['STAFF LABOR'],
               committed: staffActuals,
               actuals: staffActuals,
-              forecastedFinal: staffActuals + staffForecast,
-              variance: laborBudgets['STAFF LABOR'] - (staffActuals + staffForecast)
+              forecastedFinal: Math.max(staffActuals, staffActuals + staffForecast),
+              variance: laborBudgets['STAFF LABOR'] - Math.max(staffActuals, staffActuals + staffForecast)
             }
           ]
 
-          // Update totals to include taxes & insurance
-          actuals += taxesInsuranceActuals
-          committed += taxesInsuranceActuals
-          forecastedFinal += taxesInsuranceForecast
+          // Tax & insurance is now included in the burdened labor costs
           
           // Set main LABOR budget to sum of all subcategory budgets
-          cat.budget = laborBudgets['DIRECT LABOR'] + laborBudgets['INDIRECT LABOR'] + 
-                       laborBudgets['STAFF LABOR']
+          const breakdownTotal = laborBudgets['DIRECT LABOR'] + laborBudgets['INDIRECT LABOR'] + 
+                                laborBudgets['STAFF LABOR']
+          
+          // Only override if we found labor breakdown data
+          if (laborBudgetBreakdowns && laborBudgetBreakdowns.length > 0) {
+            cat.budget = breakdownTotal
+          }
+          // Otherwise cat.budget keeps the original value from projectBudget?.labor_budget
         } else if (cat.costCodeCategories.length > 0 || cat.costCenterCodes.length > 0) {
           // Filter POs for this category
           const categoryPOs = allPOs?.filter(po => {
@@ -268,16 +258,11 @@ export async function GET(
           }) || []
 
           if (categoryPOs.length > 0) {
-            committed = categoryPOs.reduce((sum, po) => sum + (po.committed_amount || 0), 0)
-            
-            // Calculate forecasted final
-            forecastedFinal = categoryPOs.reduce((sum, po) => {
-              // Use forecasted_final_cost if available, otherwise use committed_amount
-              return sum + (po.forecasted_final_cost || po.committed_amount || 0)
-            }, 0)
-
-            // Calculate actuals from PO invoiced_amount field
-            actuals = categoryPOs.reduce((sum, po) => sum + (po.invoiced_amount || 0), 0)
+            // Use centralized service for PO calculations
+            const poTotals = ForecastCalculationService.calculateTotalPOForecast(categoryPOs)
+            committed = poTotals.committed
+            actuals = poTotals.invoiced
+            forecastedFinal = poTotals.forecasted
           }
           
           // If no POs found but we have a budget, forecast should at least be the budget amount
@@ -287,6 +272,9 @@ export async function GET(
           }
         }
 
+        // Final safety check: ensure forecasted final is never less than actuals
+        forecastedFinal = Math.max(forecastedFinal, actuals)
+        
         const variance = cat.budget - forecastedFinal
 
         return {

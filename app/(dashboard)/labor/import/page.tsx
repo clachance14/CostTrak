@@ -209,13 +209,15 @@ export default function LaborImportPage() {
           // Update preview with actual rates from database
           let recalculatedTotalCost = 0
           const updatedEmployees = preview.employees.map(emp => {
-            const dbEmp = dbEmployees.find((e: any) => e.employeeNumber === emp.employeeId)
+            const dbEmp = dbEmployees.find((e: { employeeNumber: string; baseRate: number }) => e.employeeNumber === emp.employeeId)
             const actualRate = dbEmp?.baseRate || emp.stRate || 0
             
             // Recalculate costs with actual rate
             const stWages = emp.stHours * actualRate
             const otWages = emp.otHours * actualRate * 1.5
-            const totalCost = stWages + otWages
+            // Apply 28% burden to straight-time wages only (matching backend logic)
+            const burdenAmount = stWages * 0.28
+            const totalCost = stWages + otWages + burdenAmount
             recalculatedTotalCost += totalCost
 
             return {
@@ -347,7 +349,9 @@ export default function LaborImportPage() {
         const stRate = Number(row[EXCEL_COLUMNS.ST_RATE]) || 0
         const stWages = stHours * stRate
         const otWages = otHours * stRate * 1.5
-        const employeeTotalCost = stWages + otWages
+        // Apply 28% burden to straight-time wages only (matching backend logic)
+        const burdenAmount = stWages * 0.28
+        const employeeTotalCost = stWages + otWages + burdenAmount
 
         // Parse name from combined field (format: "Last, First")
         const nameField = String(row[EXCEL_COLUMNS.NAME] || '').trim()
@@ -826,7 +830,7 @@ export default function LaborImportPage() {
                       <th className="px-4 py-2 text-left text-xs font-medium text-foreground/80 uppercase">Craft</th>
                       <th className="px-4 py-2 text-right text-xs font-medium text-foreground/80 uppercase">ST Hours</th>
                       <th className="px-4 py-2 text-right text-xs font-medium text-foreground/80 uppercase">OT Hours</th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-foreground/80 uppercase">Rate</th>
+                      <th className="px-4 py-2 text-right text-xs font-medium text-foreground/80 uppercase">Rate (w/Burden)</th>
                       <th className="px-4 py-2 text-right text-xs font-medium text-foreground/80 uppercase">Total Cost</th>
                     </tr>
                   </thead>
@@ -850,9 +854,9 @@ export default function LaborImportPage() {
                               <span className="text-xs text-foreground/60">Loading...</span>
                             ) : (
                               <>
-                                {formatCurrency(emp.stRate)}
+                                {formatCurrency(emp.stRate * 1.28)}
                                 {emp.dbRate !== undefined && emp.dbRate !== emp.stRate && (
-                                  <div className="text-xs text-green-600">From DB</div>
+                                  <div className="text-xs text-green-600">From DB (w/28% burden)</div>
                                 )}
                               </>
                             )}
@@ -1033,8 +1037,8 @@ export default function LaborImportPage() {
                       <p className="font-medium">{employee.last_name}, {employee.first_name}</p>
                     </div>
                     <div>
-                      <Label className="text-sm">Base Rate</Label>
-                      <p className="font-medium">{formatCurrency(employee.base_rate)}/hr</p>
+                      <Label className="text-sm">Rate (w/28% Burden)</Label>
+                      <p className="font-medium">{formatCurrency(employee.base_rate * 1.28)}/hr</p>
                     </div>
                     <div>
                       <Label htmlFor={`craft-${index}`} className="text-sm">Craft Type</Label>

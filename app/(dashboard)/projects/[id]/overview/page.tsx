@@ -104,6 +104,10 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
     return `${(value || 0).toFixed(1)}%`
   }
 
+  const formatPercentSimple = (value: number) => {
+    return `${Math.round(value || 0)}%`
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800'
@@ -303,13 +307,13 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
               <div className="text-center">
                 <div className="text-gray-500">Margin %</div>
                 <div className={`font-semibold text-lg ${financialMetrics.profitMargin >= 5 ? 'text-green-600' : financialMetrics.profitMargin >= 0 ? 'text-yellow-600' : 'text-red-600'}`}>
-                  {formatPercent(financialMetrics.profitMargin)}
+                  {formatPercentSimple(financialMetrics.profitMargin)}
                 </div>
               </div>
               <div className="text-center">
                 <div className="text-gray-500">% Complete</div>
                 <div className="font-semibold text-lg">
-                  {formatPercent(financialMetrics.percentComplete)}
+                  {formatPercentSimple(financialMetrics.percentComplete)}
                 </div>
               </div>
             </div>
@@ -378,19 +382,20 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
                 ]}
               />
               <FinancialMetricCard
-                title="Current Cost"
-                value={formatCurrency(financialMetrics.actualCostToDate)}
+                title="Forecasted Cost"
+                value={formatCurrency(financialMetrics.estimateAtCompletion)}
                 icon={BarChart3}
-                status={financialMetrics.actualCostToDate <= financialMetrics.revisedContract * 0.9 ? 'good' : 
-                        financialMetrics.actualCostToDate <= financialMetrics.revisedContract ? 'warning' : 'danger'}
-                helpText="Total costs incurred to date"
+                status={financialMetrics.estimateAtCompletion <= financialMetrics.revisedContract * 0.9 ? 'good' : 
+                        financialMetrics.estimateAtCompletion <= financialMetrics.revisedContract ? 'warning' : 'danger'}
+                helpText="Total forecasted cost at project completion"
                 details={[
                   {
-                    label: 'Cost Progress',
-                    value: formatCurrency(financialMetrics.actualCostToDate),
+                    label: 'Cost Forecast',
+                    value: formatCurrency(financialMetrics.estimateAtCompletion),
                     subItems: [
-                      { label: 'Percent of Contract', value: formatPercent((financialMetrics.actualCostToDate / financialMetrics.revisedContract) * 100) },
-                      { label: 'Remaining Budget', value: formatCurrency(financialMetrics.revisedContract - financialMetrics.actualCostToDate) }
+                      { label: 'Percent of Contract', value: formatPercentSimple((financialMetrics.estimateAtCompletion / financialMetrics.revisedContract) * 100) },
+                      { label: 'Actual to Date', value: formatCurrency(financialMetrics.actualCostToDate) },
+                      { label: 'Estimate to Complete', value: formatCurrency(financialMetrics.estimateToComplete) }
                     ]
                   }
                 ]}
@@ -410,7 +415,7 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
                     label: 'Profit Breakdown',
                     value: formatCurrency(financialMetrics.forecastedProfit),
                     subItems: [
-                      { label: 'Profit Margin', value: formatPercent(financialMetrics.profitMargin), isPositive: financialMetrics.profitMargin >= 5 }
+                      { label: 'Profit Margin', value: formatPercentSimple(financialMetrics.profitMargin), isPositive: financialMetrics.profitMargin >= 5 }
                     ]
                   }
                 ]}
@@ -497,7 +502,7 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
                     <div className="flex justify-between">
                       <span className="font-medium">Profit Margin %</span>
                       <span className={`font-bold ${financialMetrics.profitMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatPercent(financialMetrics.profitMargin)}
+                        {formatPercentSimple(financialMetrics.profitMargin)}
                       </span>
                     </div>
                   </div>

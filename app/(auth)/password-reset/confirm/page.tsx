@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -9,7 +9,33 @@ import { newPasswordSchema, type NewPasswordInput } from '@/lib/validations/auth
 import { AlertCircle, CheckCircle, Eye, EyeOff, Lock } from 'lucide-react'
 import Link from 'next/link'
 
+// Main component with Suspense wrapper
 export default function PasswordResetConfirmPage() {
+  return (
+    <Suspense fallback={<PasswordResetLoading />}>
+      <PasswordResetForm />
+    </Suspense>
+  )
+}
+
+// Loading state component
+function PasswordResetLoading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <Card className="w-full max-w-md">
+        <CardContent className="pt-6">
+          <div className="flex justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground"></div>
+          </div>
+          <p className="text-center mt-4 text-foreground/60">Loading password reset...</p>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Actual form component with useSearchParams
+function PasswordResetForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')

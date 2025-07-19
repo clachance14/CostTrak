@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { ForecastCalculationService } from '@/lib/services/forecast-calculations'
 
 // GET /api/projects/[id]/financial-summary - Get comprehensive financial summary
 export async function GET(
@@ -169,50 +170,34 @@ export async function GET(
       .eq('project_id', id)
       .order('snapshot_date', { ascending: false })
 
-    // Calculate financial metrics
-    const totalPOCommitted = purchaseOrders?.reduce((sum, po) => sum + (po.committed_amount || 0), 0) || 0
-    const totalPOInvoiced = purchaseOrders?.reduce((sum, po) => sum + (po.invoiced_amount || 0), 0) || 0
-    const totalPOForecasted = purchaseOrders?.reduce((sum, po) => sum + (po.forecast_amount || po.committed_amount || 0), 0) || 0
+    // Calculate financial metrics using centralized service
+    const poTotals = ForecastCalculationService.calculateTotalPOForecast(purchaseOrders || [])
+    const totalPOCommitted = poTotals.committed
+    const totalPOInvoiced = poTotals.invoiced
+    const totalPOForecasted = poTotals.forecasted
     
     const approvedChangeOrders = changeOrders?.filter(co => co.status === 'approved').reduce((sum, co) => sum + co.amount, 0) || 0
     const pendingChangeOrders = changeOrders?.filter(co => co.status === 'pending').reduce((sum, co) => sum + co.amount, 0) || 0
     
     const totalBudget = budgets?.reduce((sum, budget) => sum + (budget.value || 0), 0) || 0
-    const totalLaborActual = laborActuals?.reduce((sum, labor) => sum + (labor.actual_cost || 0), 0) || 0
     
-    // Step 1: Calculate AC (Actual Cost) - what has been spent
-    const actualCostToDate = totalPOInvoiced + totalLaborActual
+    // Use centralized service for all forecast calculations
+    const eacCalculation = await ForecastCalculationService.calculateProjectEAC(
+      id,
+      purchaseOrders || [],
+      laborActuals || [],
+      laborForecasts || []
+    )
     
-    // Step 2: Calculate future labor forecast costs
-    // Get running average rates from latest labor actuals by craft type
-    const latestRatesByCraft = laborActuals?.reduce((rates, labor) => {
-      const craftTypeId = labor.craft_type?.id
-      if (craftTypeId && (!rates[craftTypeId] || new Date(labor.week_ending) > new Date(rates[craftTypeId].week_ending))) {
-        rates[craftTypeId] = {
-          rate: labor.actual_hours > 0 ? labor.actual_cost / labor.actual_hours : 0,
-          week_ending: labor.week_ending
-        }
-      }
-      return rates
-    }, {} as Record<string, { rate: number; week_ending: string }>) || {}
-    
-    // Calculate future labor costs from headcount forecasts
-    const futureLaborCost = laborForecasts?.reduce((sum, forecast) => {
-      const craftRate = latestRatesByCraft[forecast.craft_type]?.rate || 0
-      const weeklyHours = 40 // Standard work week
-      const weeklyLaborCost = forecast.forecasted_headcount * craftRate * weeklyHours
-      return sum + weeklyLaborCost
-    }, 0) || 0
-    
-    // Step 3: Calculate ETC (Estimate to Complete)
-    const remainingPOCommitments = Math.max(0, totalPOCommitted - totalPOInvoiced)
-    const estimateToComplete = remainingPOCommitments + futureLaborCost
-    
-    // Step 4: Calculate EAC (Estimate at Completion)
-    const estimateAtCompletion = actualCostToDate + estimateToComplete
+    const actualCostToDate = eacCalculation.actualCostToDate
+    const estimateToComplete = eacCalculation.estimateToComplete
+    const estimateAtCompletion = eacCalculation.estimateAtCompletion
+    const totalLaborActual = eacCalculation.breakdown.laborActuals
+    const futureLaborCost = eacCalculation.breakdown.laborFuture
+    const remainingPOCommitments = eacCalculation.breakdown.poRemaining
     
     // Calculate derived metrics
-    const revisedContract = project.revised_contract || project.original_contract
+    const revisedContract = project.revised_contract || project.original_contract || 0
     const varianceAtCompletion = revisedContract - estimateAtCompletion
     const forecastedProfit = varianceAtCompletion // Same as variance
     const profitMargin = revisedContract > 0 ? (forecastedProfit / revisedContract) * 100 : 0
@@ -269,58 +254,52 @@ export async function GET(
       }
     })
 
-    // Add labor actuals to budget breakdown by category
+    // Add labor actuals to budget breakdown by category using centralized service
+    const laborTotals = ForecastCalculationService.calculateTotalLaborActuals(laborActuals || [])
+    
     // Initialize labor categories if they don't exist
-    if (!budgetBreakdown['DIRECT LABOR']) {
-      budgetBreakdown['DIRECT LABOR'] = {
-        budget: 0,
-        committed: 0,
-        actual: 0,
-        forecasted: 0,
-        variance: 0
+    const laborCategories = ['DIRECT LABOR', 'INDIRECT LABOR', 'STAFF LABOR']
+    laborCategories.forEach(category => {
+      if (!budgetBreakdown[category]) {
+        budgetBreakdown[category] = {
+          budget: 0,
+          committed: 0,
+          actual: 0,
+          forecasted: 0,
+          variance: 0
+        }
       }
-    }
-    if (!budgetBreakdown['INDIRECT LABOR']) {
-      budgetBreakdown['INDIRECT LABOR'] = {
-        budget: 0,
-        committed: 0,
-        actual: 0,
-        forecasted: 0,
-        variance: 0
-      }
-    }
+    })
     
-    // Sum labor actuals by category
-    const directLaborActual = laborActuals?.reduce((sum, labor) => {
-      return labor.craft_type?.category === 'direct' ? sum + (labor.actual_cost || 0) : sum
-    }, 0) || 0
-    
-    const indirectLaborActual = laborActuals?.reduce((sum, labor) => {
-      return labor.craft_type?.category === 'indirect' ? sum + (labor.actual_cost || 0) : sum
-    }, 0) || 0
-    
-    // Add direct labor costs
-    if (directLaborActual > 0) {
-      budgetBreakdown['DIRECT LABOR'].actual += directLaborActual
-      budgetBreakdown['DIRECT LABOR'].committed += directLaborActual
+    // Update labor actuals by category
+    if (laborTotals.byCategory.direct > 0) {
+      budgetBreakdown['DIRECT LABOR'].actual = laborTotals.byCategory.direct
+      budgetBreakdown['DIRECT LABOR'].committed = laborTotals.byCategory.direct
       budgetBreakdown['DIRECT LABOR'].forecasted = Math.max(
         budgetBreakdown['DIRECT LABOR'].budget,
-        budgetBreakdown['DIRECT LABOR'].committed,
-        budgetBreakdown['DIRECT LABOR'].actual
+        laborTotals.byCategory.direct + (eacCalculation.breakdown.laborFuture * 0.6) // Estimate 60% is direct
       )
       budgetBreakdown['DIRECT LABOR'].variance = budgetBreakdown['DIRECT LABOR'].budget - budgetBreakdown['DIRECT LABOR'].forecasted
     }
     
-    // Add indirect labor costs
-    if (indirectLaborActual > 0) {
-      budgetBreakdown['INDIRECT LABOR'].actual += indirectLaborActual
-      budgetBreakdown['INDIRECT LABOR'].committed += indirectLaborActual
+    if (laborTotals.byCategory.indirect > 0) {
+      budgetBreakdown['INDIRECT LABOR'].actual = laborTotals.byCategory.indirect
+      budgetBreakdown['INDIRECT LABOR'].committed = laborTotals.byCategory.indirect
       budgetBreakdown['INDIRECT LABOR'].forecasted = Math.max(
         budgetBreakdown['INDIRECT LABOR'].budget,
-        budgetBreakdown['INDIRECT LABOR'].committed,
-        budgetBreakdown['INDIRECT LABOR'].actual
+        laborTotals.byCategory.indirect + (eacCalculation.breakdown.laborFuture * 0.3) // Estimate 30% is indirect
       )
       budgetBreakdown['INDIRECT LABOR'].variance = budgetBreakdown['INDIRECT LABOR'].budget - budgetBreakdown['INDIRECT LABOR'].forecasted
+    }
+    
+    if (laborTotals.byCategory.staff > 0) {
+      budgetBreakdown['STAFF LABOR'].actual = laborTotals.byCategory.staff
+      budgetBreakdown['STAFF LABOR'].committed = laborTotals.byCategory.staff
+      budgetBreakdown['STAFF LABOR'].forecasted = Math.max(
+        budgetBreakdown['STAFF LABOR'].budget,
+        laborTotals.byCategory.staff + (eacCalculation.breakdown.laborFuture * 0.1) // Estimate 10% is staff
+      )
+      budgetBreakdown['STAFF LABOR'].variance = budgetBreakdown['STAFF LABOR'].budget - budgetBreakdown['STAFF LABOR'].forecasted
     }
 
 

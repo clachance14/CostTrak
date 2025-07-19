@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { Button, Input, Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui'
@@ -11,7 +11,33 @@ interface TwoFactorInput {
   code: string
 }
 
+// Main component with Suspense wrapper
 export default function TwoFactorPage() {
+  return (
+    <Suspense fallback={<TwoFactorLoading />}>
+      <TwoFactorForm />
+    </Suspense>
+  )
+}
+
+// Loading state component
+function TwoFactorLoading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <Card className="w-full max-w-md">
+        <CardContent className="pt-6">
+          <div className="flex justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground"></div>
+          </div>
+          <p className="text-center mt-4 text-foreground/60">Loading 2FA verification...</p>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Actual form component with useSearchParams
+function TwoFactorForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const session = searchParams.get('session')

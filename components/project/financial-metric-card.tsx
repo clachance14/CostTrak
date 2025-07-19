@@ -128,7 +128,7 @@ export function FinancialMetricCard({
                   'text-sm font-medium',
                   trend.isPositive ? 'text-green-600' : 'text-red-600'
                 )}>
-                  {trend.value > 0 ? '+' : ''}{trend.value}%
+                  {trend.value > 0 ? '+' : ''}{Math.round(trend.value)}%
                   {trend.label && ` ${trend.label}`}
                 </span>
               </div>

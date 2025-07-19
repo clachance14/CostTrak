@@ -311,8 +311,11 @@ export async function POST(request: NextRequest) {
       errors: [] as Array<{ craft: string; error: string }>
     }
 
+    // Map to track craft codes and their associated employee categories
+    const craftCategoryMap = new Map<string, { direct: number; indirect: number; staff: number }>()
+
     if (columnMap.craft !== undefined) {
-      // First pass: collect all unique pay grade codes from the file
+      // First pass: collect all unique pay grade codes and analyze employee categories
       for (let i = headerRowIndex + 1; i < rawData.length; i++) {
         const row = rawData[i]
         if (!row || row.length === 0) continue
@@ -322,7 +325,30 @@ export async function POST(request: NextRequest) {
 
         const craftCode = parseStringValue(row[columnMap.craft])
         if (craftCode && craftCode !== 'DIRECT' && craftCode !== 'INDIRECT' && craftCode !== 'STAFF') {
-          craftTypesInFile.add(craftCode.toUpperCase())
+          const upperCraftCode = craftCode.toUpperCase()
+          craftTypesInFile.add(upperCraftCode)
+          
+          // Track employee categories for this craft code
+          if (!craftCategoryMap.has(upperCraftCode)) {
+            craftCategoryMap.set(upperCraftCode, { direct: 0, indirect: 0, staff: 0 })
+          }
+          
+          // Determine employee category
+          let empCategory: 'direct' | 'indirect' | 'staff' = 'direct' // default
+          if (columnMap.category !== undefined) {
+            const categoryValue = parseStringValue(row[columnMap.category])?.toLowerCase()
+            if (categoryValue === 'direct') empCategory = 'direct'
+            else if (categoryValue === 'indirect') empCategory = 'indirect'
+            else if (categoryValue === 'staff') empCategory = 'staff'
+          } else if (columnMap.type !== undefined) {
+            const typeValue = parseStringValue(row[columnMap.type])
+            const isIndirect = typeValue.toLowerCase().includes('indirect')
+            empCategory = isIndirect ? 'indirect' : 'direct'
+          }
+          
+          // Increment counter for this category
+          const counts = craftCategoryMap.get(upperCraftCode)!
+          counts[empCategory]++
         }
       }
 
@@ -331,11 +357,17 @@ export async function POST(request: NextRequest) {
         const existing = existingCraftTypes?.find(ct => ct.code === craftCode)
         
         if (!existing) {
-          // Determine category based on code patterns or default to direct
-          const category: 'direct' | 'indirect' | 'staff' = 'direct'
+          // Determine category based on majority of employees using this craft code
+          const counts = craftCategoryMap.get(craftCode) || { direct: 0, indirect: 0, staff: 0 }
+          let category: 'direct' | 'indirect' | 'staff' = 'direct'
           
-          // You can add logic here to determine category from code if needed
-          // For now, default to direct
+          // Use the category with the most employees
+          if (counts.indirect > counts.direct && counts.indirect > counts.staff) {
+            category = 'indirect'
+          } else if (counts.staff > counts.direct && counts.staff > counts.indirect) {
+            category = 'staff'
+          }
+          // Otherwise default to 'direct'
           
           const { error } = await adminSupabase
             .from('craft_types')
@@ -353,6 +385,7 @@ export async function POST(request: NextRequest) {
             })
           } else {
             craftTypeUpdateResults.created++
+            console.log(`Created craft type ${craftCode} with category: ${category} (counts: ${JSON.stringify(counts)})`)
           }
         }
       }

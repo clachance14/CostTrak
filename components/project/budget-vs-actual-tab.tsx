@@ -4,7 +4,7 @@ import { useState, Fragment } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Card } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/utils'
-import { ChevronRight, ChevronDown, AlertTriangle } from 'lucide-react'
+import { ChevronRight, ChevronDown } from 'lucide-react'
 import { BudgetCategoryPOModal } from './budget-category-po-modal'
 import { cn } from '@/lib/utils'
 
@@ -75,11 +75,10 @@ export function BudgetVsActualTab({ projectId, contractValue }: BudgetVsActualTa
 
   const totals = categories.reduce((acc, cat) => ({
     budget: acc.budget + cat.budget,
-    committed: acc.committed + cat.committed,
     actuals: acc.actuals + cat.actuals,
     forecastedFinal: acc.forecastedFinal + cat.forecastedFinal,
     variance: acc.variance + cat.variance
-  }), { budget: 0, committed: 0, actuals: 0, forecastedFinal: 0, variance: 0 })
+  }), { budget: 0, actuals: 0, forecastedFinal: 0, variance: 0 })
 
   return (
     <div className="space-y-6">
@@ -115,8 +114,8 @@ export function BudgetVsActualTab({ projectId, contractValue }: BudgetVsActualTa
               <tr className="border-b">
                 <th className="text-left py-3 px-4">Budget Category</th>
                 <th className="text-right py-3 px-4">Budget</th>
-                <th className="text-right py-3 px-4">Committed</th>
                 <th className="text-right py-3 px-4">Actuals</th>
+                <th className="text-right py-3 px-4">Left to Spend</th>
                 <th className="text-right py-3 px-4">Forecasted Final</th>
                 <th className="text-right py-3 px-4">Variance</th>
                 <th className="w-8"></th>
@@ -167,15 +166,13 @@ export function BudgetVsActualTab({ projectId, contractValue }: BudgetVsActualTa
                         {formatCurrency(category.budget)}
                       </td>
                       <td className="text-right py-3 px-4">
-                        {formatCurrency(category.committed)}
+                        {formatCurrency(category.actuals)}
                       </td>
-                      <td className="text-right py-3 px-4">
-                        <div className="flex items-center justify-end gap-1">
-                          {formatCurrency(category.actuals)}
-                          {category.actuals > category.committed && category.category !== 'LABOR' && (
-                            <AlertTriangle className="h-3 w-3 text-orange-500" />
-                          )}
-                        </div>
+                      <td className={cn(
+                        "text-right py-3 px-4",
+                        category.forecastedFinal - category.actuals < 0 ? "text-red-600" : ""
+                      )}>
+                        {formatCurrency(category.forecastedFinal - category.actuals)}
                       </td>
                       <td className="text-right py-3 px-4">
                         {formatCurrency(category.forecastedFinal)}
@@ -206,10 +203,13 @@ export function BudgetVsActualTab({ projectId, contractValue }: BudgetVsActualTa
                           {formatCurrency(subcat.budget)}
                         </td>
                         <td className="text-right py-3 px-4 text-sm">
-                          {formatCurrency(subcat.committed)}
-                        </td>
-                        <td className="text-right py-3 px-4 text-sm">
                           {formatCurrency(subcat.actuals)}
+                        </td>
+                        <td className={cn(
+                          "text-right py-3 px-4 text-sm",
+                          subcat.forecastedFinal - subcat.actuals < 0 ? "text-red-600" : ""
+                        )}>
+                          {formatCurrency(subcat.forecastedFinal - subcat.actuals)}
                         </td>
                         <td className="text-right py-3 px-4 text-sm">
                           {formatCurrency(subcat.forecastedFinal)}
@@ -232,8 +232,13 @@ export function BudgetVsActualTab({ projectId, contractValue }: BudgetVsActualTa
               <tr className="font-semibold">
                 <td className="py-3 px-4">Total</td>
                 <td className="text-right py-3 px-4">{formatCurrency(totals.budget)}</td>
-                <td className="text-right py-3 px-4">{formatCurrency(totals.committed)}</td>
                 <td className="text-right py-3 px-4">{formatCurrency(totals.actuals)}</td>
+                <td className={cn(
+                  "text-right py-3 px-4",
+                  totals.forecastedFinal - totals.actuals < 0 ? "text-red-600" : ""
+                )}>
+                  {formatCurrency(totals.forecastedFinal - totals.actuals)}
+                </td>
                 <td className="text-right py-3 px-4">{formatCurrency(totals.forecastedFinal)}</td>
                 <td className={cn(
                   "text-right py-3 px-4",
