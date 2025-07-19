@@ -1,16 +1,26 @@
-import { createMiddlewareClient } from '@supabase/ssr'
+// middleware.ts - Compatible with @supabase/ssr@0.7.0-rc.2
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next()
-  
-  const supabase = createMiddlewareClient(
+  let response = NextResponse.next()
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    },
-    { req: request, res: response }
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options)
+          })
+        },
+      },
+    }
   )
 
   try {
