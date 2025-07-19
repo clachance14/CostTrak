@@ -16,8 +16,10 @@ const roleRoutes: Record<string, string[]> = {
 }
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
   })
 
   const supabase = createServerClient<Database>(
@@ -29,14 +31,8 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({
-            request,
-          })
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            response.cookies.set(name, value, options)
           )
         },
       },
@@ -71,7 +67,7 @@ export async function middleware(request: NextRequest) {
 
   // Allow public routes and auth API routes
   if (publicRoutes.some(route => pathname === route) || pathname.startsWith('/api/auth/')) {
-    return supabaseResponse
+    return response
   }
 
   // Check authentication
@@ -107,7 +103,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Update last activity time
-    supabaseResponse.cookies.set('last_activity', now.toString(), {
+    response.cookies.set('last_activity', now.toString(), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -129,7 +125,7 @@ export async function middleware(request: NextRequest) {
       url.pathname = '/setup-profile'
       return NextResponse.redirect(url)
     }
-    return supabaseResponse
+    return response
   }
 
   // Check role-based access
@@ -137,7 +133,7 @@ export async function middleware(request: NextRequest) {
   
   // Controllers have access to all routes for testing
   if (userRole === 'controller') {
-    return supabaseResponse
+    return response
   }
   
   const allowedRoutes = roleRoutes[userRole] || []
@@ -153,7 +149,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  return supabaseResponse
+  return response
 }
 
 export const config = {
