@@ -64,7 +64,7 @@ export async function PATCH(
 
     // Remove undefined values
     const updates = Object.fromEntries(
-      Object.entries(allowedUpdates).filter(([_, v]) => v !== undefined)
+      Object.entries(allowedUpdates).filter(([, v]) => v !== undefined)
     )
 
     const { data, error } = await supabase

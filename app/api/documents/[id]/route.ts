@@ -22,26 +22,12 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Fetch the document
-    const { data: document, error } = await supabase
-      .from('documents')
-      .select(`
-        *,
-        uploader:profiles!uploaded_by(first_name, last_name, email)
-      `)
-      .eq('id', id)
-      .is('deleted_at', null)
-      .single()
-
-    if (error || !document) {
-      return NextResponse.json(
-        { error: 'Document not found' },
-        { status: 404 }
-      )
-    }
-
-    // The RLS policies will handle access control
-    return NextResponse.json({ data: document })
+    // TODO: Implement documents table in database
+    // For now, return not implemented
+    return NextResponse.json(
+      { error: 'Documents feature not implemented' },
+      { status: 501 }
+    )
   } catch (error) {
     console.error('Error fetching document:', error)
     if (error instanceof z.ZodError) {
@@ -86,40 +72,12 @@ export async function DELETE(
       )
     }
 
-    // Get document details before deletion
-    const { data: document } = await supabase
-      .from('documents')
-      .select('*')
-      .eq('id', id)
-      .single()
-
-    if (!document) {
-      return NextResponse.json(
-        { error: 'Document not found' },
-        { status: 404 }
-      )
-    }
-
-    // Soft delete the document
-    const storageService = new StorageService(supabase)
-    await storageService.deleteDocument(id)
-
-    // Log in audit log
-    await supabase.from('audit_log').insert({
-      entity_type: 'document',
-      entity_id: id,
-      action: 'delete',
-      changes: {
-        name: document.name,
-        entity_type: document.entity_type,
-        entity_id: document.entity_id,
-      },
-      performed_by: user.id,
-    })
-
-    return NextResponse.json({
-      message: 'Document deleted successfully',
-    })
+    // TODO: Implement documents table in database
+    // For now, return not implemented
+    return NextResponse.json(
+      { error: 'Documents feature not implemented' },
+      { status: 501 }
+    )
   } catch (error) {
     console.error('Error deleting document:', error)
     if (error instanceof z.ZodError) {

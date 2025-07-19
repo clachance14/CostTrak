@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import type { Database } from '@/types/database'
+import type { Database } from '@/types/database.generated'
 
 type ProjectAssignment = Database['public']['Tables']['project_assignments']['Row']
 type ProjectAssignmentInsert = Database['public']['Tables']['project_assignments']['Insert']

@@ -246,7 +246,7 @@ export default function PurchaseOrderDetailPage({ params }: PODetailPageProps) {
                           {formatCurrency(item.unit_price)}
                         </td>
                         <td className="px-4 py-3 text-sm text-right font-medium">
-                          {formatCurrency(item.total_amount)}
+                          {formatCurrency(item.amount)}
                         </td>
                       </tr>
                     ))}

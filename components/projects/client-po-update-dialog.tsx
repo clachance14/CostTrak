@@ -19,7 +19,7 @@ interface ClientPOUpdateDialogProps {
   onOpenChange: (open: boolean) => void
   projectId: string
   currentPONumber?: string
-  currentRevision?: string
+  currentRepresentative?: string
   onUpdate: () => void
 }
 
@@ -28,12 +28,12 @@ export function ClientPOUpdateDialog({
   onOpenChange,
   projectId,
   currentPONumber,
-  currentRevision,
+  currentRepresentative,
   onUpdate
 }: ClientPOUpdateDialogProps) {
   const [loading, setLoading] = useState(false)
   const [poNumber, setPONumber] = useState(currentPONumber || '')
-  const [revision, setRevision] = useState(currentRevision || '')
+  const [representative, setRepresentative] = useState(currentRepresentative || '')
   const [notes, setNotes] = useState('')
 
   const handleSubmit = async () => {
@@ -44,7 +44,7 @@ export function ClientPOUpdateDialog({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           client_po_number: poNumber || undefined,
-          client_po_revision: revision || null
+          client_representative: representative || undefined
         })
       })
 
@@ -71,7 +71,7 @@ export function ClientPOUpdateDialog({
         <DialogHeader>
           <DialogTitle>Update Client PO Information</DialogTitle>
           <DialogDescription>
-            Update the client PO number and revision for invoicing purposes.
+            Update the client PO number and representative for invoicing purposes.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -85,16 +85,13 @@ export function ClientPOUpdateDialog({
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="revision">Revision</Label>
+            <Label htmlFor="representative">Client Representative</Label>
             <Input
-              id="revision"
-              value={revision}
-              onChange={(e) => setRevision(e.target.value)}
-              placeholder="e.g., Rev A, Rev 1, etc."
+              id="representative"
+              value={representative}
+              onChange={(e) => setRepresentative(e.target.value)}
+              placeholder="Enter client representative name"
             />
-            <p className="text-sm text-muted-foreground">
-              Leave empty if this is the original PO
-            </p>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="notes">Notes (Optional)</Label>

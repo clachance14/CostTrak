@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js'
-import { Database } from '@/types/database'
+import { Database } from '@/types/database.generated'
 
 type NotificationType = Database['public']['Enums']['notification_type']
 type NotificationPriority = 'low' | 'medium' | 'high' | 'critical'

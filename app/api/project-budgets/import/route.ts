@@ -278,8 +278,35 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Convert map to array
-    const breakdownRows = Array.from(breakdownMap.values())
+    // Convert map to array and handle TAXES & INSURANCE distribution
+    let breakdownRows = Array.from(breakdownMap.values())
+    
+    // Find and distribute TAXES & INSURANCE proportionally
+    const taxInsuranceRows = breakdownRows.filter(row => row.cost_type === 'TAXES & INSURANCE')
+    const laborRows = breakdownRows.filter(row => 
+      ['DIRECT LABOR', 'INDIRECT LABOR', 'PERDIEM', 'PER DIEM'].includes(row.cost_type)
+    )
+    
+    if (taxInsuranceRows.length > 0 && laborRows.length > 0) {
+      // Calculate total labor value (excluding tax & insurance)
+      const totalLaborValue = laborRows.reduce((sum, row) => sum + row.value, 0)
+      
+      // Distribute tax & insurance proportionally
+      taxInsuranceRows.forEach(taxRow => {
+        laborRows.forEach(laborRow => {
+          const proportion = laborRow.value / totalLaborValue
+          const additionalValue = taxRow.value * proportion
+          
+          // Add the proportional tax & insurance to the labor row
+          laborRow.value += additionalValue
+          
+          console.log(`Distributed ${additionalValue.toFixed(2)} of tax & insurance to ${laborRow.discipline} - ${laborRow.cost_type}`)
+        })
+      })
+      
+      // Remove the separate TAXES & INSURANCE rows
+      breakdownRows = breakdownRows.filter(row => row.cost_type !== 'TAXES & INSURANCE')
+    }
     
     if (breakdownRows.length === 0) {
       return NextResponse.json(

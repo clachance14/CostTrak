@@ -26,7 +26,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { 
   Bell, 
-  CheckCheck, 
+  Check, 
   Trash2,
   Search,
   AlertCircle,
@@ -35,8 +35,8 @@ import {
   DollarSign,
   Calendar,
   User,
-  FileUp,
-  Megaphone,
+  Upload,
+  Bell as Megaphone,
   Loader2
 } from 'lucide-react'
 import Link from 'next/link'
@@ -163,7 +163,7 @@ export default function NotificationsPage() {
       case 'user_role_changed':
         return <User className="h-5 w-5" />
       case 'document_uploaded':
-        return <FileUp className="h-5 w-5" />
+        return <Upload className="h-5 w-5" />
       case 'system_announcement':
         return <Megaphone className="h-5 w-5" />
       default:
@@ -278,7 +278,7 @@ export default function NotificationsPage() {
                     onClick={() => markAsReadMutation.mutate(selectedNotifications)}
                     disabled={markAsReadMutation.isPending}
                   >
-                    <CheckCheck className="mr-2 h-4 w-4" />
+                    <Check className="mr-2 h-4 w-4" />
                     Mark as read ({selectedNotifications.length})
                   </Button>
                   <Button
@@ -298,7 +298,7 @@ export default function NotificationsPage() {
                   onClick={() => markAllAsReadMutation.mutate()}
                   disabled={markAllAsReadMutation.isPending}
                 >
-                  <CheckCheck className="mr-2 h-4 w-4" />
+                  <Check className="mr-2 h-4 w-4" />
                   Mark all as read
                 </Button>
               )}

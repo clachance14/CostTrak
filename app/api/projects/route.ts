@@ -298,16 +298,27 @@ export async function POST(request: NextRequest) {
 
     // Create contract breakdown if provided
     if (validatedData.contract_breakdown) {
+      // Only include fields that exist in the database schema
+      // Note: total_contract_amount is a generated column and should not be included
+      const contractData = {
+        project_id: project.id,
+        client_po_number: validatedData.contract_breakdown.client_po_number,
+        client_representative: validatedData.contract_breakdown.client_representative,
+        labor_po_amount: validatedData.contract_breakdown.labor_po_amount || 0,
+        materials_po_amount: validatedData.contract_breakdown.materials_po_amount || 0,
+        demo_po_amount: validatedData.contract_breakdown.demo_po_amount || 0,
+        contract_date: validatedData.contract_breakdown.contract_date,
+        contract_terms: validatedData.contract_breakdown.contract_terms,
+        created_by: user.id
+      }
+
       const { error: contractError } = await supabase
         .from('project_contract_breakdowns')
-        .insert({
-          project_id: project.id,
-          ...validatedData.contract_breakdown,
-          created_by: user.id
-        })
+        .insert(contractData)
 
       if (contractError) {
         console.error('Contract breakdown creation error:', contractError)
+        console.error('Attempted data:', contractData)
         // Don't fail the whole request, just log the error
       }
     }

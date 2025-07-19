@@ -341,7 +341,7 @@ export default function PurchaseOrdersImportPage() {
                     <tr key={i}>
                       {preview.headers.map((header, j) => (
                         <td key={j} className="px-4 py-2 text-sm text-foreground whitespace-nowrap">
-                          {row[header] || '-'}
+                          {(row as Record<string, any>)[header] || '-'}
                         </td>
                       ))}
                     </tr>

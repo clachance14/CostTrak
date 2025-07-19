@@ -6,7 +6,6 @@ export const dynamic = 'force-dynamic'
 
 // Schema for updating contract details
 const updateContractSchema = z.object({
-  client_po_revision: z.string().optional().nullable(),
   client_po_number: z.string().optional(),
   client_representative: z.string().optional()
 })

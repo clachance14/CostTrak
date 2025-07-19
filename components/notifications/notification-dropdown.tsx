@@ -6,14 +6,14 @@ import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { 
   Bell, 
-  CheckCheck, 
+  Check, 
   TrendingUp,
   FileText,
   DollarSign,
   Calendar,
   User,
-  FileUp,
-  Megaphone,
+  Upload,
+  Bell as Megaphone,
   Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -50,7 +50,7 @@ function getNotificationIcon(type?: string) {
     case 'labor_forecast':
       return <Calendar className="h-4 w-4" />
     case 'financial_snapshot':
-      return <FileUp className="h-4 w-4" />
+      return <Upload className="h-4 w-4" />
     case 'user':
       return <User className="h-4 w-4" />
     case 'system':
@@ -135,7 +135,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
             onClick={() => markAllAsReadMutation.mutate()}
             disabled={markAllAsReadMutation.isPending}
           >
-            <CheckCheck className="mr-2 h-4 w-4" />
+            <Check className="mr-2 h-4 w-4" />
             Mark all read
           </Button>
         )}

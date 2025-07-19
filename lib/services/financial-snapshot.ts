@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js'
-import { Database } from '@/types/database'
+import { Database } from '@/types/database.generated'
 
 type FinancialSnapshot = Database['public']['Tables']['financial_snapshots']['Insert']
 

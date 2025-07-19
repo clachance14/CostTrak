@@ -291,7 +291,6 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
                 {contractData?.client_po_number && (
                   <div className="text-xs text-gray-500 mt-1">
                     PO: {contractData.client_po_number}
-                    {contractData.client_po_revision && ` ${contractData.client_po_revision}`}
                   </div>
                 )}
               </div>
@@ -534,12 +533,6 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Revision</span>
-                      <span className="font-semibold">
-                        {contractData?.client_po_revision || 'Original'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
                       <span className="text-gray-600">Client Representative</span>
                       <span className="font-semibold">
                         {contractData?.client_representative || 'Not Set'}
@@ -772,7 +765,7 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
         onOpenChange={setShowClientPODialog}
         projectId={id}
         currentPONumber={contractData?.client_po_number}
-        currentRevision={contractData?.client_po_revision}
+        currentRepresentative={contractData?.client_representative}
         onUpdate={() => {
           queryClient.invalidateQueries({ queryKey: ['project-contract', id] })
           queryClient.invalidateQueries({ queryKey: ['project-financial-summary', id] })

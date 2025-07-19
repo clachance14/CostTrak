@@ -8,7 +8,7 @@ import {
   Eye,
   UserCheck,
   ChevronRight,
-  TestTube,
+  Info,
   BarChart3
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -127,7 +127,7 @@ export default function ControllerDashboard() {
       <Card className="border-orange-200 bg-orange-50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TestTube className="h-5 w-5" />
+            <Info className="h-5 w-5" />
             Controller Testing Mode
           </CardTitle>
           <CardDescription>

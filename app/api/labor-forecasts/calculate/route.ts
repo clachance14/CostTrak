@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getWeekEndingDate } from '@/lib/validations/labor-forecast-v2'
+import { addWeeks } from 'date-fns'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,15 +26,65 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Use the database function to calculate forecast
-    const { data, error } = await supabase
-      .rpc('calculate_labor_forecast', {
-        p_project_id: project_id,
-        p_start_date: start_date || new Date().toISOString(),
-        p_weeks_ahead: weeks_ahead
-      })
+    // Get the start date (default to next Sunday if not provided)
+    const startDate = start_date ? new Date(start_date) : new Date()
+    const firstWeekEnding = getWeekEndingDate(startDate)
 
-    if (error) throw error
+    // Get running averages for the project
+    const { data: runningAverages, error: avgError } = await supabase
+      .from('labor_running_averages')
+      .select('*')
+      .eq('project_id', project_id)
+
+    if (avgError) throw avgError
+
+    // Get headcount forecasts for the project
+    const { data: headcountForecasts, error: hcError } = await supabase
+      .from('labor_headcount_forecasts')
+      .select(`
+        *,
+        craft_types (
+          id,
+          name,
+          code,
+          category
+        )
+      `)
+      .eq('project_id', project_id)
+      .gte('week_ending', firstWeekEnding.toISOString())
+      .lte('week_ending', addWeeks(firstWeekEnding, weeks_ahead - 1).toISOString())
+      .order('week_ending')
+      .order('craft_type_id')
+
+    if (hcError) throw hcError
+
+    // Create a map of craft type running averages
+    const avgRateMap = new Map<string, number>(
+      runningAverages?.map(ra => [ra.craft_type_id, Number(ra.avg_rate)]) || []
+    )
+
+    // Standard work week hours (40 hours per person)
+    const HOURS_PER_PERSON_PER_WEEK = 40
+
+    // Process the headcount data to calculate forecasted hours and costs
+    const processedData = headcountForecasts?.map(hc => {
+      const avgRate = avgRateMap.get(hc.craft_type_id) || 0
+      const totalHours = hc.headcount * HOURS_PER_PERSON_PER_WEEK
+      const totalCost = totalHours * avgRate
+
+      return {
+        week_ending: hc.week_ending,
+        craft_type_id: hc.craft_type_id,
+        craft_name: hc.craft_types?.name || '',
+        craft_code: hc.craft_types?.code || '',
+        labor_category: hc.craft_types?.category || '',
+        headcount: hc.headcount,
+        hours_per_person: HOURS_PER_PERSON_PER_WEEK,
+        avg_rate: avgRate,
+        total_hours: totalHours,
+        total_cost: totalCost
+      }
+    }) || []
 
     // Group by week for easier consumption
     interface WeekData {
@@ -50,23 +102,12 @@ export async function POST(request: NextRequest) {
         headcount: number
         totalHours: number
         totalCost: number
-        byCategory: Record<string, { headcount: number; hours: number; cost: number }>
+        byCategory?: Record<string, { headcount: number; hours: number; cost: number }>
       }
     }
     const weeklyData = new Map<string, WeekData>()
     
-    data?.forEach((row: {
-      week_ending: string
-      craft_type_id: string
-      craft_name: string
-      craft_code: string
-      labor_category: string
-      headcount: number
-      hours_per_person: number
-      avg_rate: number
-      total_hours: number
-      total_cost: number
-    }) => {
+    processedData.forEach((row) => {
       const weekKey = row.week_ending
       
       if (!weeklyData.has(weekKey)) {
@@ -76,25 +117,27 @@ export async function POST(request: NextRequest) {
           totals: {
             headcount: 0,
             totalHours: 0,
-            forecastedCost: 0
+            totalCost: 0
           }
         })
       }
       
       const week = weeklyData.get(weekKey)
+      if (!week) return
+      
       week.entries.push({
         craftTypeId: row.craft_type_id,
         craftName: row.craft_name,
+        craftCode: row.craft_code,
         laborCategory: row.labor_category,
         headcount: row.headcount,
-        totalHours: row.total_hours,
-        avgRate: row.avg_rate,
-        forecastedCost: row.forecasted_cost
+        hours: row.total_hours,
+        cost: row.total_cost
       })
       
       week.totals.headcount += row.headcount
-      week.totals.totalHours += parseFloat(row.total_hours)
-      week.totals.forecastedCost += parseFloat(row.forecasted_cost)
+      week.totals.totalHours += row.total_hours
+      week.totals.totalCost += row.total_cost
     })
 
     // Convert to array and sort by week
@@ -106,8 +149,8 @@ export async function POST(request: NextRequest) {
     const grandTotals = weeks.reduce((totals, week) => ({
       headcount: totals.headcount + week.totals.headcount,
       totalHours: totals.totalHours + week.totals.totalHours,
-      forecastedCost: totals.forecastedCost + week.totals.forecastedCost
-    }), { headcount: 0, totalHours: 0, forecastedCost: 0 })
+      totalCost: totals.totalCost + week.totals.totalCost
+    }), { headcount: 0, totalHours: 0, totalCost: 0 })
 
     // Get labor categories summary
     const categorySummary = new Map<string, {
@@ -116,41 +159,24 @@ export async function POST(request: NextRequest) {
       totalHours: number
       totalCost: number
     }>()
-    data?.forEach((row: {
-      week_ending: string
-      craft_type_id: string
-      craft_name: string
-      craft_code: string
-      labor_category: string
-      headcount: number
-      hours_per_person: number
-      avg_rate: number
-      total_hours: number
-      total_cost: number
-    }) => {
+    
+    processedData.forEach((row) => {
       const category = row.labor_category
       if (!categorySummary.has(category)) {
         categorySummary.set(category, {
-          category,
+          craftCount: 0,
+          totalHeadcount: 0,
           totalHours: 0,
-          totalCost: 0,
-          avgRate: 0,
-          craftCount: 0
+          totalCost: 0
         })
       }
       
       const cat = categorySummary.get(category)
-      cat.totalHours += parseFloat(row.total_hours)
-      cat.totalCost += parseFloat(row.forecasted_cost)
-      cat.avgRate += parseFloat(row.avg_rate)
+      if (!cat) return
+      
+      cat.totalHours += row.total_hours
+      cat.totalCost += row.total_cost
       cat.craftCount += 1
-    })
-
-    // Calculate average rates
-    categorySummary.forEach(cat => {
-      if (cat.craftCount > 0) {
-        cat.avgRate = cat.avgRate / cat.craftCount
-      }
     })
 
     return NextResponse.json({

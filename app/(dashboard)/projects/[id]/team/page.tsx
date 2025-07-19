@@ -5,15 +5,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { 
   ArrowLeft,
-  Plus,
   Trash2,
   Edit2,
   UserPlus,
-  Shield,
-  Eye,
-  Clock,
-  AlertCircle,
-  CheckCircle
+  Clock
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -41,6 +36,15 @@ import { format } from 'date-fns'
 
 interface TeamManagementPageProps {
   params: Promise<{ id: string }>
+}
+
+interface User {
+  id: string
+  email: string
+  first_name: string
+  last_name: string
+  role: string
+  is_active: boolean
 }
 
 interface ProjectAssignment {
@@ -116,7 +120,7 @@ export default function TeamManagementPage({ params }: TeamManagementPageProps) 
   })
 
   // Fetch project assignments
-  const { data: assignments = [], isLoading: assignmentsLoading } = useQuery({
+  const { data: assignments = [], isLoading: assignmentsLoading } = useQuery<ProjectAssignment[]>({
     queryKey: ['project-assignments', projectId],
     queryFn: async () => {
       const response = await fetch(`/api/projects/${projectId}/assignments`)
@@ -126,15 +130,15 @@ export default function TeamManagementPage({ params }: TeamManagementPageProps) 
   })
 
   // Fetch available users
-  const { data: availableUsers = [] } = useQuery({
+  const { data: availableUsers = [] } = useQuery<User[]>({
     queryKey: ['available-users'],
     queryFn: async () => {
       const response = await fetch('/api/users')
       if (!response.ok) throw new Error('Failed to fetch users')
       const data = await response.json()
       // Filter out users already assigned and the current project manager
-      const assignedUserIds = assignments.map((a: ProjectAssignment) => a.user_id)
-      return data.users.filter((u: any) => 
+      const assignedUserIds = assignments.map((a) => a.user_id)
+      return data.users.filter((u: User) => 
         !assignedUserIds.includes(u.id) && 
         u.id !== project?.project_manager_id &&
         u.is_active
@@ -151,7 +155,12 @@ export default function TeamManagementPage({ params }: TeamManagementPageProps) 
 
   // Create assignment mutation
   const createAssignment = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: {
+      user_id: string;
+      role: string;
+      permissions: Record<string, boolean>;
+      notes?: string;
+    }) => {
       const response = await fetch(`/api/projects/${projectId}/assignments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -173,7 +182,11 @@ export default function TeamManagementPage({ params }: TeamManagementPageProps) 
 
   // Update assignment mutation
   const updateAssignment = useMutation({
-    mutationFn: async ({ assignmentId, data }: { assignmentId: string, data: any }) => {
+    mutationFn: async ({ assignmentId, data }: { assignmentId: string, data: {
+      role?: string;
+      permissions?: Record<string, boolean>;
+      notes?: string;
+    } }) => {
       const response = await fetch(`/api/projects/${projectId}/assignments`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -342,13 +355,13 @@ export default function TeamManagementPage({ params }: TeamManagementPageProps) 
                       
                       {/* Permissions */}
                       <div className="flex flex-wrap gap-2 mt-2">
-                        {Object.entries(assignment.permissions).map(([perm, hasPermission]) => 
-                          hasPermission && (
+                        {Object.entries(assignment.permissions)
+                          .filter(([, hasPermission]) => hasPermission)
+                          .map(([perm]) => (
                             <Badge key={perm} variant="outline" className="text-xs">
                               {PERMISSION_LABELS[perm] || perm}
                             </Badge>
-                          )
-                        )}
+                          ))}
                       </div>
                       
                       {/* Metadata */}
@@ -431,7 +444,7 @@ export default function TeamManagementPage({ params }: TeamManagementPageProps) 
                     <SelectValue placeholder="Select a user" />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableUsers.map((user: any) => (
+                    {availableUsers.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.first_name} {user.last_name} ({user.email})
                       </SelectItem>
@@ -444,7 +457,7 @@ export default function TeamManagementPage({ params }: TeamManagementPageProps) 
             {/* Role Selection */}
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <Select value={selectedRole} onValueChange={(value: any) => setSelectedRole(value)}>
+              <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as 'delegate_pm' | 'viewer')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -528,7 +541,7 @@ export default function TeamManagementPage({ params }: TeamManagementPageProps) 
               Cancel
             </Button>
             <Button
-              variant="destructive"
+              variant="danger"
               onClick={() => deleteConfirmId && deleteAssignment.mutate(deleteConfirmId)}
               disabled={deleteAssignment.isPending}
             >

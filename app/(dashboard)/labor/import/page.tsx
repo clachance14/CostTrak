@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { 
   Upload as UploadIcon, 
   AlertCircle, 
-  CheckCircle2 as CheckCircle,
+  CheckCircle,
   Download,
   ArrowLeft,
   Info as InfoIcon,
@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useUser } from '@/hooks/use-auth'
 import * as XLSX from 'xlsx'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, cn } from '@/lib/utils'
 import { parseExcelDate, EXCEL_HEADERS, EXCEL_COLUMNS } from '@/lib/validations/labor-import'
 import type { LaborImportResult } from '@/lib/validations/labor-import'
 
@@ -44,6 +44,8 @@ interface PreviewData {
     otHours: number
     stRate: number
     totalCost: number
+    exists?: boolean
+    dbRate?: number
   }>
   totals: {
     employees: number
@@ -110,6 +112,13 @@ export default function LaborImportPage() {
   const [setupStep, setSetupStep] = useState<'crafts' | 'employees'>('crafts')
   const [isProcessingSetup, setIsProcessingSetup] = useState(false)
   const [justCompletedSetup, setJustCompletedSetup] = useState(false)
+  
+  // Drag and drop state
+  const [isDragging, setIsDragging] = useState(false)
+  const dragCounter = useRef(0)
+  
+  // State for tracking rate fetching
+  const [isFetchingRates, setIsFetchingRates] = useState(false)
 
   // Check permissions
   const canImport = user && ['controller', 'ops_manager', 'project_manager'].includes(user.role)
@@ -175,10 +184,69 @@ export default function LaborImportPage() {
     }
   })
 
-  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0]
-    if (!selectedFile) return
+  // Fetch employee rates after preview is set
+  useEffect(() => {
+    const fetchEmployeeRates = async () => {
+      if (!preview?.employees || preview.employees.length === 0) return
+      
+      // Check if we already have rates (already fetched)
+      const hasRates = preview.employees.some(emp => emp.dbRate !== undefined)
+      if (hasRates) return
+      
+      setIsFetchingRates(true)
+      
+      try {
+        const employeeIds = preview.employees.map(emp => emp.employeeId)
+        const response = await fetch('/api/employees/batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ employeeIds })
+        })
 
+        if (response.ok) {
+          const { employees: dbEmployees } = await response.json()
+          
+          // Update preview with actual rates from database
+          let recalculatedTotalCost = 0
+          const updatedEmployees = preview.employees.map(emp => {
+            const dbEmp = dbEmployees.find((e: any) => e.employeeNumber === emp.employeeId)
+            const actualRate = dbEmp?.baseRate || emp.stRate || 0
+            
+            // Recalculate costs with actual rate
+            const stWages = emp.stHours * actualRate
+            const otWages = emp.otHours * actualRate * 1.5
+            const totalCost = stWages + otWages
+            recalculatedTotalCost += totalCost
+
+            return {
+              ...emp,
+              stRate: actualRate,
+              totalCost,
+              exists: dbEmp && dbEmp.employeeNumber !== undefined,
+              dbRate: dbEmp?.baseRate
+            }
+          })
+
+          setPreview({
+            ...preview,
+            employees: updatedEmployees,
+            totals: {
+              ...preview.totals,
+              totalCost: recalculatedTotalCost
+            }
+          })
+        }
+      } catch (error) {
+        console.error('Failed to fetch employee rates:', error)
+      } finally {
+        setIsFetchingRates(false)
+      }
+    }
+
+    fetchEmployeeRates()
+  }, [preview?.employees])
+
+  const processFile = useCallback(async (selectedFile: File) => {
     setFile(selectedFile)
     setPreview(null)
     setImportResult(null)
@@ -191,6 +259,7 @@ export default function LaborImportPage() {
       if (!workbook.SheetNames.includes('DOW')) {
         setPreview({
           contractorNumber: '',
+          contractorInfo: null,
           weekEnding: new Date(),
           employees: [],
           totals: { employees: 0, totalHours: 0, totalCost: 0 },
@@ -241,7 +310,18 @@ export default function LaborImportPage() {
       }
 
       // Parse employee data
-      const employees = []
+      const employees: Array<{
+        employeeId: string
+        lastName: string
+        firstName: string
+        craftCode: string
+        stHours: number
+        otHours: number
+        stRate: number
+        totalCost: number
+        exists?: boolean
+        dbRate?: number
+      }> = []
       let totalHours = 0
       let totalCost = 0
 
@@ -324,6 +404,62 @@ export default function LaborImportPage() {
       })
     }
   }, [projectsData?.projects])
+
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0]
+    if (!selectedFile) return
+    await processFile(selectedFile)
+  }, [processFile])
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounter.current++
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true)
+    }
+  }, [])
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounter.current--
+    if (dragCounter.current === 0) {
+      setIsDragging(false)
+    }
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }, [])
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    dragCounter.current = 0
+
+    const files = Array.from(e.dataTransfer.files)
+    const excelFile = files.find(file => 
+      file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
+    )
+
+    if (excelFile) {
+      await processFile(excelFile)
+    } else {
+      // Show error for invalid file type
+      setPreview({
+        contractorNumber: '',
+        contractorInfo: null,
+        weekEnding: new Date(),
+        employees: [],
+        totals: { employees: 0, totalHours: 0, totalCost: 0 },
+        isValid: false,
+        errors: ['Please drop an Excel file (.xlsx or .xls)']
+      })
+    }
+  }, [processFile])
 
   const handleImport = async () => {
     if (!file || !preview?.isValid || !selectedProject) return
@@ -500,7 +636,7 @@ export default function LaborImportPage() {
               <li>File must be in ICS Labor Cost Excel format with &quot;DOW&quot; sheet</li>
               <li>Contractor number in row 4, week ending date in row 5</li>
               <li>Employee data starts from row 10 with hours and rates</li>
-              <li>All labor will be imported as aggregated "Direct Labor" totals</li>
+              <li>All labor will be imported as aggregated &quot;Direct Labor&quot; totals</li>
               <li>Total hours and costs will be summed from all employees</li>
               <li>Rows with 0 hours are automatically skipped</li>
             </ul>
@@ -547,7 +683,18 @@ export default function LaborImportPage() {
 
       {/* File Upload */}
       <Card className="p-6 mb-6">
-        <div className="border-2 border-dashed border-foreground/30 rounded-lg p-8 text-center">
+        <div 
+          className={cn(
+            "border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200",
+            isDragging 
+              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 scale-[1.02]" 
+              : "border-foreground/30 hover:border-foreground/50"
+          )}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
           <input
             type="file"
             accept=".xlsx,.xls"
@@ -555,12 +702,26 @@ export default function LaborImportPage() {
             className="hidden"
             id="file-upload"
           />
-          <label htmlFor="file-upload" className="cursor-pointer">
-            <FileSpreadsheet className="h-12 w-12 text-foreground mx-auto mb-4" />
-            <p className="text-lg font-medium text-foreground mb-2">
-              {file ? file.name : 'Click to upload or drag and drop'}
-            </p>
-            <p className="text-sm text-foreground/80">Excel files (.xlsx) up to 10MB</p>
+          <label htmlFor="file-upload" className="cursor-pointer block">
+            {isDragging ? (
+              <>
+                <UploadIcon className="h-12 w-12 text-blue-500 mx-auto mb-4 animate-bounce" />
+                <p className="text-lg font-medium text-blue-600 dark:text-blue-400 mb-2">
+                  Drop your Excel file here
+                </p>
+                <p className="text-sm text-blue-500 dark:text-blue-400">
+                  Release to upload
+                </p>
+              </>
+            ) : (
+              <>
+                <FileSpreadsheet className="h-12 w-12 text-foreground/60 mx-auto mb-4" />
+                <p className="text-lg font-medium text-foreground mb-2">
+                  {file ? file.name : 'Click to upload or drag and drop'}
+                </p>
+                <p className="text-sm text-foreground/80">Excel files (.xlsx, .xls) up to 10MB</p>
+              </>
+            )}
           </label>
         </div>
       </Card>
@@ -634,10 +795,28 @@ export default function LaborImportPage() {
                   </div>
                   <div>
                     <p className="text-sm text-blue-700">Total Cost</p>
-                    <p className="text-xl font-bold text-blue-900">{formatCurrency(preview.totals.totalCost)}</p>
+                    <p className="text-xl font-bold text-blue-900">
+                      {isFetchingRates ? (
+                        <span className="text-sm">Calculating...</span>
+                      ) : (
+                        formatCurrency(preview.totals.totalCost)
+                      )}
+                    </p>
                   </div>
                 </div>
               </div>
+
+              {preview.employees.some(emp => emp.exists === false) && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                  <div className="flex items-start">
+                    <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
+                    <div className="text-sm text-yellow-800">
+                      <p className="font-medium mb-1">New employees will be created during import:</p>
+                      <p>Employees highlighted in yellow don't exist in the system yet. Their wage rates will be set from the Excel file or default to $0 if not specified.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="overflow-x-auto max-h-96 overflow-y-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -653,14 +832,32 @@ export default function LaborImportPage() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {preview.employees.map((emp, i) => (
-                      <tr key={i}>
+                      <tr key={i} className={emp.exists === false ? 'bg-yellow-50' : ''}>
                         <td className="px-4 py-2 text-sm text-foreground">
-                          {emp.lastName}, {emp.firstName} ({emp.employeeId})
+                          <div>
+                            {emp.lastName}, {emp.firstName} ({emp.employeeId})
+                            {emp.exists === false && (
+                              <span className="ml-2 text-xs text-yellow-600 font-medium">(New)</span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-2 text-sm text-foreground">{emp.craftCode}</td>
                         <td className="px-4 py-2 text-sm text-foreground text-right">{emp.stHours}</td>
                         <td className="px-4 py-2 text-sm text-foreground text-right">{emp.otHours}</td>
-                        <td className="px-4 py-2 text-sm text-foreground text-right">{formatCurrency(emp.stRate)}</td>
+                        <td className="px-4 py-2 text-sm text-foreground text-right">
+                          <div>
+                            {isFetchingRates ? (
+                              <span className="text-xs text-foreground/60">Loading...</span>
+                            ) : (
+                              <>
+                                {formatCurrency(emp.stRate)}
+                                {emp.dbRate !== undefined && emp.dbRate !== emp.stRate && (
+                                  <div className="text-xs text-green-600">From DB</div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </td>
                         <td className="px-4 py-2 text-sm text-foreground text-right font-medium">{formatCurrency(emp.totalCost)}</td>
                       </tr>
                     ))}

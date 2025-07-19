@@ -71,6 +71,20 @@ interface CompositeRateInfo {
   }[]
 }
 
+interface ActualData {
+  weekEnding: string
+  craftTypeId: string
+  totalHours: number
+  totalCost: number
+}
+
+interface ForecastEntry {
+  craftTypeId: string
+  headcount: number
+  totalHours: number
+  forecastedCost: number
+}
+
 interface LaborForecastTabProps {
   projectId: string
   projectName: string
@@ -79,7 +93,7 @@ interface LaborForecastTabProps {
 
 const HOURS_PER_PERSON = 50
 
-export function LaborForecastTab({ projectId, projectName, jobNumber }: LaborForecastTabProps) {
+export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -104,16 +118,67 @@ export function LaborForecastTab({ projectId, projectName, jobNumber }: LaborFor
       setLoading(true)
       setError(null)
 
-      // Fetch craft types
-      const craftTypesResponse = await fetch('/api/craft-types')
-      if (!craftTypesResponse.ok) throw new Error('Failed to fetch craft types')
-      const craftTypesData = await craftTypesResponse.json()
-      console.log('Craft types API response:', craftTypesData)
-      // Handle both possible response formats
-      const loadedCraftTypes = Array.isArray(craftTypesData) ? craftTypesData : (craftTypesData.craftTypes || [])
-      setCraftTypes(loadedCraftTypes)
+      // Fetch craft types with better error handling and retry logic
+      let loadedCraftTypes: CraftType[] = []
+      // let craftTypesError: Error | null = null
+      
+      // Retry logic for craft types
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const craftTypesResponse = await fetch('/api/craft-types')
+          console.log(`Craft types fetch attempt ${attempt}, status:`, craftTypesResponse.status)
+          
+          if (!craftTypesResponse.ok) {
+            const errorText = await craftTypesResponse.text()
+            console.error('Craft types fetch failed:', {
+              attempt,
+              status: craftTypesResponse.status,
+              statusText: craftTypesResponse.statusText,
+              body: errorText
+            })
+            
+            if (craftTypesResponse.status === 401) {
+              throw new Error('Authentication required. Please log in again.')
+            } else if (craftTypesResponse.status === 500) {
+              if (attempt < 3) {
+                console.log(`Server error, retrying in ${attempt} second(s)...`)
+                await new Promise(resolve => setTimeout(resolve, attempt * 1000))
+                continue
+              }
+              throw new Error('Server error loading craft types. Please try again later.')
+            } else {
+              throw new Error(`Failed to fetch craft types: ${craftTypesResponse.statusText}`)
+            }
+          }
+          
+          const craftTypesData = await craftTypesResponse.json()
+          console.log('Craft types API response:', craftTypesData)
+          // Handle both possible response formats
+          loadedCraftTypes = Array.isArray(craftTypesData) ? craftTypesData : (craftTypesData.craftTypes || [])
+          setCraftTypes(loadedCraftTypes)
+          // craftTypesError = null
+          break // Success, exit retry loop
+          
+        } catch (error) {
+          // craftTypesError = error instanceof Error ? error : new Error('Unknown error fetching craft types')
+          console.error(`Error fetching craft types (attempt ${attempt}/3):`, error)
+          
+          // Only throw authentication errors immediately
+          if (error instanceof Error && error.message.includes('Authentication')) {
+            throw error
+          }
+          
+          // For other errors, continue retrying
+          if (attempt === 3) {
+            // Final attempt failed, continue with empty craft types
+            console.warn('All attempts to fetch craft types failed, continuing with empty list')
+            setCraftTypes([])
+          }
+        }
+      }
 
       // Fetch running averages
+      let fetchedRunningAverages: RunningAverage[] = []
       const avgResponse = await fetch(
         `/api/labor-forecasts/running-averages?project_id=${projectId}&weeks_back=${historicalWeeks}`
       )
@@ -121,15 +186,16 @@ export function LaborForecastTab({ projectId, projectName, jobNumber }: LaborFor
         const errorText = await avgResponse.text()
         console.error('Running averages fetch failed:', avgResponse.status, errorText)
         // Don't throw - just continue with empty averages
-        setRunningAverages([])
+        fetchedRunningAverages = []
       } else {
         const avgData = await avgResponse.json()
-        setRunningAverages(avgData.averages?.map((avg: { craftTypeId: string; avgRate: number; weeksOfData: number }) => ({
+        fetchedRunningAverages = avgData.averages?.map((avg: { craftTypeId: string; avgRate: number; weeksOfData: number }) => ({
           craftTypeId: avg.craftTypeId,
           avgRate: avg.avgRate,
           weeksOfData: avg.weeksOfData
-        })) || [])
+        })) || []
       }
+      setRunningAverages(fetchedRunningAverages)
 
       // Fetch composite rate
       const compositeResponse = await fetch(
@@ -156,7 +222,7 @@ export function LaborForecastTab({ projectId, projectName, jobNumber }: LaborFor
       console.log('Number of actuals:', actualsData.actuals?.length || 0)
       if (actualsData.actuals?.length > 0) {
         console.log('First actual record:', actualsData.actuals[0])
-        console.log('Actual dates:', actualsData.actuals.map((a: any) => a.weekEnding))
+        console.log('Actual dates:', actualsData.actuals.map((a: { weekEnding: string }) => a.weekEnding))
       }
 
       // Fetch headcount forecasts
@@ -173,7 +239,7 @@ export function LaborForecastTab({ projectId, projectName, jobNumber }: LaborFor
 
       // Generate week dates based on actual data
       let startDate: Date
-      let endDate = new Date()
+      const endDate = new Date()
       
       // Find the earliest actual data date
       if (actualsData.actuals?.length > 0) {
@@ -218,7 +284,7 @@ export function LaborForecastTab({ projectId, projectName, jobNumber }: LaborFor
       
       // Calculate weighted average rates by category
       loadedCraftTypes.forEach(craft => {
-        const runningAvg = runningAverages.find(ra => ra.craftTypeId === craft.id)
+        const runningAvg = fetchedRunningAverages.find(ra => ra.craftTypeId === craft.id)
         if (runningAvg && runningAvg.avgRate > 0) {
           categoryRates[craft.category] += runningAvg.avgRate
           categoryCounts[craft.category]++
@@ -233,6 +299,24 @@ export function LaborForecastTab({ projectId, projectName, jobNumber }: LaborFor
         }
       })
 
+      // Create a map of actuals by week for faster lookup
+      // Convert any Saturday dates to Sunday for consistency
+      const actualsMap = new Map<string, any[]>()
+      actualsData.actuals?.forEach((actual: ActualData) => {
+        // Convert to Sunday if needed
+        const actualDate = new Date(actual.weekEnding)
+        const sundayDate = getWeekEndingDate(actualDate)
+        const sundayDateOnly = sundayDate.toISOString().split('T')[0]
+        
+        if (!actualsMap.has(sundayDateOnly)) {
+          actualsMap.set(sundayDateOnly, [])
+        }
+        actualsMap.get(sundayDateOnly)!.push(actual)
+      })
+      
+      console.log('Actuals map keys (converted to Sunday):', Array.from(actualsMap.keys()).sort())
+      console.log('All generated week dates:', allWeeks.map(d => d.toISOString().split('T')[0]))
+      
       allWeeks.forEach((weekDate, weekIndex) => {
         const weekString = weekDate.toISOString()
         const weekDateOnly = weekDate.toISOString().split('T')[0] // Get YYYY-MM-DD format
@@ -245,46 +329,34 @@ export function LaborForecastTab({ projectId, projectName, jobNumber }: LaborFor
           staff: { category: 'staff', headcount: 0, hours: 0, cost: 0, rate: categoryRates.staff }
         }
         
-        if (isActual) {
-          // Sum actuals by category
-          let matchFound = false
-          actualsData.actuals?.forEach((actual: { weekEnding: string; craftTypeId: string; totalHours: number; totalCost: number }) => {
-            const actualDateOnly = actual.weekEnding.split('T')[0] // Get YYYY-MM-DD format
-            
-            // Debug logging for every comparison
-            if (!matchFound && actualsData.actuals.indexOf(actual) === 0) {
-              console.log(`Comparing week ${weekDateOnly} with actual ${actualDateOnly}`)
-            }
-            
-            if (actualDateOnly === weekDateOnly) {
-              matchFound = true
-              console.log(`Found match for week ${weekDateOnly}:`, actual)
-              
-              const craft = loadedCraftTypes.find(c => c.id === actual.craftTypeId)
-              if (craft) {
-                console.log(`Found craft ${craft.name} (${craft.category}) for actual`)
-                const cat = categories[craft.category]
-                const oldHeadcount = cat.headcount
-                cat.headcount += actual.totalHours / HOURS_PER_PERSON
-                cat.hours += actual.totalHours
-                cat.cost += actual.totalCost
-                cat.rate = cat.hours > 0 ? cat.cost / cat.hours : categoryRates[craft.category]
-                console.log(`Updated ${craft.category}: headcount ${oldHeadcount} -> ${cat.headcount}, hours: ${actual.totalHours}`)
-              } else {
-                console.log(`No craft found for craftTypeId: ${actual.craftTypeId}`)
-                console.log('Available craft types:', loadedCraftTypes.map(c => ({ id: c.id, name: c.name })))
-              }
+        if (isActual && actualsMap.has(weekDateOnly)) {
+          // Process actuals for this week
+          const weekActuals = actualsMap.get(weekDateOnly)!
+          console.log(`Processing ${weekActuals.length} actuals for week ${weekDateOnly}`)
+          
+          weekActuals.forEach(actual => {
+            const craft = loadedCraftTypes.find(c => c.id === actual.craftTypeId)
+            if (craft) {
+              console.log(`Found craft ${craft.name} (${craft.category}) with ${actual.totalHours} hours`)
+              const cat = categories[craft.category]
+              const oldHeadcount = cat.headcount
+              cat.headcount += actual.totalHours / HOURS_PER_PERSON
+              cat.hours += actual.totalHours
+              cat.cost += actual.totalCost
+              cat.rate = cat.hours > 0 ? cat.cost / cat.hours : categoryRates[craft.category]
+              console.log(`Updated ${craft.category}: headcount ${oldHeadcount} -> ${cat.headcount}, hours: ${actual.totalHours}`)
+            } else {
+              console.log(`WARNING: No craft found for craftTypeId: ${actual.craftTypeId}`)
+              console.log('Available craft type IDs:', loadedCraftTypes.map(c => c.id))
             }
           })
-          
-          if (!matchFound && weekIndex < 5) { // Only log first few weeks to avoid spam
-            console.log(`No match found for week ${weekDateOnly}`)
-          }
+        } else if (isActual && weekIndex === 0) {
+          console.log(`No actuals found for week ${weekDateOnly}`)
         } else {
           // Sum forecasts by category
           const forecastWeek = forecastData.weeks?.find((w: { weekEnding: string }) => w.weekEnding === weekString)
           if (forecastWeek) {
-            forecastWeek.entries?.forEach((entry: { craftTypeId: string; headcount: number; totalHours: number; forecastedCost: number }) => {
+            forecastWeek.entries?.forEach((entry: ForecastEntry) => {
               const craft = loadedCraftTypes.find(c => c.id === entry.craftTypeId)
               if (craft && entry.headcount > 0) {
                 const cat = categories[craft.category]
@@ -370,7 +442,7 @@ export function LaborForecastTab({ projectId, projectName, jobNumber }: LaborFor
     // If we have actuals, also ensure we include all actual dates
     const actualDates = new Set<string>()
     if (actuals && actuals.length > 0) {
-      actuals.forEach(actual => {
+      actuals.forEach((actual: ActualData) => {
         const actualDate = getWeekEndingDate(new Date(actual.weekEnding))
         actualDates.add(actualDate.toISOString().split('T')[0])
       })
@@ -694,9 +766,21 @@ export function LaborForecastTab({ projectId, projectName, jobNumber }: LaborFor
 
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <AlertTriangle className="h-5 w-5 text-red-400 mr-2" />
-            <p className="text-red-800">{error}</p>
+          <div className="flex items-start">
+            <AlertTriangle className="h-5 w-5 text-red-400 mr-2 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-red-800 font-medium">{error}</p>
+              {error.includes('Authentication') && (
+                <p className="text-red-600 text-sm mt-1">
+                  Your session may have expired. Please refresh the page or log in again.
+                </p>
+              )}
+              {error.includes('Server error') && (
+                <p className="text-red-600 text-sm mt-1">
+                  The server is experiencing issues. We&apos;ll retry automatically. If the problem persists, please contact support.
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -24,10 +24,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
+  // Parse request parameters
+  const projectId = request.nextUrl.searchParams.get('project_id')
+  const weeksBack = parseInt(request.nextUrl.searchParams.get('weeks_back') || '12', 10)
+  const includeCategories = request.nextUrl.searchParams.get('categories')?.split(',') || ['direct', 'indirect', 'staff']
+
   try {
-    const projectId = request.nextUrl.searchParams.get('project_id')
-    const weeksBack = parseInt(request.nextUrl.searchParams.get('weeks_back') || '12', 10)
-    const includeCategories = request.nextUrl.searchParams.get('categories')?.split(',') || ['direct', 'indirect', 'staff']
 
     if (!projectId) {
       return NextResponse.json(
@@ -53,16 +55,9 @@ export async function GET(request: NextRequest) {
     }
 
     if (userDetails.role === 'viewer') {
-      const { data: access } = await supabase
-        .from('user_project_access')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('project_id', projectId)
-        .single()
-
-      if (!access) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      }
+      // TODO: Implement proper viewer access control when user_project_access table is created
+      // For now, viewers are blocked from this endpoint
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     // Calculate date range
@@ -77,7 +72,8 @@ export async function GET(request: NextRequest) {
         week_ending,
         actual_hours,
         actual_cost,
-        craft_type:craft_types(
+        craft_type_id,
+        craft_types(
           id,
           name,
           category
@@ -86,18 +82,30 @@ export async function GET(request: NextRequest) {
       .eq('project_id', projectId)
       .gte('week_ending', startDate.toISOString())
       .lte('week_ending', endDate.toISOString())
-      .in('craft_type.category', includeCategories)
       .gt('actual_hours', 0)
       .order('week_ending', { ascending: true })
 
-    if (error) throw error
+    if (error) {
+      console.error('Composite rate query error:', JSON.stringify(error, null, 2))
+      throw error
+    }
+
+    console.log(`Found ${actuals?.length || 0} actuals for project ${projectId}`)
 
     // Calculate composite rates by week
     const weeklyRates: { [key: string]: { hours: number; cost: number; rate: number } } = {}
     let totalHours = 0
     let totalCost = 0
 
-    actuals?.forEach(actual => {
+    // Filter actuals by category and calculate rates
+    const filteredActuals = actuals?.filter(actual => {
+      // Handle both nested and flat structure
+      const craftType = actual.craft_types as { id: string; name: string; category: string } | null
+      const category = craftType?.category
+      return category && includeCategories.includes(category)
+    }) || []
+
+    filteredActuals.forEach(actual => {
       const week = actual.week_ending
       if (!weeklyRates[week]) {
         weeklyRates[week] = { hours: 0, cost: 0, rate: 0 }
@@ -126,10 +134,13 @@ export async function GET(request: NextRequest) {
       staff: { hours: 0, cost: 0, rate: 0 }
     }
 
-    actuals?.forEach(actual => {
-      const category = actual.craft_type.category
-      categoryRates[category].hours += actual.actual_hours
-      categoryRates[category].cost += actual.actual_cost
+    filteredActuals.forEach(actual => {
+      const craftType = actual.craft_types as { id: string; name: string; category: string } | null
+      const category = craftType?.category
+      if (category && categoryRates[category]) {
+        categoryRates[category].hours += actual.actual_hours
+        categoryRates[category].cost += actual.actual_cost
+      }
     })
 
     // Calculate rates by category
@@ -145,9 +156,9 @@ export async function GET(request: NextRequest) {
     let recentHours = 0
     let recentCost = 0
     
-    actuals?.filter(a => new Date(a.week_ending) >= fourWeeksAgo).forEach(actual => {
-      recentHours += actual.actual_hours
-      recentCost += actual.actual_cost
+    filteredActuals?.filter(a => new Date(a.week_ending) >= fourWeeksAgo).forEach(actual => {
+      recentHours += actual.actual_hours || 0
+      recentCost += actual.actual_cost || 0
     })
     
     const recentCompositeRate = recentHours > 0 ? recentCost / recentHours : 0
@@ -188,9 +199,19 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Composite rate calculation error:', error)
+    console.error('Composite rate calculation error:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      projectId,
+      weeksBack,
+      includeCategories
+    })
     return NextResponse.json(
-      { error: 'Failed to calculate composite rate' },
+      { 
+        error: 'Failed to calculate composite rate',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }

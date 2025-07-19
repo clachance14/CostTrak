@@ -120,6 +120,9 @@ export async function GET(
           week_ending,
           actual_hours,
           actual_cost,
+          burden_rate,
+          burden_amount,
+          actual_cost_with_burden,
           craft_type_id,
           craft_types (
             code,
@@ -197,7 +200,7 @@ export async function GET(
       // Query from labor_employee_actuals which is where the import puts data
       const { data, error } = await adminSupabase
         .from('labor_employee_actuals')
-        .select('week_ending, total_hours, total_cost')
+        .select('week_ending, total_hours, total_cost, total_cost_with_burden')
         .eq('project_id', projectId)
         .order('week_ending')
 
@@ -216,7 +219,7 @@ export async function GET(
           }
           const totals = weekMap.get(week)!
           totals.hours += record.total_hours || 0
-          totals.cost += record.total_cost || 0
+          totals.cost += record.total_cost_with_burden || record.total_cost || 0
         })
 
         weeklyActuals = Array.from(weekMap.entries()).map(([week, totals]) => ({
@@ -229,7 +232,7 @@ export async function GET(
       console.error('Failed to get early weekly actuals:', error)
     }
 
-    // Calculate KPIs from employee actuals
+    // Calculate KPIs from employee actuals (using burdened costs)
     const totalActualCost = weeklyActuals.reduce((sum, week) => sum + (week.actual_cost || 0), 0)
     const totalActualHours = weeklyActuals.reduce((sum, week) => sum + (week.actual_hours || 0), 0)
     const averageActualRate = totalActualHours > 0 ? totalActualCost / totalActualHours : 0
@@ -284,6 +287,7 @@ export async function GET(
         .select(`
           total_hours,
           total_cost,
+          total_cost_with_burden,
           employee_id,
           employees!inner (
             craft_type_id
@@ -326,7 +330,7 @@ export async function GET(
 
           const craft = craftMap.get(key)!
           craft.actualHours += record.total_hours || 0
-          craft.actualCost += record.total_cost || 0
+          craft.actualCost += record.total_cost_with_burden || record.total_cost || 0
         })
       }
     } catch (error) {
@@ -390,7 +394,7 @@ export async function GET(
       
       const weekData = weeklyMap.get(week)!
       // Fix: use the correct property names from weeklyActuals
-      weekData.actualCost = actual.actual_cost || 0
+      weekData.actualCost = actual.actual_cost_with_burden || actual.actual_cost || 0
       weekData.actualHours = actual.actual_hours || 0
       
       console.log(`Week ${week}: actual object keys:`, Object.keys(actual), 'values:', actual) // Debug to see exact structure
@@ -537,7 +541,7 @@ export async function GET(
         stHours: record.st_hours || 0,
         otHours: record.ot_hours || 0,
         totalHours: record.total_hours || 0,
-        actualCost: record.total_cost || 0,
+        actualCost: record.total_cost_with_burden || record.total_cost || 0,
         rate: record.employees.base_rate || 0
       }
       

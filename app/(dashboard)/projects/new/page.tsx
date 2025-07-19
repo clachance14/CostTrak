@@ -55,12 +55,21 @@ interface BudgetPreview {
       cost_type: string
       manhours: number | null
       value: number
+      category: 'labor' | 'materials' | 'equipment' | 'subcontracts' | 'small_tools_consumables' | 'other'
     }>
     total: number
   }>
   totalBudget: number
   isValid: boolean
   errors: string[]
+  categoryBreakdown: {
+    labor: { items: string[]; total: number }
+    materials: { items: string[]; total: number }
+    equipment: { items: string[]; total: number }
+    subcontracts: { items: string[]; total: number }
+    small_tools_consumables: { items: string[]; total: number }
+    other: { items: string[]; total: number }
+  }
 }
 
 const STEPS = [
@@ -156,7 +165,7 @@ export default function ProjectSetupForm() {
     return `${value.toFixed(1)}%`
   }
 
-  const handleInputChange = (field: keyof FormData, value: string | number) => {
+  const handleInputChange = (field: keyof FormData, value: string | number | POLineItem[]) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -290,7 +299,15 @@ export default function ProjectSetupForm() {
           disciplines: [],
           totalBudget: 0,
           isValid: false,
-          errors: ['No BUDGETS sheet found in Excel file.']
+          errors: ['No BUDGETS sheet found in Excel file.'],
+          categoryBreakdown: {
+            labor: { items: [], total: 0 },
+            materials: { items: [], total: 0 },
+            equipment: { items: [], total: 0 },
+            subcontracts: { items: [], total: 0 },
+            small_tools_consumables: { items: [], total: 0 },
+            other: { items: [], total: 0 }
+          }
         })
         return
       }
@@ -310,7 +327,7 @@ export default function ProjectSetupForm() {
       }
 
       // Process budget data
-      const disciplines = new Map<string, Array<{cost_type: string; manhours: number | null; value: number}>>()
+      const disciplines = new Map<string, Array<{cost_type: string; manhours: number | null; value: number; category: 'labor' | 'materials' | 'equipment' | 'subcontracts' | 'small_tools_consumables' | 'other'}>>()
       const budgetBreakdowns: Array<{discipline: string; cost_type: string; manhours: number | null; value: number}> = []
       let currentDiscipline = ''
       let totalBudget = 0
@@ -321,6 +338,14 @@ export default function ProjectSetupForm() {
         subcontracts: 0,
         small_tools_consumables: 0,
         other: 0
+      }
+      const categoryBreakdown: BudgetPreview['categoryBreakdown'] = {
+        labor: { items: [], total: 0 },
+        materials: { items: [], total: 0 },
+        equipment: { items: [], total: 0 },
+        subcontracts: { items: [], total: 0 },
+        small_tools_consumables: { items: [], total: 0 },
+        other: { items: [], total: 0 }
       }
       
       // Debug: Track all disciplines found
@@ -375,35 +400,58 @@ export default function ProjectSetupForm() {
           disciplines.set(currentDiscipline, [])
         }
         
+        // Determine category
+        const costType = description.trim().toUpperCase()
+        let category: 'labor' | 'materials' | 'equipment' | 'subcontracts' | 'small_tools_consumables' | 'other'
+        
+        if (costType.includes('LABOR')) {
+          category = 'labor'
+          categoryTotals.labor += numericValue
+          categoryBreakdown.labor.items.push(`${currentDiscipline}: ${description.trim()}`)
+          categoryBreakdown.labor.total += numericValue
+        } else if (costType === 'MATERIALS') {
+          category = 'materials'
+          categoryTotals.materials += numericValue
+          categoryBreakdown.materials.items.push(`${currentDiscipline}: ${description.trim()}`)
+          categoryBreakdown.materials.total += numericValue
+        } else if (costType === 'EQUIPMENT') {
+          category = 'equipment'
+          categoryTotals.equipment += numericValue
+          categoryBreakdown.equipment.items.push(`${currentDiscipline}: ${description.trim()}`)
+          categoryBreakdown.equipment.total += numericValue
+        } else if (costType === 'SUBCONTRACTS') {
+          category = 'subcontracts'
+          categoryTotals.subcontracts += numericValue
+          categoryBreakdown.subcontracts.items.push(`${currentDiscipline}: ${description.trim()}`)
+          categoryBreakdown.subcontracts.total += numericValue
+        } else if (costType === 'SMALL TOOLS & CONSUMABLES') {
+          category = 'small_tools_consumables'
+          categoryTotals.small_tools_consumables += numericValue
+          categoryBreakdown.small_tools_consumables.items.push(`${currentDiscipline}: ${description.trim()}`)
+          categoryBreakdown.small_tools_consumables.total += numericValue
+        } else {
+          category = 'other'
+          categoryTotals.other += numericValue
+          categoryBreakdown.other.items.push(`${currentDiscipline}: ${description.trim()}`)
+          categoryBreakdown.other.total += numericValue
+        }
+        
         const item = {
           cost_type: description.trim(),
           manhours: numericManhours,
-          value: numericValue
+          value: numericValue,
+          category
         }
         
         disciplines.get(currentDiscipline)!.push(item)
         budgetBreakdowns.push({
           discipline: currentDiscipline,
-          ...item
+          cost_type: description.trim(),
+          manhours: numericManhours,
+          value: numericValue
         })
         
         totalBudget += numericValue
-        
-        // Map to categories
-        const costType = description.trim().toUpperCase()
-        if (costType.includes('LABOR')) {
-          categoryTotals.labor += numericValue
-        } else if (costType === 'MATERIALS') {
-          categoryTotals.materials += numericValue
-        } else if (costType === 'EQUIPMENT') {
-          categoryTotals.equipment += numericValue
-        } else if (costType === 'SUBCONTRACTS') {
-          categoryTotals.subcontracts += numericValue
-        } else if (costType === 'SMALL TOOLS & CONSUMABLES') {
-          categoryTotals.small_tools_consumables += numericValue
-        } else {
-          categoryTotals.other += numericValue
-        }
       }
 
       const disciplineArray = Array.from(disciplines.entries()).map(([name, items]) => ({
@@ -439,7 +487,8 @@ export default function ProjectSetupForm() {
         disciplines: disciplineArray,
         totalBudget,
         isValid: disciplineArray.length > 0,
-        errors: disciplineArray.length === 0 ? ['No valid budget data found'] : debugSummary
+        errors: disciplineArray.length === 0 ? ['No valid budget data found'] : debugSummary,
+        categoryBreakdown
       })
       
       // Update form data with imported values
@@ -461,7 +510,15 @@ export default function ProjectSetupForm() {
         disciplines: [],
         totalBudget: 0,
         isValid: false,
-        errors: ['Failed to parse Excel file']
+        errors: ['Failed to parse Excel file'],
+        categoryBreakdown: {
+          labor: { items: [], total: 0 },
+          materials: { items: [], total: 0 },
+          equipment: { items: [], total: 0 },
+          subcontracts: { items: [], total: 0 },
+          small_tools_consumables: { items: [], total: 0 },
+          other: { items: [], total: 0 }
+        }
       })
     }
   }, [])
@@ -743,17 +800,77 @@ export default function ProjectSetupForm() {
                   </p>
                 </div>
                 
+                {/* Category Breakdown Section */}
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <p className="text-sm font-medium text-amber-800 mb-3">Budget Category Mapping</p>
+                  <div className="space-y-2">
+                    {Object.entries(budgetPreview.categoryBreakdown).map(([category, data]) => {
+                      if (data.total === 0) return null
+                      return (
+                        <div key={category} className="border-l-4 border-l-amber-400 pl-3">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium capitalize">
+                              {category.replace(/_/g, ' ')}: {formatCurrency(data.total)}
+                            </span>
+                          </div>
+                          {category === 'other' && data.items.length > 0 && (
+                            <div className="mt-1 space-y-1">
+                              <p className="text-xs text-amber-700 font-medium">Items in &quot;Other&quot; category:</p>
+                              {data.items.map((item, idx) => (
+                                <p key={idx} className="text-xs text-amber-600 pl-2">• {item}</p>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+                
+                {/* Detailed Line Items by Discipline */}
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-foreground/80">Disciplines:</p>
+                  <p className="text-sm font-medium text-foreground/80">Detailed Budget by Discipline:</p>
                   {budgetPreview.disciplines.map((discipline, i) => (
-                    <div key={i} className="bg-background p-3 rounded border border-foreground/10">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">{discipline.name}</span>
-                        <span className="text-sm text-foreground/60">
-                          {formatCurrency(discipline.total)}
-                        </span>
+                    <details key={i} className="bg-background rounded border border-foreground/10">
+                      <summary className="p-3 cursor-pointer hover:bg-muted/50">
+                        <div className="inline-flex justify-between items-center w-full">
+                          <span className="font-medium">{discipline.name}</span>
+                          <span className="text-sm text-foreground/60">
+                            {formatCurrency(discipline.total)} ({discipline.items.length} items)
+                          </span>
+                        </div>
+                      </summary>
+                      <div className="border-t border-foreground/10">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-foreground/5">
+                              <th className="text-left p-2">Description</th>
+                              <th className="text-right p-2">Manhours</th>
+                              <th className="text-right p-2">Amount</th>
+                              <th className="text-left p-2">Category</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {discipline.items.map((item, idx) => (
+                              <tr key={idx} className={`border-b border-foreground/5 ${item.category === 'other' ? 'bg-amber-50' : ''}`}>
+                                <td className="p-2">{item.cost_type}</td>
+                                <td className="text-right p-2">{item.manhours || '-'}</td>
+                                <td className="text-right p-2">{formatCurrency(item.value)}</td>
+                                <td className="p-2">
+                                  <span className={`text-xs px-2 py-1 rounded-full ${
+                                    item.category === 'other' 
+                                      ? 'bg-amber-200 text-amber-800' 
+                                      : 'bg-gray-200 text-gray-700'
+                                  }`}>
+                                    {item.category.replace(/_/g, ' ')}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
-                    </div>
+                    </details>
                   ))}
                 </div>
               </div>

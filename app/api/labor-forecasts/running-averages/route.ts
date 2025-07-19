@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Try to get running averages from the table first
-    let { data: runningAverages, error } = await supabase
+    const result = await supabase
       .from('labor_running_averages')
       .select(`
         *,
@@ -77,10 +77,16 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq('project_id', projectId)
+    
+    let runningAverages = result.data
+    const error = result.error
 
     // If no data or error, calculate from labor_actuals
     if (error || !runningAverages || runningAverages.length === 0) {
-      console.log('No running averages found, calculating from actuals...')
+      if (error) {
+        console.error('Error fetching running averages:', JSON.stringify(error, null, 2))
+      }
+      console.log(`No running averages found for project ${projectId}, calculating from actuals...`)
       
       // Get all craft types
       const { data: craftTypes } = await supabase
@@ -118,7 +124,10 @@ export async function GET(request: NextRequest) {
           week_count: craftActuals.length,
           last_updated: craftActuals.length > 0 
             ? craftActuals.sort((a, b) => new Date(b.week_ending).getTime() - new Date(a.week_ending).getTime())[0].week_ending
-            : null
+            : null,
+          // Add fields expected by the frontend
+          avg_cost: totalCost,
+          avg_hours: totalHours
         }
       }) || []
     }
@@ -171,7 +180,7 @@ export async function GET(request: NextRequest) {
         craftTypeId: avg.craft_type_id,
         craftName: avg.craft_type?.name || 'Unknown',
         laborCategory: avg.craft_type?.category || 'direct',
-        avgRate: avg.avg_rate || (avg.total_hours > 0 ? avg.total_cost / avg.total_hours : 0),
+        avgRate: avg.avg_rate || ((avg as any).total_hours && (avg as any).total_hours > 0 ? (avg as any).total_cost / (avg as any).total_hours : 0),
         weeksOfData: avg.week_count || 0,
         lastActualWeek: avg.last_updated,
         trends: trendsMap.get(avg.craft_type_id) || []
@@ -187,9 +196,17 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Running averages fetch error:', error)
+    console.error('Running averages fetch error:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      projectId
+    })
     return NextResponse.json(
-      { error: 'Failed to fetch running averages' },
+      { 
+        error: 'Failed to fetch running averages',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }

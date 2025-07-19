@@ -22,6 +22,14 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // TODO: Implement documents table in database
+    // For now, return not implemented
+    return NextResponse.json(
+      { error: 'Documents feature not implemented' },
+      { status: 501 }
+    )
+    
+    /*
     // Fetch the document
     const { data: document, error } = await supabase
       .from('documents')
@@ -43,7 +51,9 @@ export async function GET(
     // Generate download URL
     const storageService = new StorageService(supabase)
     const downloadUrl = await storageService.getDownloadUrl(document)
+    */
 
+    /*
     // Log download in audit log
     await supabase.from('audit_log').insert({
       entity_type: 'document',
@@ -62,6 +72,7 @@ export async function GET(
         mime_type: document.mime_type,
       },
     })
+    */
   } catch (error) {
     console.error('Error generating download URL:', error)
     if (error instanceof z.ZodError) {

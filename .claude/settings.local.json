@@ -19,7 +19,11 @@
       "Bash(done)",
       "Bash(gh pr view:*)",
       "Bash(git commit:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(pnpm build:*)",
+      "Bash(npx tsc:*)",
+      "mcp__postgres__query",
+      "Bash(npx tsx:*)"
     ],
     "deny": []
   }

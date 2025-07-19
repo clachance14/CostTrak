@@ -8,6 +8,23 @@ import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
+// Type definition for employee actual with nested relations
+type EmployeeActualWithRelations = {
+  week_ending: string
+  total_hours: number | null
+  total_cost: number | null
+  employee_id: string
+  employees: {
+    craft_type_id: string
+    craft_types: {
+      id: string
+      name: string
+      code: string
+      category: string
+    }
+  }
+}
+
 // GET /api/labor-forecasts/weekly-actuals - Get weekly actual data
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -29,10 +46,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
+  // Parse query parameters
+  const projectId = request.nextUrl.searchParams.get('project_id')
+  const weekEnding = request.nextUrl.searchParams.get('week_ending')
+
   try {
-    // Parse query parameters
-    const projectId = request.nextUrl.searchParams.get('project_id')
-    const weekEnding = request.nextUrl.searchParams.get('week_ending')
 
     if (!projectId) {
       return NextResponse.json(
@@ -58,48 +76,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (userDetails.role === 'viewer') {
-      const { data: access } = await supabase
-        .from('user_project_access')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('project_id', projectId)
-        .single()
-
-      if (!access) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      }
+      // TODO: Implement proper viewer access control when user_project_access table is created
+      // For now, viewers are blocked from this endpoint
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Build query
-    let query = supabase
-      .from('labor_actuals')
-      .select(`
-        *,
-        craft_type:craft_types(
-          id,
-          name,
-          code,
-          category
-        )
-      `)
-      .eq('project_id', projectId)
-      .order('week_ending', { ascending: false })
-
-    if (weekEnding) {
-      const weekEndingDate = getWeekEndingDate(new Date(weekEnding))
-      query = query.eq('week_ending', weekEndingDate.toISOString())
-    } else {
-      // Default to last 8 weeks
-      const eightWeeksAgo = new Date()
-      eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56)
-      query = query.gte('week_ending', eightWeeksAgo.toISOString())
-    }
-
-    const { data: actuals, error } = await query
-
-    if (error) throw error
-
-    // Also fetch employee actuals and aggregate by craft type
+    // Fetch employee actuals (primary data source)
     let employeeActualsQuery = supabase
       .from('labor_employee_actuals')
       .select(`
@@ -109,7 +91,7 @@ export async function GET(request: NextRequest) {
         employee_id,
         employees!inner (
           craft_type_id,
-          craft_types (
+          craft_types!inner (
             id,
             name,
             code,
@@ -123,32 +105,26 @@ export async function GET(request: NextRequest) {
     if (weekEnding) {
       const weekEndingDate = getWeekEndingDate(new Date(weekEnding))
       employeeActualsQuery = employeeActualsQuery.eq('week_ending', weekEndingDate.toISOString())
-    } else {
-      const eightWeeksAgo = new Date()
-      eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56)
-      employeeActualsQuery = employeeActualsQuery.gte('week_ending', eightWeeksAgo.toISOString())
+    }
+    // No date filter - return all historical data for the project
+
+    const { data: employeeActuals, error: empActualsError } = await employeeActualsQuery as { 
+      data: EmployeeActualWithRelations[] | null
+      error: any 
+    }
+    
+    if (empActualsError) {
+      console.error('Employee actuals query error:', JSON.stringify(empActualsError, null, 2))
+      throw empActualsError
     }
 
-    const { data: employeeActuals } = await employeeActualsQuery
+    console.log(`Found ${employeeActuals?.length || 0} employee actuals for project ${projectId}`)
 
     // Aggregate employee actuals by craft type and week
+    // Using only labor_employee_actuals as the source of truth
     const aggregatedMap = new Map<string, any>()
     
-    // First add any existing labor_actuals data
-    actuals?.forEach(actual => {
-      const key = `${actual.week_ending}-${actual.craft_type_id}`
-      aggregatedMap.set(key, {
-        weekEnding: actual.week_ending,
-        craftTypeId: actual.craft_type_id,
-        craftName: actual.craft_type.name,
-        craftCode: actual.craft_type.code,
-        laborCategory: actual.craft_type.category,
-        totalHours: actual.actual_hours,
-        totalCost: actual.actual_cost
-      })
-    })
-    
-    // Then aggregate employee actuals
+    // Aggregate employee actuals by craft type
     employeeActuals?.forEach(empActual => {
       if (!empActual.employees?.craft_type_id || !empActual.employees?.craft_types) return
       
@@ -156,7 +132,7 @@ export async function GET(request: NextRequest) {
       const key = `${empActual.week_ending}-${empActual.employees.craft_type_id}`
       
       if (aggregatedMap.has(key)) {
-        // Add to existing entry
+        // Add to existing entry for same week/craft
         const existing = aggregatedMap.get(key)
         existing.totalHours += empActual.total_hours || 0
         existing.totalCost += empActual.total_cost || 0
@@ -189,7 +165,7 @@ export async function GET(request: NextRequest) {
     // Get running averages
     const { data: runningAverages } = await supabase
       .from('labor_running_averages')
-      .select('craft_type_id, avg_rate, weeks_of_data')
+      .select('craft_type_id, avg_rate, week_count')
       .eq('project_id', projectId)
 
     const avgMap = new Map(
@@ -211,6 +187,8 @@ export async function GET(request: NextRequest) {
         craftCode: actual.craftCode,
         laborCategory: actual.laborCategory,
         weekEnding: actual.weekEnding,
+        actualCost: actual.totalCost,  // Changed from totalCost to actualCost
+        actualHours: actual.totalHours, // Changed from totalHours to actualHours
         totalCost: actual.totalCost,
         totalHours: actual.totalHours,
         ratePerHour: actual.totalHours > 0 ? actual.totalCost / actual.totalHours : 0,
@@ -227,9 +205,18 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Weekly actuals fetch error:', error)
+    console.error('Weekly actuals fetch error:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      projectId,
+      weekEnding
+    })
     return NextResponse.json(
-      { error: 'Failed to fetch weekly actuals' },
+      { 
+        error: 'Failed to fetch weekly actuals',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }

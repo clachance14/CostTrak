@@ -128,7 +128,9 @@ export async function GET() {
     if (statusError) throw statusError
 
     const statusDistribution = statusData?.reduce((acc: Record<string, number>, project) => {
-      acc[project.status] = (acc[project.status] || 0) + 1
+      if (project.status) {
+        acc[project.status] = (acc[project.status] || 0) + 1
+      }
       return acc
     }, {}) || {}
 

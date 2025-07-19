@@ -179,14 +179,26 @@ export function QuickImportSection({
         <h3 className="text-sm font-medium mb-2">{title}</h3>
         <div
           className={cn(
-            "relative border-2 border-dashed rounded-lg p-6 text-center transition-colors",
-            isDragging && "border-primary bg-primary/5",
+            "relative border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200",
+            isDragging && "border-primary bg-primary/5 scale-[1.02] shadow-lg",
             status.type === 'error' && "border-red-500 bg-red-50 dark:bg-red-900/20",
             status.type === 'success' && "border-green-500 bg-green-50 dark:bg-green-900/20",
-            !isDragging && status.type === 'idle' && "border-gray-300 dark:border-gray-600 hover:border-gray-400"
+            !isDragging && status.type === 'idle' && "border-gray-300 dark:border-gray-600 hover:border-gray-400 hover:shadow-md"
           )}
-          onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
-          onDragLeave={() => setIsDragging(false)}
+          onDragEnter={(e) => { 
+            e.preventDefault(); 
+            e.stopPropagation();
+            setIsDragging(true) 
+          }}
+          onDragOver={(e) => { 
+            e.preventDefault(); 
+            e.stopPropagation();
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsDragging(false)
+          }}
           onDrop={(e) => handleDrop(e, importType)}
         >
           <input
@@ -200,21 +212,35 @@ export function QuickImportSection({
 
           {status.type === 'idle' && (
             <>
-              <FileSpreadsheet className="mx-auto h-12 w-12 text-gray-400" />
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                Drag and drop or{' '}
-                <Button
-                  variant="link"
-                  className="p-0 h-auto"
-                  onClick={() => inputRef.current?.click()}
-                  disabled={!selectedProject}
-                >
-                  browse
-                </Button>
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {importType === 'labor' ? 'Excel files (.xlsx, .xls)' : 'CSV or Excel files'}
-              </p>
+              {isDragging ? (
+                <>
+                  <FileSpreadsheet className="mx-auto h-12 w-12 text-primary animate-bounce" />
+                  <p className="mt-2 text-sm font-medium text-primary">
+                    Drop your {importType === 'labor' ? 'Excel' : 'CSV/Excel'} file here
+                  </p>
+                  <p className="text-xs text-primary/80 mt-1">
+                    {importType === 'labor' ? 'Accepts .xlsx, .xls' : 'Accepts .csv, .xlsx, .xls'}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <FileSpreadsheet className="mx-auto h-12 w-12 text-gray-400" />
+                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                    Drag and drop or{' '}
+                    <Button
+                      variant="link"
+                      className="p-0 h-auto"
+                      onClick={() => inputRef.current?.click()}
+                      disabled={!selectedProject}
+                    >
+                      browse
+                    </Button>
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {importType === 'labor' ? 'Excel files (.xlsx, .xls)' : 'CSV or Excel files'}
+                  </p>
+                </>
+              )}
             </>
           )}
 

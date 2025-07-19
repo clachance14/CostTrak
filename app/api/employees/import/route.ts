@@ -628,7 +628,7 @@ export async function POST(request: NextRequest) {
 
       // Log import activity
       await adminSupabase.from('audit_log').insert({
-        user_id: user.id,
+        performed_by: user.id,
         action: 'import',
         entity_type: 'employees',
         entity_id: user.id, // Use user ID as entity ID for batch imports
@@ -638,7 +638,7 @@ export async function POST(request: NextRequest) {
           imported: results.imported,
           skipped: results.skipped,
           total: results.total
-        }
+        } as any // TODO: Fix Json type
       })
     }
 
@@ -661,14 +661,14 @@ export async function POST(request: NextRequest) {
           
           // Log update
           await adminSupabase.from('audit_log').insert({
-            user_id: user.id,
+            performed_by: user.id,
             action: 'update',
             entity_type: 'employee',
             entity_id: emp.id,
             changes: { 
               employee_number: emp.employee_number,
               updates: emp.updates 
-            }
+            } as any // TODO: Fix Json type
           })
         }
       }

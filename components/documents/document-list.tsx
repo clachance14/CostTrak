@@ -17,7 +17,7 @@ import {
   Trash2, 
   FileText,
   FileSpreadsheet,
-  FileImage,
+  Image as FileImage,
   File,
   Loader2
 } from 'lucide-react'

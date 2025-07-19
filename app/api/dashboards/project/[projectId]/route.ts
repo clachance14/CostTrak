@@ -52,6 +52,9 @@ export async function GET(
     
     // For viewer role, check if they have access to this specific project
     if (isViewer) {
+      // For now, skip viewer access check as project_viewer_access table doesn't exist
+      // TODO: Implement proper viewer access control using project_assignments table
+      /*
       const { data: viewerAccess } = await supabase
         .from('project_viewer_access')
         .select('id')
@@ -62,6 +65,8 @@ export async function GET(
       if (!viewerAccess) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
+      */
+      return NextResponse.json({ error: 'Viewer access not implemented' }, { status: 403 })
     } else if (!canViewAllProjects && !isProjectManager) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
@@ -69,9 +74,9 @@ export async function GET(
     // Get purchase orders summary
     const { data: poData, error: poError } = await supabase
       .from('purchase_orders')
-      .select('id, po_number, vendor_name, committed_amount, invoiced_amount, status, issue_date')
+      .select('id, po_number, vendor_name, committed_amount, invoiced_amount, status, created_at')
       .eq('project_id', projectId)
-      .order('issue_date', { ascending: false })
+      .order('created_at', { ascending: false })
 
     if (poError) throw poError
 
@@ -81,7 +86,7 @@ export async function GET(
       totalInvoiced: acc.totalInvoiced + (po.invoiced_amount || 0),
       byStatus: {
         ...acc.byStatus,
-        [po.status]: (acc.byStatus[po.status] || 0) + 1
+        [po.status as string]: (acc.byStatus[po.status as string] || 0) + 1
       }
     }), {
       totalPOs: 0,
@@ -103,19 +108,21 @@ export async function GET(
       ?.filter(co => co.status === 'approved')
       .reduce((sum, co) => sum + (co.amount || 0), 0) || 0
 
-    // Get labor forecasts (if any exist)
+    // Get labor actuals (if any exist)
     const { data: laborData, error: laborError } = await supabase
-      .from('labor_forecasts')
-      .select('craft_type, actual_hours, actual_cost, forecasted_hours, forecasted_cost')
+      .from('labor_actuals')
+      .select('craft_type_id, actual_hours, actual_cost')
       .eq('project_id', projectId)
 
-    if (laborError) throw laborError
+    if (laborError) {
+      console.log('Labor actuals error:', laborError)
+    }
 
     const laborSummary = laborData?.reduce((acc, labor) => ({
       totalActualHours: acc.totalActualHours + (labor.actual_hours || 0),
       totalActualCost: acc.totalActualCost + (labor.actual_cost || 0),
-      totalForecastedHours: acc.totalForecastedHours + (labor.forecasted_hours || 0),
-      totalForecastedCost: acc.totalForecastedCost + (labor.forecasted_cost || 0)
+      totalForecastedHours: 0, // TODO: Get from labor_headcount_forecasts
+      totalForecastedCost: 0 // TODO: Get from labor_headcount_forecasts
     }), {
       totalActualHours: 0,
       totalActualCost: 0,
@@ -141,7 +148,7 @@ export async function GET(
     // Get recent activity
     const { data: auditLogs, error: auditError } = await supabase
       .from('audit_log')
-      .select('action, entity_type, entity_id, changes, created_at, user_id')
+      .select('action, entity_type, entity_id, changes, created_at, performed_by')
       .eq('entity_id', projectId)
       .eq('entity_type', 'project')
       .order('created_at', { ascending: false })
@@ -166,10 +173,7 @@ export async function GET(
           endDate: project.end_date,
           client: {
             id: project.client.id,
-            name: project.client.name,
-            contactName: project.client.contact_name,
-            contactEmail: project.client.contact_email,
-            contactPhone: project.client.contact_phone
+            name: project.client.name
           },
           division: {
             id: project.division.id,
@@ -208,7 +212,7 @@ export async function GET(
             amount: po.committed_amount,
             invoiced: po.invoiced_amount,
             status: po.status,
-            issueDate: po.issue_date
+            issueDate: po.created_at
           })) || []
         },
         changeOrders: {
@@ -230,7 +234,7 @@ export async function GET(
           entityType: log.entity_type,
           changes: log.changes,
           timestamp: log.created_at,
-          userId: log.user_id
+          userId: log.performed_by
         })) || [],
         lastUpdated: new Date().toISOString()
       }

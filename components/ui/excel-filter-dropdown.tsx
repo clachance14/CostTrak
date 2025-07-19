@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { Search, Check, ChevronDown, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react'
+import { Search, Check, ChevronDown, ArrowUp, ArrowDown, RefreshCcw as RotateCcw } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'

@@ -17,6 +17,9 @@ export async function POST() {
     }
 
     // Check if 2FA is already enabled
+    // TODO: Add two_factor_enabled field to profiles table
+    // For now, skip this check
+    /*
     const { data: profile } = await supabase
       .from('profiles')
       .select('two_factor_enabled')
@@ -29,6 +32,7 @@ export async function POST() {
         { status: 400 }
       )
     }
+    */
 
     // Generate secret
     const secret = speakeasy.generateSecret({

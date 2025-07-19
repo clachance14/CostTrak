@@ -53,8 +53,8 @@ export async function GET(
     const hasAccess = 
       userProfile.role === 'controller' ||
       userProfile.role === 'executive' ||
-      (userProfile.role === 'ops_manager' && changeOrder.project.division_id === userProfile.division_id) ||
-      (userProfile.role === 'project_manager' && changeOrder.project.project_manager_id === user.id) ||
+      (userProfile.role === 'ops_manager' && changeOrder.project?.division_id === userProfile.division_id) ||
+      (userProfile.role === 'project_manager' && changeOrder.project?.project_manager_id === user.id) ||
       userProfile.role === 'accounting'
 
     if (!hasAccess) {
@@ -91,7 +91,7 @@ export async function GET(
       fileSize: attachment.file_size,
       mimeType: attachment.mime_type,
       uploadedAt: attachment.uploaded_at,
-      uploadedBy: attachment.uploader ? {
+      uploadedBy: attachment.uploader && !Array.isArray(attachment.uploader) ? {
         id: attachment.uploader.id,
         name: `${attachment.uploader.first_name} ${attachment.uploader.last_name}`
       } : null
@@ -183,7 +183,7 @@ export async function POST(
     const hasEditAccess = 
       userProfile.role === 'controller' ||
       userProfile.role === 'ops_manager' ||
-      (userProfile.role === 'project_manager' && changeOrder.project.project_manager_id === user.id)
+      (userProfile.role === 'project_manager' && changeOrder.project?.project_manager_id === user.id)
 
     if (!hasEditAccess) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

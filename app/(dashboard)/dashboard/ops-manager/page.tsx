@@ -179,15 +179,8 @@ export default function OpsManagerDashboard() {
           id,
           job_number,
           name,
-          percent_complete,
-          revised_contract_amount,
-          original_contract_amount,
-          actual_cost_to_date,
-          cost_to_complete,
-          estimated_final_cost,
-          profit_forecast,
-          margin_percent,
-          variance_at_completion,
+          revised_contract,
+          original_contract,
           change_orders!change_orders_project_id_fkey(
             amount,
             status
@@ -199,14 +192,14 @@ export default function OpsManagerDashboard() {
       if (projectsError) throw projectsError
 
       // Calculate financial metrics
-      const financialData: ProjectFinancialOverview[] = projects.map((project: { id: string; job_number: string; name: string; percent_complete: number | null; revised_contract_amount: number | null; original_contract_amount: number | null; actual_cost_to_date: number | null; cost_to_complete: number | null; estimated_final_cost: number | null; profit_forecast: number | null; margin_percent: number | null; variance_at_completion: number | null; change_orders: { amount: number; status: string }[] | null }) => {
+      const financialData: ProjectFinancialOverview[] = projects.map((project: { id: string; job_number: string; name: string; revised_contract: number | null; original_contract: number | null; change_orders: { amount: number; status: string | null }[] | null }) => {
         const approvedCOs = project.change_orders
-          ?.filter((co: { status: string }) => co.status === 'approved')
+          ?.filter((co: { status: string | null }) => co.status === 'approved')
           .reduce((sum: number, co: { amount: number }) => sum + (co.amount || 0), 0) || 0
         
-        const revisedContract = (project.original_contract_amount || 0) + approvedCOs
-        const actualCost = project.actual_cost_to_date || 0
-        const costToComplete = project.cost_to_complete || 0
+        const revisedContract = (project.original_contract || 0) + approvedCOs
+        const actualCost = 0 // This would need to be calculated from purchase orders
+        const costToComplete = 0 // This would need to be calculated
         const eac = actualCost + costToComplete
         const profitForecast = revisedContract - eac
         const marginPercent = revisedContract > 0 ? (profitForecast / revisedContract) * 100 : 0
@@ -216,7 +209,7 @@ export default function OpsManagerDashboard() {
           id: project.id,
           jobNumber: project.job_number,
           name: project.name,
-          percentComplete: project.percent_complete || 0,
+          percentComplete: 0, // This would need to be calculated
           revisedContract,
           actualCostToDate: actualCost,
           costToComplete,

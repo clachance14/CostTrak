@@ -290,26 +290,47 @@ export function LaborPeriodTable({ periodBreakdown, onDrillDown }: LaborPeriodTa
                         )}
                       </div>
                     </TableCell>
-                    <TableCell colSpan={3}>
+                    <TableCell>
                       <span className="text-sm text-muted-foreground">
                         {period.employees.length} employees
                       </span>
                     </TableCell>
-                    <TableCell colSpan={2} className="text-right font-medium">
-                      {formatNumber(period.totalActualHours)} hrs
+                    <TableCell>
+                      {/* Empty cell for Craft column */}
+                    </TableCell>
+                    <TableCell>
+                      {/* Empty cell for Category column */}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      Actual: {formatCurrency(period.totalActualCost)}
+                      {/* Calculate total ST hours */}
+                      {formatNumber(period.employees.reduce((sum, emp) => sum + emp.stHours, 0))}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      Forecast: {formatCurrency(period.totalForecastedCost)}
+                      {/* Calculate total OT hours */}
+                      {formatNumber(period.employees.reduce((sum, emp) => sum + emp.otHours, 0))}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      <div className="flex items-center justify-end gap-1">
-                        {getVarianceIcon(period.variancePercent)}
-                        <span className={getVarianceColor(period.variancePercent)}>
-                          {period.variancePercent > 0 ? '+' : ''}{period.variancePercent.toFixed(1)}%
-                        </span>
+                      {formatNumber(period.totalActualHours)}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {/* Calculate average rate */}
+                      {period.totalActualHours > 0 
+                        ? formatRate(period.totalActualCost / period.totalActualHours)
+                        : '$0.00'
+                      }
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      <div className="space-y-1">
+                        <div>Actual: {formatCurrency(period.totalActualCost)}</div>
+                        <div className="text-xs text-muted-foreground">
+                          Forecast: {formatCurrency(period.totalForecastedCost)}
+                        </div>
+                        <div className="flex items-center justify-end gap-1">
+                          {getVarianceIcon(period.variancePercent)}
+                          <span className={`text-xs ${getVarianceColor(period.variancePercent)}`}>
+                            {period.variancePercent > 0 ? '+' : ''}{period.variancePercent.toFixed(1)}%
+                          </span>
+                        </div>
                       </div>
                     </TableCell>
                   </TableRow>

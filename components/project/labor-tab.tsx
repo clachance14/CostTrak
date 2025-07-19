@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -13,12 +14,14 @@ import {
   RefreshCw, 
   AlertCircle,
   Calendar,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Upload
 } from 'lucide-react'
 import { LaborKPICards } from './labor-kpi-cards'
 import { LaborCraftTable } from './labor-craft-table'
 import { LaborTrendCharts } from './labor-trend-charts'
 import { LaborPeriodTable } from './labor-period-table'
+import { useUser } from '@/hooks/use-auth'
 import { format } from 'date-fns'
 import * as XLSX from 'xlsx'
 
@@ -87,7 +90,12 @@ interface LaborAnalytics {
 }
 
 export function LaborTab({ projectId, projectName, jobNumber }: LaborTabProps) {
+  const router = useRouter()
+  const { data: user } = useUser()
   const [activeTab, setActiveTab] = useState('overview')
+  
+  // Check if user can import labor data
+  const canImport = user && ['controller', 'ops_manager', 'project_manager'].includes(user.role)
   
   // Debug logging
   useEffect(() => {
@@ -284,6 +292,16 @@ export function LaborTab({ projectId, projectName, jobNumber }: LaborTabProps) {
           </div>
         </div>
         <div className="flex gap-2">
+          {canImport && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/labor/import?project_id=${projectId}`)}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Import Labor Data
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"

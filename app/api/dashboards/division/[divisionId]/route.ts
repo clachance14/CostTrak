@@ -93,7 +93,9 @@ export async function GET(
 
     // Get project status distribution
     const statusDistribution = projects?.reduce((acc: Record<string, number>, project) => {
-      acc[project.status] = (acc[project.status] || 0) + 1
+      if (project.status) {
+        acc[project.status] = (acc[project.status] || 0) + 1
+      }
       return acc
     }, {}) || {}
 
@@ -141,8 +143,7 @@ export async function GET(
         division: {
           id: division.id,
           name: division.name,
-          code: division.code,
-          description: division.description
+          code: division.code
         },
         overview: {
           totalProjects,

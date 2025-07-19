@@ -583,6 +583,11 @@ export async function POST(request: NextRequest) {
       const totalHours = totalStHours + totalOtHours
       const totalCost = totalStWages + totalOtWages
       
+      // Calculate burden on straight time wages only (28% default)
+      const burdenRate = 0.28
+      const burdenAmount = totalStWages * burdenRate
+      const totalCostWithBurden = totalCost + burdenAmount
+      
       try {
         // Check if entry already exists for this week
         const { data: existing, error: existingError } = await adminSupabase
@@ -602,6 +607,9 @@ export async function POST(request: NextRequest) {
             .update({
               actual_hours: totalHours,
               actual_cost: totalCost,
+              burden_rate: burdenRate,
+              burden_amount: burdenAmount,
+              actual_cost_with_burden: totalCostWithBurden,
               updated_at: new Date().toISOString()
             })
             .eq('id', existing.id)
@@ -617,14 +625,17 @@ export async function POST(request: NextRequest) {
               craft_type_id: defaultCraftTypeId,
               week_ending: weekEndingISO,
               actual_hours: totalHours,
-              actual_cost: totalCost
+              actual_cost: totalCost,
+              burden_rate: burdenRate,
+              burden_amount: burdenAmount,
+              actual_cost_with_burden: totalCostWithBurden
             })
 
           if (insertError) throw insertError
           result.imported = 1
         }
 
-        console.log(`Imported labor totals: ${employeeCount} employees, ${totalHours} hours, $${totalCost}`)
+        console.log(`Imported labor totals: ${employeeCount} employees, ${totalHours} hours, $${totalCost} (+ $${burdenAmount.toFixed(2)} burden = $${totalCostWithBurden.toFixed(2)} total)`)
         
         // Set employee count in result
         result.employeeCount = employeeCount

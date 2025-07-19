@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { Database } from '@/types/database'
+import { Database } from '@/types/database.generated'
 
 // Admin client for server-side operations that require elevated privileges
 // This should only be used in server-side code, never exposed to the client

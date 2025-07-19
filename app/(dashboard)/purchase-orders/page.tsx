@@ -4,12 +4,12 @@ import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { 
-  FileUp, 
+  Upload, 
   Download,
   Eye,
   DollarSign,
   Package,
-  Settings2
+  Settings
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -202,7 +202,7 @@ export default function PurchaseOrdersPage() {
               variant="outline"
               className="border-orange-500 text-orange-700 hover:bg-orange-50 flex items-center gap-2"
             >
-              <Settings2 className="h-4 w-4" />
+              <Settings className="h-4 w-4" />
               Clear All Filters ({activeFiltersCount})
             </Button>
           )}
@@ -219,7 +219,7 @@ export default function PurchaseOrdersPage() {
               onClick={() => router.push('/purchase-orders/import')}
               className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
             >
-              <FileUp className="h-4 w-4" />
+              <Upload className="h-4 w-4" />
               Import CSV
             </Button>
           )}

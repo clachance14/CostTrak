@@ -113,6 +113,8 @@ export async function GET(
             .from('labor_actuals')
             .select(`
               actual_cost,
+              actual_cost_with_burden,
+              burden_amount,
               craft_type:craft_types(
                 category
               )
@@ -126,7 +128,8 @@ export async function GET(
 
           if (laborActuals) {
             laborActuals.forEach(la => {
-              const cost = la.actual_cost || 0
+              // Use the cost with burden included
+              const cost = la.actual_cost_with_burden || la.actual_cost || 0
               switch (la.craft_type?.category) {
                 case 'direct':
                   directActuals += cost
@@ -183,24 +186,21 @@ export async function GET(
             forecastedFinal = actuals + futureLabor
           }
 
-          // Calculate taxes & insurance (typically 25-30% of labor)
-          const taxesInsuranceRate = 0.28 // 28% burden rate
-          const taxesInsuranceActuals = actuals * taxesInsuranceRate
-          const taxesInsuranceForecast = forecastedFinal * taxesInsuranceRate
+          // Tax & insurance is now included in the burdened labor costs
+          // No need to calculate separately
 
           // Get labor budget breakdown from project_budget_breakdowns
           const { data: laborBudgetBreakdowns } = await supabase
             .from('project_budget_breakdowns')
             .select('cost_type, value')
             .eq('project_id', projectId)
-            .in('cost_type', ['DIRECT LABOR', 'INDIRECT LABOR', 'TAXES & INSURANCE', 'PERDIEM', 'PER DIEM'])
+            .in('cost_type', ['DIRECT LABOR', 'INDIRECT LABOR', 'PERDIEM', 'PER DIEM'])
 
           // Calculate labor subcategory budgets from actual breakdown data
           const laborBudgets = {
             'DIRECT LABOR': 0,
             'INDIRECT LABOR': 0,
-            'STAFF LABOR': 0,
-            'TAXES & INSURANCE': 0
+            'STAFF LABOR': 0
           }
 
           laborBudgetBreakdowns?.forEach(breakdown => {
@@ -208,8 +208,6 @@ export async function GET(
               laborBudgets['DIRECT LABOR'] += breakdown.value
             } else if (breakdown.cost_type === 'INDIRECT LABOR') {
               laborBudgets['INDIRECT LABOR'] += breakdown.value
-            } else if (breakdown.cost_type === 'TAXES & INSURANCE') {
-              laborBudgets['TAXES & INSURANCE'] += breakdown.value
             } else if (breakdown.cost_type === 'PERDIEM' || breakdown.cost_type === 'PER DIEM') {
               laborBudgets['STAFF LABOR'] += breakdown.value
             }
@@ -240,14 +238,6 @@ export async function GET(
               actuals: staffActuals,
               forecastedFinal: staffActuals + staffForecast,
               variance: laborBudgets['STAFF LABOR'] - (staffActuals + staffForecast)
-            },
-            {
-              category: 'TAXES & INSURANCE',
-              budget: laborBudgets['TAXES & INSURANCE'],
-              committed: taxesInsuranceActuals,
-              actuals: taxesInsuranceActuals,
-              forecastedFinal: taxesInsuranceForecast,
-              variance: laborBudgets['TAXES & INSURANCE'] - taxesInsuranceForecast
             }
           ]
 
@@ -258,7 +248,7 @@ export async function GET(
           
           // Set main LABOR budget to sum of all subcategory budgets
           cat.budget = laborBudgets['DIRECT LABOR'] + laborBudgets['INDIRECT LABOR'] + 
-                       laborBudgets['STAFF LABOR'] + laborBudgets['TAXES & INSURANCE']
+                       laborBudgets['STAFF LABOR']
         } else if (cat.costCodeCategories.length > 0 || cat.costCenterCodes.length > 0) {
           // Filter POs for this category
           const categoryPOs = allPOs?.filter(po => {

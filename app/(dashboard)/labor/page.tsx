@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { 
@@ -18,7 +18,6 @@ import {
 import { formatCurrency } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface ProjectInfo {
@@ -52,50 +51,7 @@ export default function LaborDashboardPage() {
   
   const supabase = createClient()
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
-        if (userError || !user) {
-          router.push('/login')
-          return
-        }
-
-        // Get user role
-        const { data: userDetails } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single()
-        
-        if (userDetails) {
-          setUserRole(userDetails.role)
-        }
-
-        // Fetch projects
-        const projectsResponse = await fetch('/api/projects?limit=100')
-        if (projectsResponse.ok) {
-          const projectsData = await projectsResponse.json()
-          setProjects(projectsData.projects || [])
-        }
-
-        // If project is selected, fetch summary data
-        if (selectedProject) {
-          await fetchProjectSummary(selectedProject)
-        }
-
-        setLoading(false)
-      } catch (error) {
-        console.error('Error fetching data:', error)
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [selectedProject, router, supabase])
-
-  const fetchProjectSummary = async (projectId: string) => {
+  const fetchProjectSummary = useCallback(async (projectId: string) => {
     try {
       // Get project info
       const project = projects.find(p => p.id === projectId)
@@ -121,11 +77,23 @@ export default function LaborDashboardPage() {
         const actualsData = await actualsRes.json()
         if (actualsData.actuals && actualsData.actuals.length > 0) {
           // Calculate totals across all weeks
-          totalCost = actualsData.actuals.reduce((sum: number, a: any) => sum + a.totalCost, 0)
-          totalHours = actualsData.actuals.reduce((sum: number, a: any) => sum + a.totalHours, 0)
+          totalCost = actualsData.actuals.reduce((sum: number, a: {
+            totalCost: number;
+            totalHours: number;
+            weekEnding: string;
+          }) => sum + a.totalCost, 0)
+          totalHours = actualsData.actuals.reduce((sum: number, a: {
+            totalCost: number;
+            totalHours: number;
+            weekEnding: string;
+          }) => sum + a.totalHours, 0)
           
           // Get unique weeks count
-          const uniqueWeeks = new Set(actualsData.actuals.map((a: any) => a.weekEnding))
+          const uniqueWeeks = new Set(actualsData.actuals.map((a: {
+            totalCost: number;
+            totalHours: number;
+            weekEnding: string;
+          }) => a.weekEnding))
           weekCount = uniqueWeeks.size
           
           // Calculate average weekly cost
@@ -189,7 +157,50 @@ export default function LaborDashboardPage() {
     } catch (error) {
       console.error('Error fetching project summary:', error)
     }
-  }
+  }, [projects, supabase])
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Get current user
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        if (userError || !user) {
+          router.push('/login')
+          return
+        }
+
+        // Get user role
+        const { data: userDetails } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+        
+        if (userDetails) {
+          setUserRole(userDetails.role)
+        }
+
+        // Fetch projects
+        const projectsResponse = await fetch('/api/projects?limit=100')
+        if (projectsResponse.ok) {
+          const projectsData = await projectsResponse.json()
+          setProjects(projectsData.projects || [])
+        }
+
+        // If project is selected, fetch summary data
+        if (selectedProject) {
+          await fetchProjectSummary(selectedProject)
+        }
+
+        setLoading(false)
+      } catch (error) {
+        console.error('Error fetching data:', error)
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [selectedProject, router, supabase, fetchProjectSummary])
 
   const handleProjectChange = (value: string) => {
     setSelectedProject(value)

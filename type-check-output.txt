@@ -1,0 +1,312 @@
+
+> costtrak@0.1.0 type-check
+> tsc --noEmit
+
+app/(dashboard)/controller/page.tsx(11,3): error TS2305: Module '"lucide-react"' has no exported member 'TestTube'.
+app/(dashboard)/dashboard/controller/page.tsx(11,3): error TS2305: Module '"lucide-react"' has no exported member 'TestTube'.
+app/(dashboard)/financial-snapshots/page.tsx(31,3): error TS2305: Module '"lucide-react"' has no exported member 'Briefcase'.
+app/(dashboard)/labor/analytics/page.tsx(476,59): error TS18048: 'percent' is possibly 'undefined'.
+app/(dashboard)/labor/import/page.tsx(9,3): error TS2724: '"lucide-react"' has no exported member named 'CheckCircle2'. Did you mean 'CheckCircle'?
+app/(dashboard)/labor/import/page.tsx(15,3): error TS2305: Module '"lucide-react"' has no exported member 'Briefcase'.
+app/(dashboard)/labor/import/page.tsx(192,20): error TS2345: Argument of type '{ contractorNumber: string; weekEnding: Date; employees: never[]; totals: { employees: number; totalHours: number; totalCost: number; }; isValid: false; errors: string[]; }' is not assignable to parameter of type 'SetStateAction<PreviewData | null>'.
+  Property 'contractorInfo' is missing in type '{ contractorNumber: string; weekEnding: Date; employees: never[]; totals: { employees: number; totalHours: number; totalCost: number; }; isValid: false; errors: string[]; }' but required in type 'PreviewData'.
+app/(dashboard)/labor/page.tsx(16,3): error TS2305: Module '"lucide-react"' has no exported member 'Activity'.
+app/(dashboard)/labor/page.tsx(95,42): error TS2448: Block-scoped variable 'fetchProjectSummary' used before its declaration.
+app/(dashboard)/labor/page.tsx(95,42): error TS2454: Variable 'fetchProjectSummary' is used before being assigned.
+app/(dashboard)/layout.tsx(10,3): error TS2305: Module '"lucide-react"' has no exported member 'FolderOpen'.
+app/(dashboard)/layout.tsx(21,3): error TS2305: Module '"lucide-react"' has no exported member 'Bell'.
+app/(dashboard)/notifications/page.tsx(28,3): error TS2305: Module '"lucide-react"' has no exported member 'Bell'.
+app/(dashboard)/notifications/page.tsx(29,3): error TS2305: Module '"lucide-react"' has no exported member 'CheckCheck'.
+app/(dashboard)/notifications/page.tsx(38,3): error TS2724: '"lucide-react"' has no exported member named 'FileUp'. Did you mean 'File'?
+app/(dashboard)/notifications/page.tsx(39,3): error TS2305: Module '"lucide-react"' has no exported member 'Megaphone'.
+app/(dashboard)/projects/[id]/team/page.tsx(340,33): error TS7006: Parameter 'assignment' implicitly has an 'any' type.
+app/(dashboard)/projects/[id]/team/page.tsx(356,25): error TS2322: Type 'unknown[]' is not assignable to type 'ReactNode'.
+  Type 'unknown[]' is not assignable to type 'Iterable<ReactNode>'.
+    The types returned by '[Symbol.iterator]().next(...)' are incompatible between these types.
+      Type 'IteratorResult<unknown, undefined>' is not assignable to type 'IteratorResult<ReactNode, any>'.
+        Type 'IteratorYieldResult<unknown>' is not assignable to type 'IteratorResult<ReactNode, any>'.
+          Type 'IteratorYieldResult<unknown>' is not assignable to type 'IteratorYieldResult<ReactNode>'.
+            Type 'unknown' is not assignable to type 'ReactNode'.
+app/(dashboard)/projects/[id]/team/page.tsx(445,42): error TS7006: Parameter 'user' implicitly has an 'any' type.
+app/(dashboard)/projects/[id]/team/page.tsx(458,86): error TS2345: Argument of type 'string' is not assignable to parameter of type 'SetStateAction<"viewer" | "delegate_pm">'.
+app/(dashboard)/projects/[id]/team/page.tsx(542,15): error TS2322: Type '"destructive"' is not assignable to type '"default" | "primary" | "secondary" | "outline" | "ghost" | "danger" | null | undefined'.
+app/(dashboard)/projects/new/page.tsx(684,67): error TS2345: Argument of type 'POLineItem[]' is not assignable to parameter of type 'string | number'.
+app/(dashboard)/projects/page.tsx(12,3): error TS2305: Module '"lucide-react"' has no exported member 'Grid3x3'.
+app/(dashboard)/projects/page.tsx(13,3): error TS2305: Module '"lucide-react"' has no exported member 'TableProperties'.
+app/(dashboard)/projects/page.tsx(21,3): error TS2724: '"lucide-react"' has no exported member named 'Settings2'. Did you mean 'Settings'?
+app/(dashboard)/purchase-orders/[id]/page.tsx(249,48): error TS2339: Property 'total_amount' does not exist on type '{ id: string; line_number: number; description: string; quantity: number; unit_price: number; amount: number; }'.
+app/(dashboard)/purchase-orders/import/page.tsx(344,28): error TS18046: 'row' is of type 'unknown'.
+app/(dashboard)/purchase-orders/page.tsx(7,3): error TS2724: '"lucide-react"' has no exported member named 'FileUp'. Did you mean 'File'?
+app/(dashboard)/purchase-orders/page.tsx(12,3): error TS2724: '"lucide-react"' has no exported member named 'Settings2'. Did you mean 'Settings'?
+app/(dashboard)/viewer/page.tsx(204,25): error TS2552: Cannot find name 'formatDate'. Did you mean 'FormData'?
+app/(dashboard)/viewer/page.tsx(204,59): error TS2552: Cannot find name 'formatDate'. Did you mean 'FormData'?
+app/api/change-orders/[id]/attachments/route.ts(56,66): error TS2339: Property 'division_id' does not exist on type '{ id: any; project_manager_id: any; division_id: any; }[]'.
+app/api/change-orders/[id]/attachments/route.ts(57,70): error TS2339: Property 'project_manager_id' does not exist on type '{ id: any; project_manager_id: any; division_id: any; }[]'.
+app/api/change-orders/[id]/attachments/route.ts(95,33): error TS2339: Property 'id' does not exist on type '{ id: any; first_name: any; last_name: any; }[]'.
+app/api/change-orders/[id]/attachments/route.ts(96,38): error TS2339: Property 'first_name' does not exist on type '{ id: any; first_name: any; last_name: any; }[]'.
+app/api/change-orders/[id]/attachments/route.ts(96,72): error TS2339: Property 'last_name' does not exist on type '{ id: any; first_name: any; last_name: any; }[]'.
+app/api/change-orders/[id]/attachments/route.ts(186,70): error TS2339: Property 'project_manager_id' does not exist on type '{ id: any; project_manager_id: any; division_id: any; }[]'.
+app/api/documents/upload/route.ts(47,7): error TS2345: Argument of type 'SupabaseClient<Database, "public", any>' is not assignable to parameter of type 'Promise<SupabaseClient<Database, "public", any>>'.
+  Type 'SupabaseClient<Database, "public", any>' is missing the following properties from type 'Promise<SupabaseClient<Database, "public", any>>': then, catch, finally, [Symbol.toStringTag]
+app/api/documents/upload/route.ts(114,6): error TS2339: Property 'from' does not exist on type 'Promise<SupabaseClient<Database, "public", any>>'.
+app/api/documents/upload/route.ts(129,8): error TS2339: Property 'from' does not exist on type 'Promise<SupabaseClient<Database, "public", any>>'.
+app/api/documents/upload/route.ts(147,8): error TS2339: Property 'from' does not exist on type 'Promise<SupabaseClient<Database, "public", any>>'.
+app/api/documents/upload/route.ts(163,8): error TS2339: Property 'from' does not exist on type 'Promise<SupabaseClient<Database, "public", any>>'.
+app/api/labor-forecasts/calculate/route.ts(79,13): error TS2353: Object literal may only specify known properties, and 'forecastedCost' does not exist in type '{ headcount: number; totalHours: number; totalCost: number; byCategory: Record<string, { headcount: number; hours: number; cost: number; }>; }'.
+app/api/labor-forecasts/calculate/route.ts(85,7): error TS18048: 'week' is possibly 'undefined'.
+app/api/labor-forecasts/calculate/route.ts(90,9): error TS2353: Object literal may only specify known properties, and 'totalHours' does not exist in type '{ craftTypeId: string; craftName: string; craftCode: string; laborCategory: string; headcount: number; hours: number; cost: number; }'.
+app/api/labor-forecasts/calculate/route.ts(92,29): error TS2339: Property 'forecasted_cost' does not exist on type '{ week_ending: string; craft_type_id: string; craft_name: string; craft_code: string; labor_category: string; headcount: number; hours_per_person: number; avg_rate: number; total_hours: number; total_cost: number; }'.
+app/api/labor-forecasts/calculate/route.ts(95,7): error TS18048: 'week' is possibly 'undefined'.
+app/api/labor-forecasts/calculate/route.ts(96,7): error TS18048: 'week' is possibly 'undefined'.
+app/api/labor-forecasts/calculate/route.ts(96,44): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+app/api/labor-forecasts/calculate/route.ts(97,7): error TS18048: 'week' is possibly 'undefined'.
+app/api/labor-forecasts/calculate/route.ts(97,19): error TS2339: Property 'forecastedCost' does not exist on type '{ headcount: number; totalHours: number; totalCost: number; byCategory: Record<string, { headcount: number; hours: number; cost: number; }>; }'.
+app/api/labor-forecasts/calculate/route.ts(97,52): error TS2339: Property 'forecasted_cost' does not exist on type '{ week_ending: string; craft_type_id: string; craft_name: string; craft_code: string; labor_category: string; headcount: number; hours_per_person: number; avg_rate: number; total_hours: number; total_cost: number; }'.
+app/api/labor-forecasts/calculate/route.ts(109,59): error TS2339: Property 'forecastedCost' does not exist on type '{ headcount: number; totalHours: number; totalCost: number; byCategory: Record<string, { headcount: number; hours: number; cost: number; }>; }'.
+app/api/labor-forecasts/calculate/route.ts(134,11): error TS2353: Object literal may only specify known properties, and 'category' does not exist in type '{ craftCount: number; totalHeadcount: number; totalHours: number; totalCost: number; }'.
+app/api/labor-forecasts/calculate/route.ts(143,7): error TS18048: 'cat' is possibly 'undefined'.
+app/api/labor-forecasts/calculate/route.ts(143,36): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+app/api/labor-forecasts/calculate/route.ts(144,7): error TS18048: 'cat' is possibly 'undefined'.
+app/api/labor-forecasts/calculate/route.ts(144,39): error TS2339: Property 'forecasted_cost' does not exist on type '{ week_ending: string; craft_type_id: string; craft_name: string; craft_code: string; labor_category: string; headcount: number; hours_per_person: number; avg_rate: number; total_hours: number; total_cost: number; }'.
+app/api/labor-forecasts/calculate/route.ts(145,7): error TS18048: 'cat' is possibly 'undefined'.
+app/api/labor-forecasts/calculate/route.ts(145,11): error TS2339: Property 'avgRate' does not exist on type '{ craftCount: number; totalHeadcount: number; totalHours: number; totalCost: number; }'.
+app/api/labor-forecasts/calculate/route.ts(145,33): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+app/api/labor-forecasts/calculate/route.ts(146,7): error TS18048: 'cat' is possibly 'undefined'.
+app/api/labor-forecasts/calculate/route.ts(152,13): error TS2339: Property 'avgRate' does not exist on type '{ craftCount: number; totalHeadcount: number; totalHours: number; totalCost: number; }'.
+app/api/labor-forecasts/calculate/route.ts(152,27): error TS2339: Property 'avgRate' does not exist on type '{ craftCount: number; totalHeadcount: number; totalHours: number; totalCost: number; }'.
+app/api/labor-forecasts/composite-rate/route.ts(130,42): error TS2339: Property 'category' does not exist on type '{ id: any; name: any; category: any; }[]'.
+app/api/labor-forecasts/weekly-actuals/route.ts(146,33): error TS2339: Property 'craft_type_id' does not exist on type '{ craft_type_id: any; craft_types: { id: any; name: any; code: any; category: any; }[]; }[]'.
+app/api/labor-forecasts/weekly-actuals/route.ts(146,72): error TS2339: Property 'craft_types' does not exist on type '{ craft_type_id: any; craft_types: { id: any; name: any; code: any; category: any; }[]; }[]'.
+app/api/labor-forecasts/weekly-actuals/route.ts(148,45): error TS2339: Property 'craft_types' does not exist on type '{ craft_type_id: any; craft_types: { id: any; name: any; code: any; category: any; }[]; }[]'.
+app/api/labor-forecasts/weekly-actuals/route.ts(149,67): error TS2339: Property 'craft_type_id' does not exist on type '{ craft_type_id: any; craft_types: { id: any; name: any; code: any; category: any; }[]; }[]'.
+app/api/labor-forecasts/weekly-actuals/route.ts(160,44): error TS2339: Property 'craft_type_id' does not exist on type '{ craft_type_id: any; craft_types: { id: any; name: any; code: any; category: any; }[]; }[]'.
+app/api/labor-import/route.ts(813,7): error TS2304: Cannot find name 'adminSupabase'.
+app/api/labor-import/route.ts(814,7): error TS2304: Cannot find name 'projectId'.
+app/api/labor-import/route.ts(815,7): error TS2304: Cannot find name 'user'.
+app/api/labor-import/route.ts(816,7): error TS2552: Cannot find name 'file'. Did you mean 'File'?
+app/api/labor-import/route.ts(819,22): error TS2304: Cannot find name 'weekEndingISO'.
+app/api/ops-manager/division-budget-summary/[divisionId]/route.ts(140,35): error TS2339: Property 'total_budget' does not exist on type '{}'.
+app/api/project-budget-breakdowns/import/route.ts(316,60): error TS2345: Argument of type '{}' is not assignable to parameter of type 'string | number | null | undefined'.
+app/api/project-budget-breakdowns/import/route.ts(317,36): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string | number | null | undefined'.
+app/api/project-budget-breakdowns/import/route.ts(322,13): error TS2365: Operator '<' cannot be applied to types 'string | number' and 'number'.
+app/api/project-budget-breakdowns/import/route.ts(337,20): error TS2365: Operator '+' cannot be applied to types 'number' and 'string | number'.
+app/api/project-budget-breakdowns/import/route.ts(338,23): error TS2365: Operator '+' cannot be applied to types 'number' and 'string | number'.
+app/api/project-budget-breakdowns/import/route.ts(346,13): error TS2322: Type 'string | number | null | undefined' is not assignable to type 'number | null'.
+  Type 'undefined' is not assignable to type 'number | null'.
+app/api/project-budget-breakdowns/import/route.ts(347,13): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+app/api/project-budget-breakdowns/summary/[projectId]/route.ts(61,9): error TS18046: 'totals' is of type 'unknown'.
+app/api/project-budget-breakdowns/summary/[projectId]/route.ts(65,11): error TS18046: 'totals' is of type 'unknown'.
+app/api/project-budget-breakdowns/summary/[projectId]/route.ts(78,19): error TS18046: 'totals' is of type 'unknown'.
+app/api/project-budget-breakdowns/summary/[projectId]/route.ts(79,18): error TS18046: 'totals' is of type 'unknown'.
+app/api/project-budget-breakdowns/summary/[projectId]/route.ts(80,22): error TS18046: 'totals' is of type 'unknown'.
+app/api/project-budget-breakdowns/summary/[projectId]/route.ts(81,22): error TS18046: 'totals' is of type 'unknown'.
+app/api/project-budget-breakdowns/summary/[projectId]/route.ts(82,24): error TS18046: 'totals' is of type 'unknown'.
+app/api/project-budget-breakdowns/summary/[projectId]/route.ts(83,18): error TS18046: 'totals' is of type 'unknown'.
+app/api/project-budget-breakdowns/summary/[projectId]/route.ts(84,21): error TS18046: 'totals' is of type 'unknown'.
+app/api/project-budget-breakdowns/summary/[projectId]/route.ts(86,26): error TS18046: 'totals' is of type 'unknown'.
+app/api/project-budget-breakdowns/summary/[projectId]/route.ts(87,22): error TS18046: 'totals' is of type 'unknown'.
+app/api/project-manager/my-projects-budget/route.ts(133,35): error TS2339: Property 'total_budget' does not exist on type '{}'.
+app/api/project-manager/my-projects-budget/route.ts(164,30): error TS2339: Property 'last_updated' does not exist on type '{}'.
+app/api/project-manager/my-projects-budget/route.ts(165,34): error TS2339: Property 'discipline_count' does not exist on type '{}'.
+app/api/project-manager/my-projects-budget/route.ts(166,32): error TS2339: Property 'total_manhours' does not exist on type '{}'.
+app/api/projects/[id]/budget-vs-actual/route.ts(130,38): error TS2339: Property 'category' does not exist on type '{ category: any; }[]'.
+app/api/projects/[id]/budget-vs-actual/route.ts(166,49): error TS2339: Property 'default_rate' does not exist on type '{ default_rate: any; category: any; }[]'.
+app/api/projects/[id]/budget-vs-actual/route.ts(170,44): error TS2339: Property 'category' does not exist on type '{ default_rate: any; category: any; }[]'.
+app/api/projects/[id]/financial-summary/route.ts(189,45): error TS2339: Property 'id' does not exist on type '{ id: any; name: any; code: any; category: any; }[]'.
+app/api/projects/[id]/financial-summary/route.ts(295,32): error TS2339: Property 'category' does not exist on type '{ id: any; name: any; code: any; category: any; }[]'.
+app/api/projects/[id]/financial-summary/route.ts(299,32): error TS2339: Property 'category' does not exist on type '{ id: any; name: any; code: any; category: any; }[]'.
+app/api/projects/[id]/labor-analytics/route.ts(257,56): error TS2339: Property 'labor_budget' does not exist on type '{ labor_budget: any; }[]'.
+app/api/projects/[id]/labor-analytics/route.ts(296,77): error TS2339: Property 'craft_type_id' does not exist on type '{ craft_type_id: any; }[]'.
+app/api/projects/[id]/labor-analytics/route.ts(306,49): error TS2339: Property 'craft_type_id' does not exist on type '{ craft_type_id: any; }[]'.
+app/api/projects/distinct-values/route.ts(75,23): error TS2345: Argument of type '(row: Record<string, unknown>) => void' is not assignable to parameter of type '((value: { client: { name: any; }[]; division: { name: any; }[]; project_manager: { first_name: any; last_name: any; }[]; }, index: number, array: { client: { name: any; }[]; division: { name: any; }[]; project_manager: { ...; }[]; }[]) => void) & ((value: GenericStringError, index: number, array: GenericStringError...'.
+  Type '(row: Record<string, unknown>) => void' is not assignable to type '(value: GenericStringError, index: number, array: GenericStringError[]) => void'.
+    Types of parameters 'row' and 'value' are incompatible.
+      Type 'GenericStringError' is not assignable to type 'Record<string, unknown>'.
+        Index signature for type 'string' is missing in type '{ error: true; } & String'.
+app/api/projects/distinct-values/route.ts(80,33): error TS2339: Property 'name' does not exist on type '{}'.
+app/api/projects/distinct-values/route.ts(83,35): error TS2339: Property 'name' does not exist on type '{}'.
+app/api/projects/distinct-values/route.ts(87,46): error TS2339: Property 'first_name' does not exist on type '{}'.
+app/api/projects/distinct-values/route.ts(87,80): error TS2339: Property 'last_name' does not exist on type '{}'.
+app/api/projects/distinct-values/route.ts(92,44): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type '{}' is not assignable to parameter of type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type '{}' is not assignable to parameter of type 'string | number'.
+app/api/projects/distinct-values/route.ts(100,24): error TS2365: Operator '<' cannot be applied to types '{}' and 'number'.
+app/api/projects/distinct-values/route.ts(102,24): error TS2365: Operator '<' cannot be applied to types '{}' and 'number'.
+app/api/projects/distinct-values/route.ts(104,24): error TS2365: Operator '<' cannot be applied to types '{}' and 'number'.
+app/api/projects/distinct-values/route.ts(106,24): error TS2365: Operator '<' cannot be applied to types '{}' and 'number'.
+app/api/projects/distinct-values/route.ts(113,13): error TS2322: Type '{} | null' is not assignable to type 'string | null'.
+  Type '{}' is not assignable to type 'string'.
+app/api/purchase-orders/distinct-values/route.ts(105,23): error TS2345: Argument of type '(row: Record<string, unknown>) => void' is not assignable to parameter of type '((value: GenericStringError, index: number, array: GenericStringError[]) => void) & ((value: { projects: { name: any; job_number: any; divisions: { ...; }[]; }[]; }, index: number, array: { ...; }[]) => void) & ((value: { ...; }, index: number, array: { ...; }[]) => void)'.
+  Type '(row: Record<string, unknown>) => void' is not assignable to type '(value: GenericStringError, index: number, array: GenericStringError[]) => void'.
+    Types of parameters 'row' and 'value' are incompatible.
+      Type 'GenericStringError' is not assignable to type 'Record<string, unknown>'.
+        Index signature for type 'string' is missing in type '{ error: true; } & String'.
+app/api/purchase-orders/distinct-values/route.ts(110,35): error TS2339: Property 'name' does not exist on type '{}'.
+app/api/purchase-orders/distinct-values/route.ts(113,35): error TS2339: Property 'job_number' does not exist on type '{}'.
+app/api/purchase-orders/distinct-values/route.ts(116,35): error TS2339: Property 'divisions' does not exist on type '{}'.
+app/api/purchase-orders/distinct-values/route.ts(119,36): error TS2339: Property 'code' does not exist on type '{}'.
+app/api/purchase-orders/distinct-values/route.ts(141,19): error TS2322: Type '{}' is not assignable to type 'string'.
+app/api/quick-import/labor/route.ts(81,28): error TS18046: 'row' is of type 'unknown'.
+app/api/quick-import/labor/route.ts(81,50): error TS18046: 'row' is of type 'unknown'.
+app/api/quick-import/labor/route.ts(83,32): error TS18046: 'row' is of type 'unknown'.
+app/api/quick-import/labor/route.ts(83,58): error TS18046: 'row' is of type 'unknown'.
+app/api/quick-import/labor/route.ts(84,34): error TS18046: 'row' is of type 'unknown'.
+app/api/quick-import/labor/route.ts(84,50): error TS18046: 'row' is of type 'unknown'.
+app/api/quick-import/labor/route.ts(85,41): error TS18046: 'row' is of type 'unknown'.
+app/api/quick-import/labor/route.ts(85,56): error TS18046: 'row' is of type 'unknown'.
+app/api/quick-import/labor/route.ts(86,27): error TS18046: 'row' is of type 'unknown'.
+app/api/quick-import/labor/route.ts(86,43): error TS18046: 'row' is of type 'unknown'.
+app/setup-profile/page.tsx(48,7): error TS2552: Cannot find name 'error'. Did you mean 'Error'?
+app/setup-profile/page.tsx(55,16): error TS2552: Cannot find name 'error'. Did you mean 'Error'?
+components/change-orders/change-order-table.tsx(43,3): error TS2305: Module '"lucide-react"' has no exported member 'Paperclip'.
+components/change-orders/change-order-table.tsx(131,23): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | number | Project | User | ChangeOrderAttachment[]' is not assignable to parameter of type 'string | number | Date'.
+      Type 'Project' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | number | Project | User | ChangeOrderAttachment[]' is not assignable to parameter of type 'string | number'.
+      Type 'Project' is not assignable to type 'string | number'.
+components/change-orders/change-order-table.tsx(132,23): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | number | Project | User | ChangeOrderAttachment[]' is not assignable to parameter of type 'string | number | Date'.
+      Type 'Project' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | number | Project | User | ChangeOrderAttachment[]' is not assignable to parameter of type 'string | number'.
+      Type 'Project' is not assignable to type 'string | number'.
+components/change-orders/change-order-table.tsx(136,14): error TS18048: 'aVal' is possibly 'undefined'.
+components/change-orders/change-order-table.tsx(136,21): error TS18048: 'bVal' is possibly 'undefined'.
+components/change-orders/change-order-table.tsx(138,14): error TS18048: 'aVal' is possibly 'undefined'.
+components/change-orders/change-order-table.tsx(138,21): error TS18048: 'bVal' is possibly 'undefined'.
+components/change-orders/change-order-table.tsx(287,28): error TS2322: Type '"default" | "secondary" | "outline" | "destructive" | "success"' is not assignable to type '"default" | "secondary" | "outline" | "destructive" | null | undefined'.
+  Type '"success"' is not assignable to type '"default" | "secondary" | "outline" | "destructive" | null | undefined'.
+components/change-orders/change-order-table.tsx(391,26): error TS2322: Type '"default" | "secondary" | "outline" | "destructive" | "success"' is not assignable to type '"default" | "secondary" | "outline" | "destructive" | null | undefined'.
+  Type '"success"' is not assignable to type '"default" | "secondary" | "outline" | "destructive" | null | undefined'.
+components/change-orders/change-order-table.tsx(428,24): error TS18048: 'selectedCO.labor_amount' is possibly 'undefined'.
+components/change-orders/change-order-table.tsx(431,49): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+components/change-orders/change-order-table.tsx(434,24): error TS18048: 'selectedCO.material_amount' is possibly 'undefined'.
+components/change-orders/change-order-table.tsx(437,49): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+components/change-orders/change-order-table.tsx(440,24): error TS18048: 'selectedCO.equipment_amount' is possibly 'undefined'.
+components/change-orders/change-order-table.tsx(443,49): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+components/change-orders/change-order-table.tsx(446,24): error TS18048: 'selectedCO.subcontract_amount' is possibly 'undefined'.
+components/change-orders/change-order-table.tsx(449,49): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+components/change-orders/change-order-table.tsx(452,24): error TS18048: 'selectedCO.markup_amount' is possibly 'undefined'.
+components/change-orders/change-order-table.tsx(455,49): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+components/change-orders/change-order-table.tsx(458,24): error TS18048: 'selectedCO.tax_amount' is possibly 'undefined'.
+components/change-orders/change-order-table.tsx(461,49): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+components/change-orders/change-order-table.tsx(575,15): error TS2322: Type '"destructive"' is not assignable to type '"default" | "primary" | "secondary" | "outline" | "ghost" | "danger" | null | undefined'.
+components/dashboard/metric-card.tsx(2,10): error TS2305: Module '"lucide-react"' has no exported member 'LucideIcon'.
+components/dashboard/pm-alert-banner.tsx(67,46): error TS2339: Property 'labor_days_old' does not exist on type 'ProjectHealthData'.
+components/dashboard/pm-alert-banner.tsx(67,75): error TS2339: Property 'po_days_old' does not exist on type 'ProjectHealthData'.
+components/dashboard/quick-import-section.tsx(207,19): error TS2322: Type '"link"' is not assignable to type '"default" | "primary" | "secondary" | "outline" | "ghost" | "danger" | null | undefined'.
+components/dashboard/quick-import-section.tsx(309,92): error TS2345: Argument of type 'RefObject<HTMLInputElement | null>' is not assignable to parameter of type 'RefObject<HTMLInputElement>'.
+  Type 'HTMLInputElement | null' is not assignable to type 'HTMLInputElement'.
+    Type 'null' is not assignable to type 'HTMLInputElement'.
+components/dashboard/quick-import-section.tsx(310,80): error TS2345: Argument of type 'RefObject<HTMLInputElement | null>' is not assignable to parameter of type 'RefObject<HTMLInputElement>'.
+  Type 'HTMLInputElement | null' is not assignable to type 'HTMLInputElement'.
+    Type 'null' is not assignable to type 'HTMLInputElement'.
+components/documents/document-list.tsx(20,3): error TS2305: Module '"lucide-react"' has no exported member 'FileImage'.
+components/forms/project-form.tsx(48,5): error TS2322: Type '{ status: "planning"; }' is not assignable to type 'AsyncDefaultValues<{ status: "active" | "completed" | "on_hold" | "cancelled"; name: string; job_number: string; project_manager_id: string; original_contract: string; division_id: string; start_date: string; ... 6 more ...; zip_code?: string | undefined; }> | { ...; } | undefined'.
+  Types of property 'status' are incompatible.
+    Type '"planning"' is not assignable to type '"active" | "completed" | "on_hold" | "cancelled" | undefined'.
+components/forms/project-form.tsx(108,34): error TS2345: Argument of type '(data: ProjectFormData) => Promise<void>' is not assignable to parameter of type 'SubmitHandler<TFieldValues>'.
+  Types of parameters 'data' and 'data' are incompatible.
+    Type 'TFieldValues' is not assignable to type '{ status: "active" | "completed" | "on_hold" | "cancelled"; name: string; job_number: string; project_manager_id: string; original_contract: string; division_id: string; start_date: string; ... 6 more ...; zip_code?: string | undefined; }'.
+      Type 'FieldValues' is missing the following properties from type '{ status: "active" | "completed" | "on_hold" | "cancelled"; name: string; job_number: string; project_manager_id: string; original_contract: string; division_id: string; start_date: string; ... 6 more ...; zip_code?: string | undefined; }': status, name, job_number, project_manager_id, and 5 more.
+components/notifications/notification-bell.tsx(5,10): error TS2305: Module '"lucide-react"' has no exported member 'Bell'.
+components/notifications/notification-dropdown.tsx(8,3): error TS2305: Module '"lucide-react"' has no exported member 'Bell'.
+components/notifications/notification-dropdown.tsx(9,3): error TS2305: Module '"lucide-react"' has no exported member 'CheckCheck'.
+components/notifications/notification-dropdown.tsx(15,3): error TS2724: '"lucide-react"' has no exported member named 'FileUp'. Did you mean 'File'?
+components/notifications/notification-dropdown.tsx(16,3): error TS2305: Module '"lucide-react"' has no exported member 'Megaphone'.
+components/project/action-required-banner.tsx(90,11): error TS2322: Type '"default" | "destructive"' is not assignable to type '"default" | "primary" | "secondary" | "outline" | "ghost" | "danger" | null | undefined'.
+  Type '"destructive"' is not assignable to type '"default" | "primary" | "secondary" | "outline" | "ghost" | "danger" | null | undefined'.
+components/project/budget-breakdown-tab.tsx(11,3): error TS2305: Module '"lucide-react"' has no exported member 'Wrench'.
+components/project/budget-vs-actual-tab.tsx(143,77): error TS2345: Argument of type 'boolean | null | undefined' is not assignable to parameter of type 'boolean'.
+  Type 'undefined' is not assignable to type 'boolean'.
+components/project/financial-metric-card.tsx(6,10): error TS2305: Module '"lucide-react"' has no exported member 'LucideIcon'.
+components/project/financial-metric-card.tsx(6,62): error TS2305: Module '"lucide-react"' has no exported member 'HelpCircle'.
+components/project/import-buttons.tsx(78,17): error TS2322: Type '"outline" | "default" | "destructive"' is not assignable to type '"primary" | "secondary" | "outline" | "ghost" | "danger" | "default" | null | undefined'.
+  Type '"destructive"' is not assignable to type '"primary" | "secondary" | "outline" | "ghost" | "danger" | "default" | null | undefined'.
+components/project/import-buttons.tsx(100,17): error TS2322: Type '"outline" | "default" | "destructive"' is not assignable to type '"primary" | "secondary" | "outline" | "ghost" | "danger" | "default" | null | undefined'.
+  Type '"destructive"' is not assignable to type '"primary" | "secondary" | "outline" | "ghost" | "danger" | "default" | null | undefined'.
+components/project/import-buttons.tsx(126,11): error TS2322: Type '"outline" | "default" | "destructive"' is not assignable to type '"primary" | "secondary" | "outline" | "ghost" | "danger" | "default" | null | undefined'.
+  Type '"destructive"' is not assignable to type '"primary" | "secondary" | "outline" | "ghost" | "danger" | "default" | null | undefined'.
+components/project/import-buttons.tsx(154,11): error TS2322: Type '"outline" | "default" | "destructive"' is not assignable to type '"primary" | "secondary" | "outline" | "ghost" | "danger" | "default" | null | undefined'.
+  Type '"destructive"' is not assignable to type '"primary" | "secondary" | "outline" | "ghost" | "danger" | "default" | null | undefined'.
+components/project/labor-forecast-tab.tsx(220,32): error TS7006: Parameter 'craft' implicitly has an 'any' type.
+components/project/labor-forecast-tab.tsx(223,11): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ direct: number; indirect: number; staff: number; }'.
+components/project/labor-forecast-tab.tsx(224,11): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ direct: number; indirect: number; staff: number; }'.
+components/project/labor-forecast-tab.tsx(272,49): error TS7006: Parameter 'c' implicitly has an 'any' type.
+components/project/labor-forecast-tab.tsx(275,27): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ direct: CategoryEntry; indirect: CategoryEntry; staff: CategoryEntry; }'.
+components/project/labor-forecast-tab.tsx(280,65): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ direct: number; indirect: number; staff: number; }'.
+components/project/labor-forecast-tab.tsx(284,77): error TS7006: Parameter 'c' implicitly has an 'any' type.
+components/project/labor-forecast-tab.tsx(294,51): error TS7006: Parameter 'c' implicitly has an 'any' type.
+components/project/labor-forecast-tab.tsx(296,29): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ direct: CategoryEntry; indirect: CategoryEntry; staff: CategoryEntry; }'.
+components/project/labor-kpi-cards.tsx(88,18): error TS2322: Type '"success" | "destructive"' is not assignable to type '"default" | "destructive" | "secondary" | "outline" | null | undefined'.
+  Type '"success"' is not assignable to type '"default" | "destructive" | "secondary" | "outline" | null | undefined'.
+components/project/project-notes.tsx(7,10): error TS2305: Module '"lucide-react"' has no exported member 'MessageSquare'.
+components/purchase-orders/po-log-table.tsx(6,35): error TS2724: '"lucide-react"' has no exported member named 'ChevronsUpDown'. Did you mean 'ChevronDown'?
+components/ui/excel-filter-dropdown.tsx(5,38): error TS2305: Module '"lucide-react"' has no exported member 'ArrowUp'.
+components/ui/excel-filter-dropdown.tsx(5,47): error TS2305: Module '"lucide-react"' has no exported member 'ArrowDown'.
+components/ui/excel-filter-dropdown.tsx(5,58): error TS2305: Module '"lucide-react"' has no exported member 'RotateCcw'.
+components/ui/select.tsx(5,10): error TS2305: Module '"lucide-react"' has no exported member 'CheckIcon'.
+components/ui/select.tsx(5,21): error TS2724: '"lucide-react"' has no exported member named 'ChevronDownIcon'. Did you mean 'ChevronDown'?
+components/ui/select.tsx(5,38): error TS2724: '"lucide-react"' has no exported member named 'ChevronUpIcon'. Did you mean 'ChevronUp'?
+components/ui/sortable-table-header.tsx(3,10): error TS2305: Module '"lucide-react"' has no exported member 'ArrowUpDown'.
+components/ui/sortable-table-header.tsx(3,23): error TS2305: Module '"lucide-react"' has no exported member 'ArrowUp'.
+components/ui/sortable-table-header.tsx(3,32): error TS2305: Module '"lucide-react"' has no exported member 'ArrowDown'.
+components/ui/theme-toggle.tsx(3,21): error TS2305: Module '"lucide-react"' has no exported member 'Monitor'.
+lib/services/financial-snapshot.ts(201,24): error TS18048: 'acc.original_contract' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(202,29): error TS18048: 'acc.approved_change_orders' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(203,23): error TS18048: 'acc.revised_contract' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(204,25): error TS18048: 'acc.total_po_committed' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(205,23): error TS18048: 'acc.total_labor_cost' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(206,23): error TS18048: 'acc.total_other_cost' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(207,22): error TS18048: 'acc.total_committed' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(208,22): error TS18048: 'acc.forecasted_cost' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(209,24): error TS18048: 'acc.forecasted_profit' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(210,23): error TS18048: 'acc.cost_to_complete' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(224,24): error TS18048: 'aggregated.revised_contract' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(225,8): error TS18048: 'aggregated.forecasted_profit' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(225,39): error TS18048: 'aggregated.revised_contract' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(228,27): error TS18048: 'aggregated.total_committed' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(228,61): error TS18048: 'aggregated.forecasted_cost' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(229,8): error TS18048: 'aggregated.total_committed' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(229,37): error TS18048: 'aggregated.forecasted_cost' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(284,24): error TS18048: 'acc.original_contract' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(285,29): error TS18048: 'acc.approved_change_orders' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(286,23): error TS18048: 'acc.revised_contract' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(287,25): error TS18048: 'acc.total_po_committed' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(288,23): error TS18048: 'acc.total_labor_cost' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(289,23): error TS18048: 'acc.total_other_cost' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(290,22): error TS18048: 'acc.total_committed' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(291,22): error TS18048: 'acc.forecasted_cost' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(292,24): error TS18048: 'acc.forecasted_profit' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(293,23): error TS18048: 'acc.cost_to_complete' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(294,24): error TS2339: Property 'project_count' does not exist on type 'Metric'.
+lib/services/financial-snapshot.ts(306,5): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(callbackfn: (previousValue: Partial<{ id?: string | undefined; snapshot_type: "project" | "division" | "company"; project_id?: string | null | undefined; division_id?: string | null | undefined; snapshot_date: string; ... 14 more ...; updated_at?: string | undefined; }>, currentValue: Partial<...>, currentIndex: number, array: Partial<...>[]) => Partial<...>, initialValue: Partial<...>): Partial<...>', gave the following error.
+    Object literal may only specify known properties, and 'project_count' does not exist in type 'Partial<{ id?: string | undefined; snapshot_type: "project" | "division" | "company"; project_id?: string | null | undefined; division_id?: string | null | undefined; snapshot_date: string; ... 14 more ...; updated_at?: string | undefined; }>'.
+  Overload 2 of 3, '(callbackfn: (previousValue: Metric, currentValue: Partial<{ id?: string | undefined; snapshot_type: "project" | "division" | "company"; project_id?: string | null | undefined; division_id?: string | null | undefined; ... 15 more ...; updated_at?: string | undefined; }>, currentIndex: number, array: Partial<...>[]) => Metric, initialValue: Metric): Metric', gave the following error.
+    Object literal may only specify known properties, and 'project_count' does not exist in type 'Metric'.
+lib/services/financial-snapshot.ts(309,24): error TS18048: 'aggregated.revised_contract' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(310,8): error TS18048: 'aggregated.forecasted_profit' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(310,39): error TS18048: 'aggregated.revised_contract' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(313,27): error TS18048: 'aggregated.total_committed' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(313,61): error TS18048: 'aggregated.forecasted_cost' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(314,8): error TS18048: 'aggregated.total_committed' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(314,37): error TS18048: 'aggregated.forecasted_cost' is possibly 'undefined'.
+lib/services/financial-snapshot.ts(324,33): error TS2339: Property 'project_count' does not exist on type 'Partial<{ id?: string | undefined; snapshot_type: "project" | "division" | "company"; project_id?: string | null | undefined; division_id?: string | null | undefined; snapshot_date: string; ... 14 more ...; updated_at?: string | undefined; }>'.
+scripts/get-db-connection-string.ts(61,27): error TS18046: 'error' is of type 'unknown'.
+scripts/test-direct-db-connection.ts(27,9): error TS7034: Variable 'connectionStrings' implicitly has type 'any[]' in some locations where its type cannot be determined.
+scripts/test-direct-db-connection.ts(31,31): error TS7005: Variable 'connectionStrings' implicitly has an 'any[]' type.
+scripts/test-direct-db-connection.ts(43,32): error TS18046: 'error' is of type 'unknown'.
+scripts/test-final-connection.ts(67,41): error TS18046: 'error' is of type 'unknown'.

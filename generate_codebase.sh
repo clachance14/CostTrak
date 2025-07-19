@@ -1,0 +1,1 @@
+find . -type d \( -name node_modules -o -path '*/.*' \) -prune -o -type f ! -name 'package-lock.json' ! -name 'pnpm-lock.yaml' ! -name '*.png' ! -name '*.jpg' ! -name '*.jpeg' ! -name '*.gif' ! -name '*.webp' ! -name '*.ico' ! -name '*.mp4' ! -name '.*' -exec bash -c 'for file; do echo "\n\n--- $file ---\n\n"; cat "$file"; done' bash {} + > codebase.txt

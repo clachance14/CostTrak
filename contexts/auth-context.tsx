@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Database } from '@/types/database'
+import { Database } from '@/types/database.generated'
 import { LoadingPage } from '@/components/ui/loading'
 
 type User = Database['public']['Tables']['profiles']['Row']

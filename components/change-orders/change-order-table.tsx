@@ -572,7 +572,7 @@ export function ChangeOrderTable({
               Cancel
             </Button>
             <Button 
-              variant="destructive"
+              variant="danger"
               onClick={handleReject}
               disabled={rejectReason.length < 10 || processingId === selectedCO?.id}
             >

@@ -83,7 +83,7 @@ export default function AccountingDashboard() {
       if (projectsError) throw projectsError
 
       // Process project financials
-      const projectFinancials: ProjectFinancials[] = projectsData?.map(project => {
+      const projectFinancials: ProjectFinancials[] = (projectsData || []).map((project: any) => {
         const totalCommitted = project.purchase_orders?.reduce(
           (sum: number, po: { committed_amount?: number }) => sum + (po.committed_amount || 0), 0
         ) || 0
@@ -105,7 +105,7 @@ export default function AccountingDashboard() {
           margin: margin,
           status: project.status
         }
-      }) || []
+      })
 
       setProjects(projectFinancials)
 

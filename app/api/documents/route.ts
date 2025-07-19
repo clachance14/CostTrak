@@ -26,86 +26,18 @@ export async function GET(request: NextRequest) {
     const searchParams = Object.fromEntries(request.nextUrl.searchParams)
     const validatedQuery = querySchema.parse(searchParams)
 
-    // Build query
-    let query = supabase
-      .from('documents')
-      .select(`
-        *,
-        uploader:profiles!uploaded_by(first_name, last_name, email)
-      `)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false })
-      .limit(validatedQuery.limit)
-      .range(validatedQuery.offset, validatedQuery.offset + validatedQuery.limit - 1)
-
-    // Apply filters
-    if (validatedQuery.entity_type) {
-      query = query.eq('entity_type', validatedQuery.entity_type)
-    }
-    
-    if (validatedQuery.entity_id) {
-      query = query.eq('entity_id', validatedQuery.entity_id)
-    }
-    
-    if (validatedQuery.category) {
-      query = query.eq('category', validatedQuery.category)
-    }
-    
-    if (validatedQuery.uploaded_by) {
-      query = query.eq('uploaded_by', validatedQuery.uploaded_by)
-    }
-
-    const { data, error, count } = await query
-
-    if (error) {
-      console.error('Error fetching documents:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch documents' },
-        { status: 500 }
-      )
-    }
-
-    // Add entity details based on type
-    const documentsWithDetails = await Promise.all((data || []).map(async (doc) => {
-      let entityDetails = null
-      
-      if (doc.entity_type === 'project') {
-        const { data: project } = await supabase
-          .from('projects')
-          .select('job_number, name')
-          .eq('id', doc.entity_id)
-          .single()
-        entityDetails = project
-      } else if (doc.entity_type === 'purchase_order') {
-        const { data: po } = await supabase
-          .from('purchase_orders')
-          .select('po_number, description')
-          .eq('id', doc.entity_id)
-          .single()
-        entityDetails = po
-      } else if (doc.entity_type === 'change_order') {
-        const { data: co } = await supabase
-          .from('change_orders')
-          .select('co_number, description')
-          .eq('id', doc.entity_id)
-          .single()
-        entityDetails = co
-      }
-
-      return {
-        ...doc,
-        entity_details: entityDetails,
-      }
-    }))
-
+    // TODO: Implement documents table in database
+    // For now, return empty list
     return NextResponse.json({
-      data: documentsWithDetails,
-      total: count || 0,
-      limit: validatedQuery.limit,
-      offset: validatedQuery.offset,
+      data: [],
+      pagination: {
+        total: 0,
+        offset: validatedQuery.offset,
+        limit: validatedQuery.limit,
+      },
     })
   } catch (error) {
-    console.error('Error in documents GET:', error)
+    console.error('Error listing documents:', error)
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Invalid query parameters', details: error.errors },

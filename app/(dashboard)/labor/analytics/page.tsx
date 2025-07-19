@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { 
@@ -9,10 +9,7 @@ import {
   DollarSign,
   Users,
   BarChart3,
-  PieChart,
-  Calendar,
-  Download,
-  Filter
+  Download
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { Card } from '@/components/ui/card'
@@ -22,8 +19,6 @@ import { Label } from '@/components/ui/label'
 import {
   LineChart,
   Line,
-  BarChart,
-  Bar,
   PieChart as RePieChart,
   Pie,
   Cell,
@@ -96,28 +91,17 @@ export default function LaborAnalyticsPage() {
   const [dateRange, setDateRange] = useState(12) // weeks
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
 
-  useEffect(() => {
-    if (!projectId) {
-      router.push('/labor')
-      return
-    }
-
-    fetchAnalyticsData()
-  }, [projectId, dateRange, categoryFilter, router])
-
-  const fetchAnalyticsData = async () => {
+  const fetchAnalyticsData = useCallback(async () => {
     try {
       setLoading(true)
 
       // Calculate date range
       const endDate = endOfWeek(new Date(), { weekStartsOn: 1 })
-      const startDate = startOfWeek(subWeeks(endDate, dateRange), { weekStartsOn: 1 })
 
       // Fetch all necessary data
-      const [actualsRes, forecastRes, avgRes, projectRes] = await Promise.all([
+      const [actualsRes, forecastRes, projectRes] = await Promise.all([
         fetch(`/api/labor-forecasts/weekly-actuals?project_id=${projectId}&limit=100`),
         fetch(`/api/labor-forecasts/headcount?project_id=${projectId}&weeks_ahead=${dateRange}`),
-        fetch(`/api/labor-forecasts/running-averages?project_id=${projectId}`),
         fetch(`/api/projects/${projectId}`)
       ])
 
@@ -137,7 +121,15 @@ export default function LaborAnalyticsPage() {
       if (actualsRes.ok) {
         const actualsData = await actualsRes.json()
         
-        actualsData.actuals?.forEach((actual: any) => {
+        actualsData.actuals?.forEach((actual: {
+          weekEnding: string;
+          totalCost: number;
+          totalHours: number;
+          laborCategory: string;
+          craftTypeId: string;
+          craftName: string;
+          craftCode: string;
+        }) => {
           const weekKey = actual.weekEnding
           const existing = weeklyActuals.get(weekKey) || { cost: 0, hours: 0 }
           
@@ -172,7 +164,12 @@ export default function LaborAnalyticsPage() {
       if (forecastRes.ok) {
         const forecastData = await forecastRes.json()
         
-        forecastData.forecast?.forEach((week: any) => {
+        forecastData.forecast?.forEach((week: {
+          weekEnding: string;
+          totalCost: number;
+          totalHours: number;
+          totalHeadcount: number;
+        }) => {
           const weekKey = week.weekEnding
           weeklyForecasts.set(weekKey, {
             cost: week.totalCost || 0,
@@ -234,7 +231,16 @@ export default function LaborAnalyticsPage() {
       console.error('Error fetching analytics data:', error)
       setLoading(false)
     }
-  }
+  }, [projectId, dateRange, categoryFilter])
+
+  useEffect(() => {
+    if (!projectId) {
+      router.push('/labor')
+      return
+    }
+
+    fetchAnalyticsData()
+  }, [projectId, dateRange, categoryFilter, router, fetchAnalyticsData])
 
   const exportData = () => {
     // Create CSV content
@@ -467,7 +473,7 @@ export default function LaborAnalyticsPage() {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                 outerRadius={80}
                 fill="#8884d8"
                 dataKey="value"

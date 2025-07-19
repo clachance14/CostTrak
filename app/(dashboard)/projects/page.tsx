@@ -9,8 +9,8 @@ import {
   Search, 
   ChevronLeft, 
   ChevronRight, 
-  Grid3x3, 
-  TableProperties,
+  LayoutGrid as Grid3x3, 
+  Table,
   Eye,
   Edit,
   FileText,
@@ -18,7 +18,7 @@ import {
   Users,
   Building,
   Download,
-  Settings2,
+  Settings,
   Upload
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -245,7 +245,7 @@ export default function ProjectsPage() {
                   : 'text-foreground/80 hover:bg-foreground/5 hover:text-foreground'
               )}
             >
-              <TableProperties className="h-4 w-4 mr-2 text-foreground/80" />
+              <Table className="h-4 w-4 mr-2 text-foreground/80" />
               Table
             </button>
           </div>
@@ -255,7 +255,7 @@ export default function ProjectsPage() {
               onClick={clearAllFilters}
               className="inline-flex items-center px-4 py-2 border-2 border-orange-500 rounded-md font-medium text-orange-700 bg-white hover:bg-orange-50 transition-colors"
             >
-              <Settings2 className="h-4 w-4 mr-2 text-orange-600" />
+              <Settings className="h-4 w-4 mr-2 text-orange-600" />
               Clear All ({activeFiltersCount})
             </button>
           )}

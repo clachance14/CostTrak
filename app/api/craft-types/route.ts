@@ -24,7 +24,10 @@ export async function GET() {
       .order('category', { ascending: true })
       .order('name', { ascending: true })
 
-    if (error) throw error
+    if (error) {
+      console.error('Craft types query error:', error)
+      throw error
+    }
 
     // Group by category for easier UI rendering
     const grouped = craftTypes?.reduce((acc, craft) => {
@@ -40,19 +43,25 @@ export async function GET() {
       return acc
     }, {} as Record<string, Array<{id: string; name: string; code: string; category: string}>>) || {}
 
-    return NextResponse.json({
-      craftTypes: craftTypes?.map(craft => ({
+    return NextResponse.json(
+      craftTypes?.map(craft => ({
         id: craft.id,
         name: craft.name,
         code: craft.code,
         category: craft.category
-      })) || [],
-      grouped
-    })
+      })) || []
+    )
   } catch (error) {
-    console.error('Craft types fetch error:', error)
+    console.error('Craft types fetch error:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return NextResponse.json(
-      { error: 'Failed to fetch craft types' },
+      { 
+        error: 'Failed to fetch craft types',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }

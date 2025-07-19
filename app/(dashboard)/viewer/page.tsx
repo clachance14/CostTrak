@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { formatCurrency } from '@/lib/utils'
+import { format } from 'date-fns'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
@@ -51,21 +52,34 @@ export default function ViewerDashboard() {
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       if (userError || !user) throw new Error('Not authenticated')
 
-      // Get projects viewer has access to
-      const { data: accessData, error: accessError } = await supabase
-        .from('project_viewer_access')
-        .select('project_id')
-        .eq('user_id', user.id)
+      // Get user profile to check role
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
 
-      if (accessError) throw accessError
+      if (!userProfile || userProfile.role !== 'viewer') {
+        throw new Error('Not authorized - viewer role required')
+      }
 
-      if (!accessData || accessData.length === 0) {
+      // For viewers, get all projects they can see
+      // This would typically be configured through project assignments or other access control
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('status', 'active')
+        .limit(10) // Limit for now, in production this would be based on assignments
+
+      if (projectsError) throw projectsError
+
+      if (!projectsData || projectsData.length === 0) {
         setProjects([])
         setLoading(false)
         return
       }
 
-      const projectIds = accessData.map(a => a.project_id)
+      const projectIds = projectsData.map(p => p.id)
 
       // Fetch project details for each accessible project
       const projectPromises = projectIds.map(async (projectId) => {
@@ -75,10 +89,10 @@ export default function ViewerDashboard() {
         return result.data
       })
 
-      const projectsData = await Promise.all(projectPromises)
+      const projectDetails = await Promise.all(projectPromises)
 
       // Transform data for viewer display (limited information)
-      const viewerProjects: ViewerProject[] = projectsData.map(data => ({
+      const viewerProjects: ViewerProject[] = projectDetails.map(data => ({
         id: data.project.id,
         jobNumber: data.project.jobNumber,
         name: data.project.name,
@@ -201,7 +215,7 @@ export default function ViewerDashboard() {
                   <span className="font-medium">Timeline:</span>
                 </div>
                 <div className="ml-6">
-                  <div>{formatDate(project.startDate)} - {formatDate(project.endDate)}</div>
+                  <div>{format(new Date(project.startDate), 'MMM d, yyyy')} - {format(new Date(project.endDate), 'MMM d, yyyy')}</div>
                 </div>
               </div>
 

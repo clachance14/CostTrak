@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { loginSchema, type LoginInput } from '@/lib/validations/auth'
-import { Database } from '@/types/database'
+import { Database } from '@/types/database.generated'
 
 type UserWithRole = Database['public']['Tables']['profiles']['Row'] | null
 

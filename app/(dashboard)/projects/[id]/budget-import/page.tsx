@@ -469,7 +469,7 @@ export default function BudgetImportPage({ params }: BudgetImportPageProps) {
         <Card className="p-6">
           <div className="flex items-center gap-2 text-red-600">
             <AlertCircle className="h-5 w-5" />
-            <p>You don't have permission to import budget breakdowns for this project</p>
+            <p>You don&apos;t have permission to import budget breakdowns for this project</p>
           </div>
         </Card>
       </div>
