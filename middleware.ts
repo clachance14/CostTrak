@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { Database } from '@/types/database.generated'
+import type { Database } from '@/types/database.generated'
 
 // Routes that don't require authentication
 const publicRoutes = ['/', '/login', '/unauthorized', '/password-reset', '/password-reset/confirm']
@@ -42,8 +42,10 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    // Check authentication - use destructuring to match v2 API response format
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    // Check authentication - explicitly handle the auth client to avoid type issues
+    // Use the auth property without type inference issues
+    const authClient = supabase.auth as any // Temporary workaround for type issue
+    const { data: { user }, error: userError } = await authClient.getUser()
     
     if (userError || !user) {
       // Redirect to login if not authenticated
