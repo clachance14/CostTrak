@@ -39,7 +39,6 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    // Use inferred types - no SupabaseAuthClient
     const { data: { user } } = await supabase.auth.getUser()
     const { data: { session } } = await supabase.auth.getSession()
 
@@ -65,18 +64,41 @@ export async function middleware(request: NextRequest) {
         url.pathname = '/setup-profile'
         return NextResponse.redirect(url)
       }
+      // If on setup-profile without profile, allow it to proceed
+      return response
     }
 
-    // Session refresh if available
-    if (session) {
-      await supabase.auth.setSession(session)
+    // Role-based access control
+    const rolePaths: Record<string, string[]> = {
+      '/accounting': ['accounting', 'controller', 'executive'],
+      '/controller': ['controller', 'executive'],
+      '/executive': ['executive', 'controller'],
+      '/ops-manager': ['ops_manager', 'controller', 'executive'],
+      '/project-manager': ['project_manager', 'controller', 'executive', 'ops_manager'],
+      '/viewer': ['viewer', 'controller', 'executive', 'ops_manager', 'project_manager'],
+    }
+
+    let requiredRoles: string[] | undefined
+    for (const path in rolePaths) {
+      if (pathname.startsWith(path)) {
+        requiredRoles = rolePaths[path]
+        break
+      }
+    }
+
+    if (requiredRoles && !requiredRoles.includes(profile.role)) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/unauthorized'
+      return NextResponse.redirect(url)
     }
 
     return response
   } catch (error) {
     console.error('Middleware auth error:', error)
-    // On error, allow the request to proceed
-    return response
+    // Fallback to redirect on error
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
   }
 }
 
