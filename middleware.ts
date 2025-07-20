@@ -1,20 +1,17 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import type { Database } from '@/types/database.generated'
 
 // Routes that don't require authentication
 const publicRoutes = ['/', '/login', '/unauthorized', '/password-reset', '/password-reset/confirm']
 
 export async function middleware(request: NextRequest) {
-  // Create a response object that we can modify
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   })
 
-  // Create Supabase client with proper cookie handling for edge runtime
-  const supabase = createServerClient<Database>(
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -22,11 +19,11 @@ export async function middleware(request: NextRequest) {
         get(name: string) {
           return request.cookies.get(name)?.value
         },
-        set(name: string, value: string, options?: any) {
+        set(name: string, value: string, options: any) {
           request.cookies.set({ name, value, ...options })
           response.cookies.set({ name, value, ...options })
         },
-        remove(name: string, options?: any) {
+        remove(name: string, options: any) {
           request.cookies.delete({ name, ...options })
           response.cookies.delete({ name, ...options })
         },
@@ -42,34 +39,37 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    // Check authentication - explicitly handle the auth client to avoid type issues
-    // Use the auth property without type inference issues
-    const authClient = supabase.auth as any // Temporary workaround for type issue
-    const { data: { user }, error: userError } = await authClient.getUser()
-    
-    if (userError || !user) {
-      // Redirect to login if not authenticated
+    // Use inferred types - no SupabaseAuthClient
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { session } } = await supabase.auth.getSession()
+
+    // Redirect to login if not authenticated
+    if (!user) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
       url.searchParams.set('redirectTo', pathname)
       return NextResponse.redirect(url)
     }
 
-    // For protected routes, verify user has a profile
-    if (pathname.startsWith('/dashboard') || pathname.startsWith('/projects') || pathname.startsWith('/api')) {
-      // Simple profile check without complex role logic for now
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, role')
-        .eq('id', user.id)
-        .single()
+    // For authenticated users, check profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, role')
+      .eq('id', user.id)
+      .single()
 
-      if (!profile) {
-        // User exists in auth but not in profiles - redirect to setup
+    if (!profile) {
+      // User exists in auth but not in profiles - redirect to setup
+      if (pathname !== '/setup-profile') {
         const url = request.nextUrl.clone()
         url.pathname = '/setup-profile'
         return NextResponse.redirect(url)
       }
+    }
+
+    // Session refresh if available
+    if (session) {
+      await supabase.auth.setSession(session)
     }
 
     return response
@@ -81,14 +81,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }
