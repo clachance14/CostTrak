@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
-// Email domain from environment or default
-const ALLOWED_EMAIL_DOMAIN = process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN || 'ics.ac'
+// Email domain - hard-coded for consistent client-side validation
+const ALLOWED_EMAIL_DOMAIN = 'ics.ac'
 
 // Login schema with domain validation
 export const loginSchema = z.object({
