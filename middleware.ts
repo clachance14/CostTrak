@@ -1,3 +1,5 @@
+// Middleware Runtime Fix - Deployed: 2025-07-21
+// Fixed 500 errors by removing throw statements and adding graceful error handling
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { type NextRequest, NextResponse } from 'next/server'
 import type { Database } from '@/types/database.generated'
