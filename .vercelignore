@@ -1,0 +1,29 @@
+# Vercel ignore file
+# Files and directories that should not be uploaded to Vercel
+
+# Development files
+.env.local
+.env.development
+CLAUDE.md
+
+# Test files
+playwright-report/
+test-results/
+coverage/
+*.test.ts
+*.spec.ts
+
+# Scripts that are only for local development
+scripts/test-*.ts
+scripts/test-*.js
+scripts/debug-*.ts
+scripts/check-*.ts
+
+# Documentation
+docs/VERCEL_BUILD_LOGGING.md
+docs/VERCEL_DEPLOYMENT_FIX.md
+
+# Temporary files
+*.log
+*.tmp
+.DS_Store

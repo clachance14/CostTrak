@@ -1,5 +1,30 @@
 import type { NextConfig } from "next";
 
+// Build-time logging for debugging Vercel deployments
+console.log('=== Next.js Config Loading ===');
+console.log('Build Time:', new Date().toISOString());
+console.log('Node Version:', process.version);
+console.log('Environment:', process.env.NODE_ENV);
+console.log('Vercel:', process.env.VERCEL ? 'Yes' : 'No');
+console.log('Vercel Env:', process.env.VERCEL_ENV || 'Not on Vercel');
+
+// Check critical environment variables
+const envVars = {
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ? '✓ Set' : '✗ Missing',
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✓ Set' : '✗ Missing',
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? '✓ Set' : '✗ Missing',
+  NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN: process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN || 'Not set',
+};
+
+console.log('Environment Variables:');
+Object.entries(envVars).forEach(([key, value]) => {
+  console.log(`  ${key}: ${value}`);
+});
+
+// Log current working directory and important files
+console.log('Working Directory:', process.cwd());
+console.log('===========================\n');
+
 const nextConfig: NextConfig = {
   // Temporary: Ignore ESLint during builds to allow deployment
   // TODO: Remove after fixing all ESLint errors

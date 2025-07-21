@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "buildCommand": "pnpm build:verbose",
+  "buildCommand": "pnpm build",
   "outputDirectory": ".next",
   "env": {
     "NEXT_PUBLIC_SUPABASE_URL": "@next_public_supabase_url",
@@ -8,10 +8,5 @@
     "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
     "NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN": "@next_public_allowed_email_domain",
     "NEXT_PUBLIC_APP_ENV": "@next_public_app_env"
-  },
-  "functions": {
-    "middleware.ts": {
-      "maxDuration": 30
-    }
   }
 }

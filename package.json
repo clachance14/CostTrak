@@ -5,9 +5,10 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
+    "build:info": "node scripts/build-info.js",
     "build:verbose": "node scripts/vercel-build.js",
     "build:diagnose": "npx tsx scripts/build-diagnostics.ts",
-    "prebuild:verbose": "npm run build:diagnose || true",
+    "prebuild:verbose": "pnpm build:diagnose || true",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
