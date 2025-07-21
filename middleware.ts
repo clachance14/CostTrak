@@ -1,5 +1,9 @@
 import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 
+'next/server'
+
+// Explicitly declare edge runtime for Vercel
+export const runtime = 'edge'
 
 // Routes that don't require authentication
 const publicRoutes = ['/', '/login', '/unauthorized', '/password-reset', '/password-reset/confirm']
