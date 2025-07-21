@@ -1,5 +1,6 @@
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { type NextRequest, NextResponse } from 'next/server'
+import type { Database } from '@/types/database.generated'
 
 // Routes that don't require authentication
 const publicRoutes = ['/', '/login', '/unauthorized', '/password-reset', '/password-reset/confirm']
@@ -31,8 +32,8 @@ export async function middleware(request: NextRequest) {
       throw new Error('Missing required environment variables')
     }
 
-    // Create a Supabase client configured for middleware
-    const supabase = createServerClient(
+    // Create a Supabase client configured for middleware with proper types
+    const supabase = createServerClient<Database>(
       supabaseUrl,
       supabaseAnonKey,
       {
@@ -41,7 +42,7 @@ export async function middleware(request: NextRequest) {
             return request.cookies.getAll()
           },
           setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
+            cookiesToSet.forEach(({ name, value, options }: { name: string; value: string; options?: CookieOptions }) => {
               request.cookies.set(name, value)
               response.cookies.set(name, value, options)
             })
@@ -113,7 +114,13 @@ export async function middleware(request: NextRequest) {
 
     return response
   } catch (error) {
-    console.error('Middleware: Unexpected error', error)
+    console.error('Middleware: Unexpected error', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      pathname,
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Present' : 'Missing',
+      supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Present' : 'Missing',
+    })
     // On any error, redirect to login as a safety measure
     const url = request.nextUrl.clone()
     url.pathname = '/login'

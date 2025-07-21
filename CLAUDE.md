@@ -80,12 +80,14 @@ The project uses Supabase for the database. There are two connection options:
    - Start with: `pnpm db:start`
    - Seed data: `pnpm db:seed`
 
-### MCP Configuration for Database Queries
+### MCP Configuration for Claude Desktop
+
+#### Database Queries
 
 To enable direct database queries in Claude Desktop, configure the MCP postgres server:
 
-1. Open Claude Desktop Settings → Developer → MCP Servers
-2. Edit the postgres server configuration:
+1. Open Claude Desktop Settings → Developer → Edit Config
+2. Add to your mcpServers configuration:
 
 ```json
 {
@@ -101,16 +103,64 @@ To enable direct database queries in Claude Desktop, configure the MCP postgres 
 
 3. Restart Claude Desktop completely for changes to take effect
 
-### Database Query Scripts
+#### Context7 Documentation Server
+
+Context7 provides real-time library documentation for React, Next.js, Supabase, and other frameworks:
+
+1. Add to your mcpServers configuration:
+
+```json
+{
+  "context7": {
+    "command": "npx",
+    "args": ["@upstash/context7-mcp"]
+  }
+}
+```
+
+2. Complete example with both servers:
+
+```json
+{
+  "mcpServers": {
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-postgres",
+        "postgres://postgres.gzrxhwpmtbgnngadgnse:F1dOjRhYg9lFWSlY@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require"
+      ]
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["@upstash/context7-mcp"]
+    }
+  }
+}
+```
+
+3. Restart Claude Desktop completely after saving
+
+#### Testing MCP Servers
+
+- **Database**: Ask "Query the projects table" or "Show all divisions"
+- **Context7**: Ask "Using Context7, show React hooks documentation" or "Fetch Next.js App Router docs"
+- **SuperClaude**: Use `--c7` flag with commands like `/analyze --c7` or `/build --react --c7`
+
+### Configuration Scripts
 
 Helpful scripts in the `/scripts` directory:
 
+**Database Scripts:**
 - `test-db-connection.ts` - Tests both local and remote database connections
 - `show-mcp-config.ts` - Shows step-by-step MCP configuration instructions
 - `show-mcp-config-ready.ts` - Displays ready-to-use MCP configuration
 - `get-db-connection-string.ts` - Generates connection strings (use `--local` flag for local)
 - `query-database.ts` - Uses Supabase client to query and display sample data
 - `test-final-connection.ts` - Direct PostgreSQL connection test with pg client
+
+**Context7 Scripts:**
+- `configure-context7-mcp.ts` - Step-by-step Context7 configuration guide
+- `test-context7-mcp.ts` - Validates Context7 server functionality
 
 Run scripts with: `npx tsx scripts/[script-name].ts`
 
