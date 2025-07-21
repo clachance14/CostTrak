@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from
 'next/server'
 
 // Explicitly declare edge runtime for Vercel
-export const runtime = 'edge'
+export const runtime = 'experimental-edge'
 
 // Routes that don't require authentication
 const publicRoutes = ['/', '/login', '/unauthorized', '/password-reset', '/password-reset/confirm']
