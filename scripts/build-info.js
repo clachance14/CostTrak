@@ -10,7 +10,6 @@ console.log('Timestamp:', new Date().toISOString());
 console.log('Node.js:', process.version);
 console.log('Platform:', process.platform, process.arch);
 console.log('Working Dir:', process.cwd());
-console.log('Script Dir:', __dirname);
 
 // Check if running on Vercel
 if (process.env.VERCEL) {
