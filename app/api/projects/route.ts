@@ -139,6 +139,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
 
+    // Fetch division counts for each project
+    if (projects && projects.length > 0) {
+      const projectIds = projects.map(p => p.id)
+      const { data: divisionCounts } = await supabase
+        .from('project_divisions')
+        .select('project_id')
+        .in('project_id', projectIds)
+
+      // Count divisions per project
+      const divisionCountMap = new Map<string, number>()
+      divisionCounts?.forEach(pd => {
+        divisionCountMap.set(pd.project_id, (divisionCountMap.get(pd.project_id) || 0) + 1)
+      })
+
+      // Add division count to each project
+      projects.forEach(project => {
+        project.division_count = divisionCountMap.get(project.id) || 1
+      })
+    }
+
     // Calculate total pages
     const totalPages = limit ? Math.ceil((count || 0) / limit) : 1
 

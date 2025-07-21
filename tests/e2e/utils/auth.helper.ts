@@ -27,11 +27,36 @@ export async function logout(page: Page) {
   await page.waitForURL('/login', { timeout: 5000 })
 }
 
-export async function setupAuthState(page: Page) {
+export async function setupAuthState(page: Page, role: string = 'project_manager') {
   // This can be used to set up authentication state before tests
   // For now, we'll use regular login flow
-  const testEmail = process.env.TEST_USER_EMAIL || 'test@ics.ac'
-  const testPassword = process.env.TEST_USER_PASSWORD || 'testpassword123'
+  const roleCredentials = {
+    controller: {
+      email: process.env.TEST_CONTROLLER_EMAIL || 'controller@ics.ac',
+      password: process.env.TEST_CONTROLLER_PASSWORD || 'testpassword123'
+    },
+    executive: {
+      email: process.env.TEST_EXECUTIVE_EMAIL || 'executive@ics.ac',
+      password: process.env.TEST_EXECUTIVE_PASSWORD || 'testpassword123'
+    },
+    ops_manager: {
+      email: process.env.TEST_OPS_EMAIL || 'ops@ics.ac',
+      password: process.env.TEST_OPS_PASSWORD || 'testpassword123'
+    },
+    project_manager: {
+      email: process.env.TEST_PM_EMAIL || 'pm@ics.ac',
+      password: process.env.TEST_PM_PASSWORD || 'testpassword123'
+    },
+    accounting: {
+      email: process.env.TEST_ACCOUNTING_EMAIL || 'accounting@ics.ac',
+      password: process.env.TEST_ACCOUNTING_PASSWORD || 'testpassword123'
+    },
+    viewer: {
+      email: process.env.TEST_VIEWER_EMAIL || 'viewer@ics.ac',
+      password: process.env.TEST_VIEWER_PASSWORD || 'testpassword123'
+    }
+  }
   
-  await login(page, testEmail, testPassword)
+  const credentials = roleCredentials[role] || roleCredentials.project_manager
+  await login(page, credentials.email, credentials.password)
 }

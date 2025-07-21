@@ -1,0 +1,5 @@
+first_name,last_name,email,role,division
+John,,invalid-email,unknown_role,Division X
+,Doe,jane.doe@gmail.com,project_manager,Division A
+Test,User,test.user@ics.ac,admin,
+Bob,Smith,bob.smith@ics.ac,project_manager,Division A

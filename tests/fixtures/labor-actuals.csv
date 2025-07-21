@@ -1,0 +1,7 @@
+employee_name,craft_type,regular_hours,overtime_hours,base_rate,base_cost
+John Carpenter,Carpenter,40,5,50,2250
+Mike Electrician,Electrician,40,0,70,2800
+Sarah Plumber,Plumber,35,10,65,2925
+Tom Foreman,Foreman,45,0,85,3825
+Lisa Laborer,Laborer,40,8,35,1680
+Bob Carpenter,Carpenter,40,0,50,2000

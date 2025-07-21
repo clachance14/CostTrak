@@ -68,6 +68,30 @@ export async function GET(
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
 
+    // Fetch project divisions data
+    const { data: projectDivisions } = await supabase
+      .from('project_divisions')
+      .select(`
+        *,
+        division:divisions!project_divisions_division_id_fkey(id, name, code),
+        division_pm:profiles!project_divisions_division_pm_id_fkey(id, first_name, last_name, email)
+      `)
+      .eq('project_id', id)
+      .order('is_lead_division', { ascending: false })
+
+    // Add divisions to project object
+    if (projectDivisions && projectDivisions.length > 0) {
+      project.divisions = projectDivisions.map(pd => ({
+        division_id: pd.division_id,
+        division_name: pd.division?.name,
+        division_code: pd.division?.code,
+        is_lead_division: pd.is_lead_division,
+        division_pm_id: pd.division_pm_id,
+        division_pm_name: pd.division_pm ? `${pd.division_pm.first_name} ${pd.division_pm.last_name}` : null,
+        budget_allocated: pd.budget_allocated
+      }))
+    }
+
     return NextResponse.json({ project })
   } catch (error) {
     console.error('Get project error:', error)

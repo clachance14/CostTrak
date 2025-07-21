@@ -59,3 +59,4 @@ CLAUDE.md
 # Supabase local development
 /supabase/.temp
 /supabase/config.toml
+.vercel

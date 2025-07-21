@@ -1,0 +1,6 @@
+first_name,last_name,email,role,division,phone,start_date
+John,Smith,john.smith@ics.ac,project_manager,Division A,555-0101,2025-02-01
+Sarah,Johnson,sarah.johnson@ics.ac,controller,Corporate,555-0102,2025-02-01
+Michael,Williams,michael.williams@ics.ac,ops_manager,Division B,555-0103,2025-02-01
+Emily,Brown,emily.brown@ics.ac,accounting,Corporate,555-0104,2025-02-01
+David,Jones,david.jones@ics.ac,viewer,Division A,555-0105,2025-02-01
