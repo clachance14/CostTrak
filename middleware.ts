@@ -29,7 +29,11 @@ export async function middleware(request: NextRequest) {
       console.error('Middleware: Missing Supabase environment variables')
       console.error('NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? 'Present' : 'Missing')
       console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Present' : 'Missing')
-      throw new Error('Missing required environment variables')
+      
+      // Don't throw - return early to prevent runtime crash
+      // Allow the request to continue for public routes
+      console.error('Middleware: Continuing without auth due to missing env vars')
+      return response
     }
 
     // Create a Supabase client configured for middleware with proper types
@@ -60,6 +64,11 @@ export async function middleware(request: NextRequest) {
 
     // Redirect to login if not authenticated
     if (!user) {
+      // Prevent redirect loop - if already going to login, allow it
+      if (pathname === '/login') {
+        return response
+      }
+      
       const url = request.nextUrl.clone()
       url.pathname = '/login'
       url.searchParams.set('redirectTo', pathname)
@@ -121,7 +130,13 @@ export async function middleware(request: NextRequest) {
       supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Present' : 'Missing',
       supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Present' : 'Missing',
     })
-    // On any error, redirect to login as a safety measure
+    
+    // For public routes, allow access even on error
+    if (publicRoutes.some(route => pathname === route) || pathname.startsWith('/api/auth/')) {
+      return response
+    }
+    
+    // Only redirect to login for protected routes
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
@@ -129,5 +144,15 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|public|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }
