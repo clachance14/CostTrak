@@ -1,20 +1,61 @@
+import { createServerClient } from '@supabase/ssr'
 import { type NextRequest, NextResponse } from 'next/server'
-import { updateSession } from './lib/supabase/middleware'
 
 // Routes that don't require authentication
 const publicRoutes = ['/', '/login', '/unauthorized', '/password-reset', '/password-reset/confirm']
 
 export async function middleware(request: NextRequest) {
+  // Create a response that we can modify
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
+
   const pathname = request.nextUrl.pathname
 
   // Allow public routes and auth API routes
   if (publicRoutes.some(route => pathname === route) || pathname.startsWith('/api/auth/')) {
-    return NextResponse.next()
+    return response
   }
 
   try {
-    // Update/refresh the user's session
-    const { response, user, supabase } = await updateSession(request)
+    // Check environment variables
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Middleware: Missing Supabase environment variables')
+      console.error('NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? 'Present' : 'Missing')
+      console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Present' : 'Missing')
+      throw new Error('Missing required environment variables')
+    }
+
+    // Create a Supabase client configured for middleware
+    const supabase = createServerClient(
+      supabaseUrl,
+      supabaseAnonKey,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              request.cookies.set(name, value)
+              response.cookies.set(name, value, options)
+            })
+          },
+        },
+      }
+    )
+
+    // Refresh session if expired - required for Server Components
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+    if (userError) {
+      console.error('Middleware: Auth error', userError)
+    }
 
     // Redirect to login if not authenticated
     if (!user) {
@@ -25,11 +66,15 @@ export async function middleware(request: NextRequest) {
     }
 
     // For authenticated users, check profile
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('id, role')
       .eq('id', user.id)
       .single()
+
+    if (profileError) {
+      console.error('Middleware: Profile error', profileError)
+    }
 
     if (!profile) {
       // User exists in auth but not in profiles - redirect to setup
@@ -68,8 +113,8 @@ export async function middleware(request: NextRequest) {
 
     return response
   } catch (error) {
-    console.error('Middleware auth error:', error)
-    // Fallback to redirect on error
+    console.error('Middleware: Unexpected error', error)
+    // On any error, redirect to login as a safety measure
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
