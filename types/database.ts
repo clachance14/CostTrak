@@ -367,7 +367,7 @@ export type Database = {
         Row: {
           id: string
           project_id: string
-          week_starting: string
+          week_ending: string
           craft_type_id: string
           headcount: number
           avg_weekly_hours: number
@@ -377,7 +377,7 @@ export type Database = {
         Insert: {
           id?: string
           project_id: string
-          week_starting: string
+          week_ending: string
           craft_type_id: string
           headcount: number
           avg_weekly_hours: number
@@ -387,7 +387,7 @@ export type Database = {
         Update: {
           id?: string
           project_id?: string
-          week_starting?: string
+          week_ending?: string
           craft_type_id?: string
           headcount?: number
           avg_weekly_hours?: number

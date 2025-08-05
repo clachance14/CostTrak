@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { 
   headcountBatchSchema
 } from '@/lib/validations/labor-forecast-v2'
-import { getTuesdayWeekEndingDate, getTuesdayWeekStartingDate, getSundayWeekStartingDate } from '@/lib/utils/forecast-date-helpers'
+// Date conversion functions no longer needed - using week_ending directly
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    // Calculate date range (using week starting dates)
+    // Calculate date range (using week ending dates)
     const startDate = startDateParam ? new Date(startDateParam + 'T00:00:00.000Z') : new Date()
     const weeks = []
     console.log('[DEBUG] Generating weeks starting from:', startDate.toISOString())
@@ -49,12 +49,16 @@ export async function GET(request: NextRequest) {
     for (let i = 0; i < weeksAhead; i++) {
       const weekDate = new Date(startDate)
       weekDate.setDate(startDate.getDate() + i * 7)
-      // Use Tuesday week starting to match database
-      const weekStarting = getTuesdayWeekStartingDate(weekDate)
-      weeks.push(weekStarting)
+      // Calculate Sunday week ending
+      const dayOfWeek = weekDate.getDay()
+      const daysToSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek
+      const weekEnding = new Date(weekDate)
+      weekEnding.setDate(weekDate.getDate() + daysToSunday)
+      weekEnding.setHours(0, 0, 0, 0)
+      weeks.push(weekEnding)
       
       if (i < 10) { // Log first 10 weeks
-        console.log(`[DEBUG] Week ${i}: ${weekStarting.toISOString().split('T')[0]} (${weekStarting.toLocaleDateString('en-US', { weekday: 'long' })})`)
+        console.log(`[DEBUG] Week ${i}: ${weekEnding.toISOString().split('T')[0]} (${weekEnding.toLocaleDateString('en-US', { weekday: 'long' })})`)
       }
     }
 
@@ -97,8 +101,8 @@ export async function GET(request: NextRequest) {
     // Debug the query parameters
     console.log('[DEBUG] Querying headcount forecasts with:')
     console.log('- project_id:', projectId)
-    console.log('- week_starting >=', weeks[0].toISOString().split('T')[0])
-    console.log('- week_starting <=', weeks[weeks.length - 1].toISOString().split('T')[0])
+    console.log('- week_ending >=', weeks[0].toISOString().split('T')[0])
+    console.log('- week_ending <=', weeks[weeks.length - 1].toISOString().split('T')[0])
     
     // First check if ANY data exists for this project
     const { data: allProjectData, error: allError } = await supabase
@@ -124,8 +128,8 @@ export async function GET(request: NextRequest) {
       .from('labor_headcount_forecasts')
       .select('*')
       .eq('project_id', projectId)
-      .gte('week_starting', weeks[0].toISOString().split('T')[0])
-      .lte('week_starting', weeks[weeks.length - 1].toISOString().split('T')[0])
+      .gte('week_ending', weeks[0].toISOString().split('T')[0])
+      .lte('week_ending', weeks[weeks.length - 1].toISOString().split('T')[0])
     
     if (simpleError) {
       console.error('[ERROR] Simple headcount query failed:', simpleError)
@@ -140,7 +144,7 @@ export async function GET(request: NextRequest) {
     const { data: headcounts, error: headcountError } = await supabase
       .from('labor_headcount_forecasts')
       .select(`
-        week_starting,
+        week_ending,
         headcount,
         avg_weekly_hours,
         craft_type_id,
@@ -152,8 +156,8 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq('project_id', projectId)
-      .gte('week_starting', weeks[0].toISOString().split('T')[0])
-      .lte('week_starting', weeks[weeks.length - 1].toISOString().split('T')[0])
+      .gte('week_ending', weeks[0].toISOString().split('T')[0])
+      .lte('week_ending', weeks[weeks.length - 1].toISOString().split('T')[0])
 
     if (headcountError) {
       console.error('[ERROR] Headcount query with join failed:', headcountError)
@@ -217,11 +221,11 @@ export async function GET(request: NextRequest) {
     console.log('[DEBUG] Starting aggregation of', finalHeadcounts?.length || 0, 'headcount records')
     
     finalHeadcounts?.forEach((hc, index) => {
-      const weekDate = new Date(hc.week_starting).toISOString().split('T')[0]
+      const weekDate = new Date(hc.week_ending).toISOString().split('T')[0]
       const category = (hc.craft_types as { category: string })?.category || 'direct'
       
       if (index < 3) { // Log first few for debugging
-        console.log(`[DEBUG] Record ${index}: week_starting=${hc.week_starting}, category=${category}, headcount=${hc.headcount}`)
+        console.log(`[DEBUG] Record ${index}: week_ending=${hc.week_ending}, category=${category}, headcount=${hc.headcount}`)
       }
       
       if (!headcountByWeekCategory.has(weekDate)) {
@@ -250,8 +254,8 @@ export async function GET(request: NextRequest) {
     })
 
     // Build response structure
-    const weeklyData = weeks.map(weekStartingDate => {
-      const weekDateOnly = weekStartingDate.toISOString().split('T')[0]
+    const weeklyData = weeks.map(weekEndingDate => {
+      const weekDateOnly = weekEndingDate.toISOString().split('T')[0]
       const weekData = headcountByWeekCategory.get(weekDateOnly) || { direct: 0, indirect: 0, staff: 0, hours: 50 }
       
       // Create entries for each category
@@ -292,11 +296,6 @@ export async function GET(request: NextRequest) {
         forecastedCost: totals.forecastedCost + entry.forecastedCost
       }), { headcount: 0, totalHours: 0, forecastedCost: 0 })
 
-      // Convert back to week ending for the frontend
-      // Frontend expects Monday-based weeks (Sunday endings), but DB has Tuesday-based weeks
-      // So Tuesday July 29 → Sunday Aug 3
-      const weekEndingDate = getTuesdayWeekEndingDate(weekStartingDate)
-      
       return {
         weekEnding: weekEndingDate.toISOString(),
         entries,
@@ -455,17 +454,13 @@ export async function POST(request: NextRequest) {
 
     // Process each week
     for (const week of validatedData.weeks) {
-      // Convert week_ending to week_starting for database storage
+      // Use week_ending directly - no conversion needed
       const weekEndingDate = new Date(week.week_ending)
-      // Frontend sends Sunday week endings, DB needs Tuesday starts
-      // So Sunday Aug 3 from frontend needs to become Tuesday July 29 for DB
-      // Direct conversion from Sunday to Tuesday
-      const weekStartingDate = getSundayWeekStartingDate(weekEndingDate)
       
       // Normalize to UTC midnight for consistent storage
-      weekStartingDate.setUTCHours(0, 0, 0, 0)
-      const formattedWeekStarting = weekStartingDate.toISOString()
-      const weekStartingDateOnly = formattedWeekStarting.split('T')[0]
+      weekEndingDate.setUTCHours(0, 0, 0, 0)
+      const formattedWeekEnding = weekEndingDate.toISOString()
+      const weekEndingDateOnly = formattedWeekEnding.split('T')[0]
 
       for (const entry of week.entries) {
         try {
@@ -488,7 +483,7 @@ export async function POST(request: NextRequest) {
               .delete()
               .eq('project_id', validatedData.project_id)
               .eq('craft_type_id', craftTypeId)
-              .eq('week_starting', formattedWeekStarting)
+              .eq('week_ending', formattedWeekEnding)
 
             if (deleteError && deleteError.code !== 'PGRST116') {
               throw deleteError
@@ -496,7 +491,7 @@ export async function POST(request: NextRequest) {
 
             results.push({
               action: 'deleted',
-              week_starting: weekStartingDateOnly,
+              week_ending: weekEndingDateOnly,
               category: category,
               craft_type_id: craftTypeId
             })
@@ -509,8 +504,8 @@ export async function POST(request: NextRequest) {
             .select('*')
             .eq('project_id', validatedData.project_id)
             .eq('craft_type_id', craftTypeId)
-            .gte('week_starting', `${weekStartingDateOnly}T00:00:00`)
-            .lt('week_starting', `${weekStartingDateOnly}T23:59:59`)
+            .gte('week_ending', `${weekEndingDateOnly}T00:00:00`)
+            .lt('week_ending', `${weekEndingDateOnly}T23:59:59`)
             .single()
 
           if (existing) {
@@ -529,7 +524,7 @@ export async function POST(request: NextRequest) {
             results.push({
               action: 'updated',
               id: existing.id,
-              week_starting: weekStartingDateOnly,
+              week_ending: weekEndingDateOnly,
               category: category,
               craft_type_id: craftTypeId,
               headcount: entry.headcount
@@ -541,7 +536,7 @@ export async function POST(request: NextRequest) {
               .insert({
                 project_id: validatedData.project_id,
                 craft_type_id: craftTypeId,
-                week_starting: formattedWeekStarting,
+                week_ending: formattedWeekEnding,
                 headcount: entry.headcount,
                 avg_weekly_hours: entry.hours_per_person || 50
               })
@@ -553,7 +548,7 @@ export async function POST(request: NextRequest) {
             results.push({
               action: 'created',
               id: created.id,
-              week_starting: weekStartingDateOnly,
+              week_ending: weekEndingDateOnly,
               category: category,
               craft_type_id: craftTypeId,
               headcount: entry.headcount
@@ -562,7 +557,7 @@ export async function POST(request: NextRequest) {
         } catch (error) {
           console.error('Entry processing error:', error)
           errors.push({
-            week_starting: weekStartingDateOnly,
+            week_ending: weekEndingDateOnly,
             category: entry.craft_type_id,
             error: error instanceof Error ? error.message : 'Unknown error'
           })

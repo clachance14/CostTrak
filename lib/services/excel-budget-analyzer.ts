@@ -400,11 +400,13 @@ export class ExcelBudgetAnalyzer {
         subcategory: mapping.subcategory,
         description: String(row[structure.dataColumns.description !== undefined ? structure.dataColumns.description : 1] || '').trim(),
         total_cost: totalCost,
-        labor_cost: 0,
-        material_cost: 0,
+        labor_direct_cost: 0,
+        labor_indirect_cost: 0,
+        labor_staff_cost: 0,
+        materials_cost: 0,
         equipment_cost: 0,
-        subcontract_cost: 0,
-        other_cost: 0
+        subcontracts_cost: 0,
+        small_tools_cost: 0
       }
       
       // Apply discipline mapping if available
@@ -449,22 +451,44 @@ export class ExcelBudgetAnalyzer {
         item.duration_days = this.parseNumericValue(row[structure.dataColumns.duration])
       }
       
-      // Allocate costs to appropriate category
-      switch (mapping.category) {
-        case 'LABOR':
-          item.labor_cost = totalCost
-          break
-        case 'MATERIAL':
-          item.material_cost = totalCost
-          break
-        case 'EQUIPMENT':
-          item.equipment_cost = totalCost
-          break
-        case 'SUBCONTRACT':
-          item.subcontract_cost = totalCost
-          break
-        default:
-          item.other_cost = totalCost
+      // Allocate costs to appropriate category based on our new 7-category structure
+      // This is for sheets other than BUDGETS (which uses convertDisciplinesToLineItems)
+      if (mapping.category === 'LABOR') {
+        // For generic labor sheets, default to indirect unless specified
+        if (mapping.subcategory === 'DIRECT') {
+          item.labor_direct_cost = totalCost
+        } else if (mapping.subcategory === 'STAFF') {
+          item.labor_staff_cost = totalCost
+        } else {
+          item.labor_indirect_cost = totalCost
+        }
+      } else {
+        // NON_LABOR categories
+        switch (mapping.subcategory) {
+          case 'MATERIALS':
+            item.materials_cost = totalCost
+            break
+          case 'EQUIPMENT':
+            item.equipment_cost = totalCost
+            break
+          case 'SUBCONTRACTS':
+            item.subcontracts_cost = totalCost
+            break
+          case 'SMALL_TOOLS':
+            item.small_tools_cost = totalCost
+            break
+          default:
+            // If subcategory not specified, try to infer from sheet name
+            if (sheetName.includes('MATERIAL')) {
+              item.materials_cost = totalCost
+            } else if (sheetName.includes('EQUIPMENT')) {
+              item.equipment_cost = totalCost
+            } else if (sheetName.includes('SUB')) {
+              item.subcontracts_cost = totalCost
+            } else {
+              item.small_tools_cost = totalCost // Default to small tools
+            }
+        }
       }
       
       items.push(item)
@@ -1112,7 +1136,6 @@ export class ExcelBudgetAnalyzer {
     wbsMap.forEach(node => {
       node.budget_total = 0
       node.manhours_total = 0
-      node.material_cost = 0
     })
     
     // Populate with budget data
@@ -1166,9 +1189,6 @@ export class ExcelBudgetAnalyzer {
         if (item.manhours) {
           targetNode.manhours_total = (targetNode.manhours_total || 0) + item.manhours
         }
-        if (item.material_cost) {
-          targetNode.material_cost = (targetNode.material_cost || 0) + item.material_cost
-        }
       }
     })
     
@@ -1183,7 +1203,6 @@ export class ExcelBudgetAnalyzer {
           node.children.forEach(child => {
             node.budget_total += child.budget_total
             node.manhours_total = (node.manhours_total || 0) + (child.manhours_total || 0)
-            node.material_cost = (node.material_cost || 0) + (child.material_cost || 0)
           })
         }
       })
@@ -1273,8 +1292,7 @@ export class ExcelBudgetAnalyzer {
         discipline: groupName,
         children: [],
         budget_total: 0,
-        manhours_total: 0,
-        material_cost: 0
+        manhours_total: 0
       }
       
       // Add child nodes for each discipline in the group
@@ -1293,14 +1311,12 @@ export class ExcelBudgetAnalyzer {
           discipline: groupName,
           children: [],
           budget_total: budgetData?.value || 0,
-          manhours_total: budgetData?.manhours || 0,
-          material_cost: budgetData?.categories['MATERIALS']?.value || 0
+          manhours_total: budgetData?.manhours || 0
         }
         
         parentNode.children.push(childNode)
         parentNode.budget_total += childNode.budget_total
         parentNode.manhours_total += childNode.manhours_total || 0
-        parentNode.material_cost += childNode.material_cost || 0
         
         childCounter++
       })
