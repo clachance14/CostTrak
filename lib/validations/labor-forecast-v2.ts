@@ -122,7 +122,9 @@ export const headcountBatchSchema = z.object({
   weeks: z.array(z.object({
     week_ending: z.string().datetime({ message: 'Invalid date format' }),
     entries: z.array(z.object({
-      craft_type_id: z.string().uuid('Invalid craft type ID'),
+      craft_type_id: z.enum(['direct', 'indirect', 'staff'], {
+        errorMap: () => ({ message: 'craft_type_id must be one of: direct, indirect, staff' })
+      }),
       headcount: z.number().min(0, 'Headcount must be non-negative'),
       hours_per_person: z.number().min(0, 'Hours must be non-negative').default(50)
     }))
