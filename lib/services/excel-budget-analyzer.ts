@@ -802,6 +802,52 @@ export class ExcelBudgetAnalyzer {
     let rowCounter = 1
     
     disciplines.forEach(disc => {
+      // Special handling for GENERAL STAFFING discipline - treat as Staff Labor
+      if (disc.discipline === 'GENERAL STAFFING') {
+        // Get the total value for GENERAL STAFFING
+        const staffValue = disc.value || 0
+        
+        // GENERAL STAFFING gets its proportional share of add-ons
+        const addOns = {
+          taxesInsurance: disc.categories['TAXES & INSURANCE']?.value || 0,
+          perdiem: disc.categories['PERDIEM']?.value || 0,
+          addOns: disc.categories['ADD ONS']?.value || 0,
+          risk: disc.categories['RISK']?.value || 0
+        }
+        
+        // Staff gets Taxes & Insurance, Add Ons, and proportional Risk
+        let staffAdditions = addOns.taxesInsurance + addOns.addOns
+        
+        // Risk is distributed proportionally - calculate staff's share based on total project
+        // We'll add this after we know the total
+        
+        const totalStaffCost = staffValue + staffAdditions
+        
+        if (totalStaffCost > 0) {
+          items.push({
+            source_sheet: 'BUDGETS',
+            source_row: rowCounter++,
+            discipline: disc.discipline,
+            category: 'LABOR',
+            subcategory: 'STAFF',
+            wbs_code: 'L-003',
+            cost_type: 'Staff Labor',
+            description: `${disc.discipline}`,
+            total_cost: totalStaffCost,
+            labor_direct_cost: 0,
+            labor_indirect_cost: 0,
+            labor_staff_cost: totalStaffCost,
+            materials_cost: 0,
+            equipment_cost: 0,
+            subcontracts_cost: 0,
+            small_tools_cost: 0,
+            manhours: disc.manhours || 0
+          })
+        }
+        
+        return // Skip normal processing for GENERAL STAFFING
+      }
+      
       // Calculate base amounts for proportional distributions
       const baseAmounts = {
         directLabor: disc.categories['DIRECT LABOR']?.value || 0,

@@ -405,17 +405,47 @@ export async function POST(request: NextRequest) {
       }
     })
     
-    // If we didn't find category-level craft types, use the first one in each category
+    // If we didn't find category-level craft types, create them
     if (categoryToCraftTypeId.size < 3) {
+      console.log('[DEBUG] Missing category craft types. Current mappings:', Object.fromEntries(categoryToCraftTypeId))
       const missingCategories = ['direct', 'indirect', 'staff'].filter(
         cat => !categoryToCraftTypeId.has(cat)
       )
       
+      console.log('[DEBUG] Need to create craft types for:', missingCategories)
+      
+      // Create the missing category craft types
       for (const category of missingCategories) {
-        const craftTypesInCategory = categoryToCraftTypes.get(category) || []
-        if (craftTypesInCategory.length > 0) {
-          categoryToCraftTypeId.set(category, craftTypesInCategory[0])
-          console.log(`Using first craft type for ${category}: ${craftTypesInCategory[0]}`)
+        const craftTypeData = {
+          name: category === 'direct' ? 'Direct Labor' : 
+                category === 'indirect' ? 'Indirect Labor' : 'Staff',
+          code: category === 'direct' ? 'DL' : 
+                category === 'indirect' ? 'IL' : 'ST',
+          category: category as 'direct' | 'indirect' | 'staff',
+          default_rate: category === 'direct' ? 50 : 
+                       category === 'indirect' ? 45 : 75,
+          is_active: true
+        }
+        
+        console.log(`[DEBUG] Creating craft type:`, craftTypeData)
+        
+        const { data: newCraftType, error: createError } = await supabase
+          .from('craft_types')
+          .insert(craftTypeData)
+          .select()
+          .single()
+          
+        if (createError) {
+          console.error(`Failed to create craft type for ${category}:`, createError)
+          // Try to use first existing craft type in category as fallback
+          const craftTypesInCategory = categoryToCraftTypes.get(category) || []
+          if (craftTypesInCategory.length > 0) {
+            categoryToCraftTypeId.set(category, craftTypesInCategory[0])
+            console.log(`Using first existing craft type for ${category}: ${craftTypesInCategory[0]}`)
+          }
+        } else if (newCraftType) {
+          categoryToCraftTypeId.set(category, newCraftType.id)
+          console.log(`Created and using new craft type for ${category}: ${newCraftType.id}`)
         }
       }
     }

@@ -31,10 +31,13 @@ interface BudgetImportData {
   wbsStructure: WBSNode[]
   totals: {
     labor: number
+    laborDirect: number
+    laborIndirect: number
+    laborStaff: number
     material: number
     equipment: number
     subcontract: number
-    other: number
+    smallTools: number
     grand_total: number
   }
   validation: {
@@ -106,10 +109,13 @@ export default function BudgetImportCoversheetPage({
         ...result.data,
         totals: {
           labor: result.data.totals.totalLabor || 0,
+          laborDirect: result.data.totals.laborDirect || 0,
+          laborIndirect: result.data.totals.laborIndirect || 0,
+          laborStaff: result.data.totals.laborStaff || 0,
           material: result.data.totals.materials || 0,
           equipment: result.data.totals.equipment || 0,
           subcontract: result.data.totals.subcontracts || 0,
-          other: result.data.totals.smallTools || 0,
+          smallTools: result.data.totals.smallTools || 0,
           grand_total: result.data.totals.grandTotal || 0
         }
       }
@@ -321,14 +327,51 @@ export default function BudgetImportCoversheetPage({
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Budget by Category</h3>
                   <div className="space-y-2">
-                    {Object.entries(previewData.totals).filter(([key]) => key !== 'grand_total').map(([category, amount]) => (
-                      <div key={category} className="flex justify-between items-center py-2 border-b">
-                        <span className="capitalize">{category}</span>
-                        <span className="font-medium">
-                          ${(amount as number).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                        </span>
+                    {/* Labor breakdown */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center py-2 border-b font-semibold">
+                        <span>Labor</span>
+                        <span>${previewData.totals.labor.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                       </div>
-                    ))}
+                      <div className="flex justify-between items-center py-1 pl-4 text-sm text-muted-foreground">
+                        <span>Direct Labor</span>
+                        <span>${previewData.totals.laborDirect.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-1 pl-4 text-sm text-muted-foreground">
+                        <span>Indirect Labor</span>
+                        <span>${previewData.totals.laborIndirect.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-1 pl-4 text-sm text-muted-foreground border-b">
+                        <span>Staff Labor</span>
+                        <span>${previewData.totals.laborStaff.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Non-labor categories */}
+                    <div className="flex justify-between items-center py-2 border-b">
+                      <span>Materials</span>
+                      <span className="font-medium">
+                        ${previewData.totals.material.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b">
+                      <span>Equipment</span>
+                      <span className="font-medium">
+                        ${previewData.totals.equipment.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b">
+                      <span>Subcontracts</span>
+                      <span className="font-medium">
+                        ${previewData.totals.subcontract.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b">
+                      <span>Small Tools & Consumables</span>
+                      <span className="font-medium">
+                        ${previewData.totals.smallTools.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
                   </div>
                 </div>
 

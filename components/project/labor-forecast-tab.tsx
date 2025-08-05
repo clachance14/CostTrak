@@ -970,6 +970,14 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
       try {
         data = await response.json()
         console.log('API Response:', data)
+        
+        // Log error details if any
+        if (data.errors && data.errors.length > 0) {
+          console.error('API Errors:', data.errors)
+          data.errors.forEach((err: any, idx: number) => {
+            console.error(`Error ${idx + 1}:`, err)
+          })
+        }
       } catch (jsonError) {
         console.error('Failed to parse API response:', jsonError)
         console.log('Response status:', response.status)
