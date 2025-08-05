@@ -370,7 +370,7 @@ export type Database = {
           week_starting: string
           craft_type_id: string
           headcount: number
-          weekly_hours: number
+          avg_weekly_hours: number
           created_at: string
           updated_at: string
         }
@@ -380,7 +380,7 @@ export type Database = {
           week_starting: string
           craft_type_id: string
           headcount: number
-          weekly_hours: number
+          avg_weekly_hours: number
           created_at?: string
           updated_at?: string
         }
@@ -390,7 +390,7 @@ export type Database = {
           week_starting?: string
           craft_type_id?: string
           headcount?: number
-          weekly_hours?: number
+          avg_weekly_hours?: number
           created_at?: string
           updated_at?: string
         }

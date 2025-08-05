@@ -801,27 +801,52 @@ export class ExcelBudgetAnalyzer {
     const items: BudgetLineItem[] = []
     let rowCounter = 1
     
+    // First pass: Calculate total risk across all disciplines
+    let totalRisk = 0
+    let totalBaseForRisk = 0
+    
+    disciplines.forEach(disc => {
+      const risk = disc.categories['RISK']?.value || 0
+      totalRisk += risk
+      
+      // For risk allocation, we need the base value excluding risk itself
+      if (disc.discipline === 'GENERAL STAFFING') {
+        // For GENERAL STAFFING, use the indirect labor value as the base
+        totalBaseForRisk += disc.categories['INDIRECT LABOR']?.value || 0
+      } else {
+        // For other disciplines, sum all base categories
+        totalBaseForRisk += (disc.categories['DIRECT LABOR']?.value || 0) +
+                           (disc.categories['INDIRECT LABOR']?.value || 0) +
+                           (disc.categories['MATERIALS']?.value || 0) +
+                           (disc.categories['EQUIPMENT']?.value || 0) +
+                           (disc.categories['SUBCONTRACTS']?.value || 0) +
+                           (disc.categories['SMALL TOOLS & CONSUMABLES']?.value || 0)
+      }
+    })
+    
+    // Second pass: Process disciplines with proportional risk allocation
     disciplines.forEach(disc => {
       // Special handling for GENERAL STAFFING discipline - treat as Staff Labor
       if (disc.discipline === 'GENERAL STAFFING') {
-        // Get the total value for GENERAL STAFFING
-        const staffValue = disc.value || 0
+        // Get the base value for GENERAL STAFFING (from INDIRECT LABOR row)
+        const staffBaseValue = disc.categories['INDIRECT LABOR']?.value || 0
         
         // GENERAL STAFFING gets its proportional share of add-ons
         const addOns = {
           taxesInsurance: disc.categories['TAXES & INSURANCE']?.value || 0,
           perdiem: disc.categories['PERDIEM']?.value || 0,
-          addOns: disc.categories['ADD ONS']?.value || 0,
-          risk: disc.categories['RISK']?.value || 0
+          addOns: disc.categories['ADD ONS']?.value || 0
         }
         
-        // Staff gets Taxes & Insurance, Add Ons, and proportional Risk
-        let staffAdditions = addOns.taxesInsurance + addOns.addOns
+        // Staff gets Taxes & Insurance, Perdiem, and Add Ons
+        let staffAdditions = addOns.taxesInsurance + addOns.perdiem + addOns.addOns
         
-        // Risk is distributed proportionally - calculate staff's share based on total project
-        // We'll add this after we know the total
+        // Add proportional share of total project risk
+        if (totalRisk > 0 && totalBaseForRisk > 0) {
+          staffAdditions += (staffBaseValue / totalBaseForRisk) * totalRisk
+        }
         
-        const totalStaffCost = staffValue + staffAdditions
+        const totalStaffCost = staffBaseValue + staffAdditions
         
         if (totalStaffCost > 0) {
           items.push({
@@ -841,7 +866,7 @@ export class ExcelBudgetAnalyzer {
             equipment_cost: 0,
             subcontracts_cost: 0,
             small_tools_cost: 0,
-            manhours: disc.manhours || 0
+            manhours: disc.categories['INDIRECT LABOR']?.manhours || 0
           })
         }
         
@@ -899,14 +924,14 @@ export class ExcelBudgetAnalyzer {
       // Scaffolding: Add entirely to Subcontracts
       subcontractsAdditions += addOns.scaffolding
       
-      // Risk: Distribute proportionally across ALL categories
-      if (addOns.risk > 0 && totalAllBase > 0) {
-        directLaborAdditions += (baseAmounts.directLabor / totalAllBase) * addOns.risk
-        indirectLaborAdditions += (baseAmounts.indirectLabor / totalAllBase) * addOns.risk
-        materialsAdditions += (baseAmounts.materials / totalAllBase) * addOns.risk
-        equipmentAdditions += (baseAmounts.equipment / totalAllBase) * addOns.risk
-        subcontractsAdditions += (baseAmounts.subcontracts / totalAllBase) * addOns.risk
-        smallToolsAdditions += (baseAmounts.smallTools / totalAllBase) * addOns.risk
+      // Risk: Distribute proportionally across ALL categories using total project risk
+      if (totalRisk > 0 && totalBaseForRisk > 0) {
+        directLaborAdditions += (baseAmounts.directLabor / totalBaseForRisk) * totalRisk
+        indirectLaborAdditions += (baseAmounts.indirectLabor / totalBaseForRisk) * totalRisk
+        materialsAdditions += (baseAmounts.materials / totalBaseForRisk) * totalRisk
+        equipmentAdditions += (baseAmounts.equipment / totalBaseForRisk) * totalRisk
+        subcontractsAdditions += (baseAmounts.subcontracts / totalBaseForRisk) * totalRisk
+        smallToolsAdditions += (baseAmounts.smallTools / totalBaseForRisk) * totalRisk
       }
       
       // Create simplified line items (only for categories with values > 0)
@@ -965,27 +990,7 @@ export class ExcelBudgetAnalyzer {
         })
       }
       
-      if (finalAmounts.laborStaff > 0) {
-        items.push({
-          source_sheet: 'BUDGETS',
-          source_row: rowCounter++,
-          discipline: disc.discipline,
-          category: 'LABOR',
-          subcategory: 'STAFF',
-          wbs_code: 'L-003',
-          cost_type: 'Staff Labor',
-          description: `${disc.discipline} - Staff Labor`,
-          total_cost: finalAmounts.laborStaff,
-          labor_direct_cost: 0,
-          labor_indirect_cost: 0,
-          labor_staff_cost: finalAmounts.laborStaff,
-          materials_cost: 0,
-          equipment_cost: 0,
-          subcontracts_cost: 0,
-          small_tools_cost: 0,
-          manhours: 0
-        })
-      }
+      // Staff Labor is now handled separately via GENERAL STAFFING discipline
       
       if (finalAmounts.materials > 0) {
         items.push({

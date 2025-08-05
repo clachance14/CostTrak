@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
       .select(`
         week_starting,
         headcount,
-        weekly_hours,
+        avg_weekly_hours,
         craft_type_id,
         craft_types(
           id,
@@ -225,7 +225,7 @@ export async function GET(request: NextRequest) {
       }
       
       if (!headcountByWeekCategory.has(weekDate)) {
-        headcountByWeekCategory.set(weekDate, { direct: 0, indirect: 0, staff: 0, hours: Number(hc.weekly_hours) || 50 })
+        headcountByWeekCategory.set(weekDate, { direct: 0, indirect: 0, staff: 0, hours: Number(hc.avg_weekly_hours) || 50 })
       }
       
       const weekData = headcountByWeekCategory.get(weekDate)!
@@ -519,7 +519,7 @@ export async function POST(request: NextRequest) {
               .from('labor_headcount_forecasts')
               .update({
                 headcount: entry.headcount,
-                weekly_hours: entry.hours_per_person || 50,
+                avg_weekly_hours: entry.hours_per_person || 50,
                 updated_at: new Date().toISOString()
               })
               .eq('id', existing.id)
@@ -543,7 +543,7 @@ export async function POST(request: NextRequest) {
                 craft_type_id: craftTypeId,
                 week_starting: formattedWeekStarting,
                 headcount: entry.headcount,
-                weekly_hours: entry.hours_per_person || 50
+                avg_weekly_hours: entry.hours_per_person || 50
               })
               .select()
               .single()
