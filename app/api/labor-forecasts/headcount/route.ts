@@ -171,32 +171,58 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // If we didn't get data with the join, try to map craft types manually
+    // Always ensure we have craft type data - use joined data if available, otherwise map manually
     let finalHeadcounts = headcounts
-    if (!headcounts || headcounts.length === 0) {
-      console.log('[DEBUG] No data from joined query, using simple query results')
-      if (simpleHeadcounts && simpleHeadcounts.length > 0) {
-        // Create a craft type map
-        const craftTypeMap = new Map<string, any>()
-        allCraftTypes?.forEach(ct => {
-          craftTypeMap.set(ct.id, ct)
+    
+    // Check if any headcount records are missing craft_types data (failed join)
+    const needsMapping = headcounts?.some(hc => !hc.craft_types) || !headcounts || headcounts.length === 0
+    
+    if (needsMapping && simpleHeadcounts && simpleHeadcounts.length > 0) {
+      console.log('[DEBUG] Mapping craft types manually for', simpleHeadcounts.length, 'records')
+      
+      // Create a craft type map
+      const craftTypeMap = new Map<string, any>()
+      allCraftTypes?.forEach(ct => {
+        craftTypeMap.set(ct.id, ct)
+      })
+      
+      console.log('[DEBUG] Available craft types:', Array.from(craftTypeMap.entries()).map(([id, ct]) => `${ct.name} (${ct.category})`))
+      
+      // Map the simple results
+      finalHeadcounts = simpleHeadcounts.map(hc => ({
+        ...hc,
+        craft_types: craftTypeMap.get(hc.craft_type_id) || { 
+          id: hc.craft_type_id,
+          name: 'Unknown',
+          category: 'direct' // Default fallback
+        }
+      }))
+      
+      console.log('[DEBUG] Successfully mapped', finalHeadcounts.length, 'records')
+      // Log sample mapping
+      if (finalHeadcounts.length > 0) {
+        const sample = finalHeadcounts[0]
+        console.log('[DEBUG] Sample mapped record:', {
+          craft_type_id: sample.craft_type_id,
+          category: (sample.craft_types as any)?.category,
+          headcount: sample.headcount,
+          week_starting: sample.week_starting
         })
-        
-        // Map the simple results
-        finalHeadcounts = simpleHeadcounts.map(hc => ({
-          ...hc,
-          craft_types: craftTypeMap.get(hc.craft_type_id) || { category: 'direct' }
-        }))
-        console.log('[DEBUG] Mapped', finalHeadcounts.length, 'records with craft type data')
       }
     }
     
     // Aggregate headcounts by week and category
     const headcountByWeekCategory = new Map<string, { direct: number; indirect: number; staff: number; hours: number }>()
     
-    finalHeadcounts?.forEach(hc => {
+    console.log('[DEBUG] Starting aggregation of', finalHeadcounts?.length || 0, 'headcount records')
+    
+    finalHeadcounts?.forEach((hc, index) => {
       const weekDate = new Date(hc.week_starting).toISOString().split('T')[0]
       const category = (hc.craft_types as { category: string })?.category || 'direct'
+      
+      if (index < 3) { // Log first few for debugging
+        console.log(`[DEBUG] Record ${index}: week_starting=${hc.week_starting}, category=${category}, headcount=${hc.headcount}`)
+      }
       
       if (!headcountByWeekCategory.has(weekDate)) {
         headcountByWeekCategory.set(weekDate, { direct: 0, indirect: 0, staff: 0, hours: Number(hc.weekly_hours) || 50 })
@@ -205,6 +231,14 @@ export async function GET(request: NextRequest) {
       const weekData = headcountByWeekCategory.get(weekDate)!
       if (category in weekData) {
         weekData[category as 'direct' | 'indirect' | 'staff'] += hc.headcount
+      }
+    })
+    
+    console.log('[DEBUG] Aggregated data by week:')
+    headcountByWeekCategory.forEach((data, weekDate) => {
+      const total = data.direct + data.indirect + data.staff
+      if (total > 0) {
+        console.log(`  ${weekDate}: direct=${data.direct}, indirect=${data.indirect}, staff=${data.staff}`)
       }
     })
     
