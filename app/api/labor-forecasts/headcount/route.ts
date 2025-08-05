@@ -22,6 +22,8 @@ export async function GET(request: NextRequest) {
     const projectId = request.nextUrl.searchParams.get('project_id')
     const weeksAhead = parseInt(request.nextUrl.searchParams.get('weeks_ahead') || '12', 10)
     const startDateParam = request.nextUrl.searchParams.get('start_date')
+    
+    console.log('[DEBUG] GET /api/labor-forecasts/headcount starting with:', { projectId, weeksAhead, startDateParam })
 
     if (!projectId) {
       return NextResponse.json(
@@ -221,7 +223,21 @@ export async function GET(request: NextRequest) {
     console.log('[DEBUG] Starting aggregation of', finalHeadcounts?.length || 0, 'headcount records')
     
     finalHeadcounts?.forEach((hc, index) => {
-      const weekDate = new Date(hc.week_ending).toISOString().split('T')[0]
+      // Handle both date formats - database might have date-only strings
+      let weekDate: string
+      try {
+        if (hc.week_ending.includes('T')) {
+          // Full ISO timestamp
+          weekDate = new Date(hc.week_ending).toISOString().split('T')[0]
+        } else {
+          // Date-only string (e.g., "2025-08-04")
+          weekDate = hc.week_ending
+        }
+      } catch (err) {
+        console.error(`[ERROR] Failed to parse week_ending: ${hc.week_ending}`, err)
+        weekDate = hc.week_ending // Use as-is
+      }
+      
       const category = (hc.craft_types as { category: string })?.category || 'direct'
       
       if (index < 3) { // Log first few for debugging
@@ -329,9 +345,13 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Headcount forecast fetch error:', error)
+    console.error('[ERROR] Headcount forecast fetch error:', error)
+    console.error('[ERROR] Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return NextResponse.json(
-      { error: 'Failed to fetch headcount forecast' },
+      { error: 'Failed to fetch headcount forecast', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

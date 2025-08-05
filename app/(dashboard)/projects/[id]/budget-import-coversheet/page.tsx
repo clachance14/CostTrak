@@ -129,7 +129,14 @@ export default function BudgetImportCoversheetPage({
   }
 
   const handleImport = async () => {
-    if (!file) return
+    console.log('Import Budget clicked')
+    console.log('File:', file)
+    console.log('PreviewData:', previewData)
+    
+    if (!file) {
+      console.error('No file selected')
+      return
+    }
 
     setLoading(true)
     setError(null)
@@ -140,20 +147,25 @@ export default function BudgetImportCoversheetPage({
       formData.append('projectId', projectId)
       formData.append('mode', 'import')
 
+      console.log('Sending import request...')
       const response = await fetch('/api/project-budgets/import-coversheet', {
         method: 'POST',
         body: formData
       })
 
+      console.log('Response status:', response.status)
       const result = await response.json()
+      console.log('Response data:', result)
 
       if (!response.ok) {
         throw new Error(result.error || 'Failed to import budget')
       }
 
+      console.log('Import successful, redirecting...')
       // Redirect to project overview
       router.push(`/projects/${projectId}/overview?tab=budget`)
     } catch (err) {
+      console.error('Import error:', err)
       setError(err instanceof Error ? err.message : 'Failed to import budget')
     } finally {
       setLoading(false)
@@ -546,7 +558,10 @@ export default function BudgetImportCoversheetPage({
                 Cancel
               </Button>
               <Button
-                onClick={handleImport}
+                onClick={() => {
+                  console.log('Button clicked - loading:', loading, 'previewData:', !!previewData)
+                  handleImport()
+                }}
                 disabled={loading || !previewData}
               >
                 {loading ? (
