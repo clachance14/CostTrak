@@ -485,15 +485,13 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
         } else {
           // Use forecast data when no actuals exist
           const forecastWeek = forecastData.weeks?.find((w: { weekEnding: string }) => {
-            // Convert both dates to date-only format for comparison
-            // Handle timezone differences by normalizing to local date strings
-            const wDate = new Date(w.weekEnding)
-            const wDateLocal = `${wDate.getFullYear()}-${String(wDate.getMonth() + 1).padStart(2, '0')}-${String(wDate.getDate()).padStart(2, '0')}`
-            const targetDateLocal = `${weekDate.getFullYear()}-${String(weekDate.getMonth() + 1).padStart(2, '0')}-${String(weekDate.getDate()).padStart(2, '0')}`
+            // Parse the API date and adjust for timezone to get the intended date
+            const apiDateStr = w.weekEnding.split('T')[0] // Get YYYY-MM-DD part
+            const targetDateStr = weekDate.toISOString().split('T')[0] // Get YYYY-MM-DD part
             
-            const match = wDateLocal === targetDateLocal
+            const match = apiDateStr === targetDateStr
             if (match) {
-              console.log(`[DEBUG] Date match found: API ${wDateLocal} === Frontend ${targetDateLocal}`)
+              console.log(`[DEBUG] Date match found: API ${apiDateStr} === Frontend ${targetDateStr}`)
             }
             return match
           })
@@ -586,9 +584,9 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
         // For forecast weeks, check if we have saved hours data
         if (!isActual && forecastData.weeks) {
           const forecastWeek = forecastData.weeks.find((w: { weekEnding: string }) => {
-            const wDate = new Date(w.weekEnding).toISOString().split('T')[0]
-            const targetDate = weekDate.toISOString().split('T')[0]
-            return wDate === targetDate
+            const apiDateStr = w.weekEnding.split('T')[0]
+            const targetDateStr = weekDate.toISOString().split('T')[0]
+            return apiDateStr === targetDateStr
           })
           
           if (forecastWeek && forecastWeek.entries && forecastWeek.entries.length > 0) {

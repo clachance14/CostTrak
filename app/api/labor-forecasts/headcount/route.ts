@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
       if (allProjectData && allProjectData.length > 0) {
         console.log('[DEBUG] Sample dates from database:')
         allProjectData.forEach(record => {
-          console.log(`  - ${record.week_starting} (headcount: ${record.headcount})`)
+          console.log(`  - ${record.week_ending} (headcount: ${record.headcount})`)
         })
       }
     }
@@ -170,10 +170,10 @@ export async function GET(request: NextRequest) {
     // Debug: Log actual database dates
     if (headcounts && headcounts.length > 0) {
       console.log('[DEBUG] Sample database records:')
-      const uniqueDates = new Set(headcounts.map(h => h.week_starting))
+      const uniqueDates = new Set(headcounts.map(h => h.week_ending))
       Array.from(uniqueDates).slice(0, 10).forEach(date => {
         const d = new Date(date)
-        console.log(`[DEBUG] DB week_starting: ${date.split('T')[0]} (${d.toLocaleDateString('en-US', { weekday: 'long' })})`)
+        console.log(`[DEBUG] DB week_ending: ${date.split('T')[0]} (${d.toLocaleDateString('en-US', { weekday: 'long' })})`)
       })
     }
 
@@ -187,12 +187,12 @@ export async function GET(request: NextRequest) {
       console.log('[DEBUG] Mapping craft types manually for', simpleHeadcounts.length, 'records')
       
       // Create a craft type map
-      const craftTypeMap = new Map<string, any>()
+      const craftTypeMap = new Map<string, { id: string; name: string; code: string; category: string }>()
       allCraftTypes?.forEach(ct => {
         craftTypeMap.set(ct.id, ct)
       })
       
-      console.log('[DEBUG] Available craft types:', Array.from(craftTypeMap.entries()).map(([id, ct]) => `${ct.name} (${ct.category})`))
+      console.log('[DEBUG] Available craft types:', Array.from(craftTypeMap.entries()).map(([, ct]) => `${ct.name} (${ct.category})`))
       
       // Map the simple results
       finalHeadcounts = simpleHeadcounts.map(hc => ({
@@ -210,9 +210,9 @@ export async function GET(request: NextRequest) {
         const sample = finalHeadcounts[0]
         console.log('[DEBUG] Sample mapped record:', {
           craft_type_id: sample.craft_type_id,
-          category: (sample.craft_types as any)?.category,
+          category: (sample.craft_types as { category: string })?.category,
           headcount: sample.headcount,
-          week_starting: sample.week_starting
+          week_ending: sample.week_ending
         })
       }
     }

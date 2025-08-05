@@ -17,7 +17,10 @@ export const getWeekStartingDate = (date: Date): Date => {
 
 // Helper to format week ending date
 export const formatWeekEnding = (date: Date): string => {
-  return format(date, 'MMM dd, yyyy')
+  // Ensure we're formatting the date in local time, not UTC
+  // If the date is at UTC midnight, it might show as previous day in local time
+  const localDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000)
+  return format(localDate, 'MMM dd, yyyy')
 }
 
 // Calculate running average rate

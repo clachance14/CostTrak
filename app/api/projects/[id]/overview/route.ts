@@ -83,19 +83,16 @@ export async function GET(
       categoryBurdenedRates[category] = stats.hours > 0 ? stats.cost / stats.hours : averageActualRate
     })
 
-    // Get budget data
-    const { data: budgetLineItems } = await supabase
-      .from('budget_line_items')
-      .select('cost_type, total_cost')
-      .eq('project_id', projectId)
+    // Get labor budget from project table
+    const laborBudget = (project.labor_direct_budget || 0) + 
+                       (project.labor_indirect_budget || 0) + 
+                       (project.labor_staff_budget || 0)
 
-    const laborBudget = budgetLineItems
-      ?.filter(item => ['Labor', 'Direct Labor', 'Indirect Labor'].includes(item.cost_type))
-      .reduce((sum, item) => sum + (item.total_cost || 0), 0) || 0
-
-    const materialBudget = budgetLineItems
-      ?.filter(item => item.cost_type === 'Material')
-      .reduce((sum, item) => sum + (item.total_cost || 0), 0) || 0
+    // Get non-labor budget from project table (materials + equipment + subcontracts + small tools)
+    const nonLaborBudget = (project.materials_budget || 0) + 
+                          (project.equipment_budget || 0) + 
+                          (project.subcontracts_budget || 0) + 
+                          (project.small_tools_budget || 0)
 
     // Get material costs from POs
     const { data: materialPOs } = await supabase
@@ -355,7 +352,7 @@ export async function GET(
         laborRemainingForecast: remainingForecastedLabor,
         materialCosts: totalPOAmount,
         materialInvoiced: totalInvoicedAmount,
-        materialBudget,
+        materialBudget: nonLaborBudget,
         remainingBudget,
         burnRate,
         projectHealth
