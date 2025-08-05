@@ -418,7 +418,11 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
         // Convert to Sunday if needed
         const actualDate = new Date(actual.weekEnding)
         const sundayDate = getWeekEndingDate(actualDate)
-        const sundayDateOnly = sundayDate.toISOString().split('T')[0]
+        // Use local date format to avoid timezone issues
+        const localYear = sundayDate.getFullYear()
+        const localMonth = String(sundayDate.getMonth() + 1).padStart(2, '0')
+        const localDay = String(sundayDate.getDate()).padStart(2, '0')
+        const sundayDateOnly = `${localYear}-${localMonth}-${localDay}`
         
         if (!actualsMap.has(sundayDateOnly)) {
           actualsMap.set(sundayDateOnly, [])
@@ -427,11 +431,20 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
       })
       
       console.log('Actuals map keys (converted to Sunday):', Array.from(actualsMap.keys()).sort())
-      console.log('All generated week dates:', allWeeks.map(d => d.toISOString().split('T')[0]))
+      console.log('All generated week dates (local):', allWeeks.map(d => {
+        const year = d.getFullYear()
+        const month = String(d.getMonth() + 1).padStart(2, '0')
+        const day = String(d.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
+      }))
       
       allWeeks.forEach((weekDate, weekIndex) => {
         const weekString = weekDate.toISOString()
-        const weekDateOnly = weekDate.toISOString().split('T')[0] // Get YYYY-MM-DD format
+        // For date comparison, normalize to local date string to avoid timezone issues
+        const localYear = weekDate.getFullYear()
+        const localMonth = String(weekDate.getMonth() + 1).padStart(2, '0')
+        const localDay = String(weekDate.getDate()).padStart(2, '0')
+        const weekDateOnly = `${localYear}-${localMonth}-${localDay}`
         const isActual = actualsMap.has(weekDateOnly) // Only mark as actual if we have data
         
         // Initialize categories
@@ -485,19 +498,23 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
         } else {
           // Use forecast data when no actuals exist
           const forecastWeek = forecastData.weeks?.find((w: { weekEnding: string }) => {
-            // Parse the API date and adjust for timezone to get the intended date
-            const apiDateStr = w.weekEnding.split('T')[0] // Get YYYY-MM-DD part
-            const targetDateStr = weekDate.toISOString().split('T')[0] // Get YYYY-MM-DD part
+            // Parse the API date - it comes as UTC timestamp
+            const apiDate = new Date(w.weekEnding)
+            // Get the local date representation of both dates for comparison
+            const apiYear = apiDate.getFullYear()
+            const apiMonth = String(apiDate.getMonth() + 1).padStart(2, '0')
+            const apiDay = String(apiDate.getDate()).padStart(2, '0')
+            const apiDateLocal = `${apiYear}-${apiMonth}-${apiDay}`
             
-            const match = apiDateStr === targetDateStr
+            const match = apiDateLocal === weekDateOnly
             if (match) {
-              console.log(`[DEBUG] Date match found: API ${apiDateStr} === Frontend ${targetDateStr}`)
+              console.log(`[DEBUG] Date match found: API ${apiDateLocal} === Frontend ${weekDateOnly}`)
             }
             return match
           })
           
           if (forecastWeek && forecastWeek.entries) {
-            console.log(`[DEBUG] Found forecast data for week ${weekDateOnly}:`, forecastWeek)
+            console.log(`[DEBUG] Found forecast data for week ${weekDateOnly} (local):`, forecastWeek)
             console.log(`[DEBUG] Number of entries: ${forecastWeek.entries.length}`)
             if (forecastWeek.entries.length > 0) {
               const sampleEntry = forecastWeek.entries[0]
@@ -561,7 +578,11 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
               }
             })
           } else {
-            console.log(`No forecast data found for week ${weekDateOnly}`)
+            console.log(`No forecast data found for week ${weekDateOnly} (local)`)
+            // Debug: Show what weeks are available in forecast data
+            if (weekIndex === 0 && forecastData.weeks) {
+              console.log('[DEBUG] Available forecast weeks:', forecastData.weeks.slice(0, 5).map((w: any) => w.weekEnding))
+            }
           }
         }
 
@@ -584,9 +605,21 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
         // For forecast weeks, check if we have saved hours data
         if (!isActual && forecastData.weeks) {
           const forecastWeek = forecastData.weeks.find((w: { weekEnding: string }) => {
-            const apiDateStr = w.weekEnding.split('T')[0]
-            const targetDateStr = weekDate.toISOString().split('T')[0]
-            return apiDateStr === targetDateStr
+            // Parse the API date - it comes as UTC timestamp
+            const apiDate = new Date(w.weekEnding)
+            // Get the local date representation for comparison
+            const apiYear = apiDate.getFullYear()
+            const apiMonth = String(apiDate.getMonth() + 1).padStart(2, '0')
+            const apiDay = String(apiDate.getDate()).padStart(2, '0')
+            const apiDateLocal = `${apiYear}-${apiMonth}-${apiDay}`
+            
+            // Compare with the local week date
+            const targetYear = weekDate.getFullYear()
+            const targetMonth = String(weekDate.getMonth() + 1).padStart(2, '0')
+            const targetDay = String(weekDate.getDate()).padStart(2, '0')
+            const targetDateLocal = `${targetYear}-${targetMonth}-${targetDay}`
+            
+            return apiDateLocal === targetDateLocal
           })
           
           if (forecastWeek && forecastWeek.entries && forecastWeek.entries.length > 0) {
