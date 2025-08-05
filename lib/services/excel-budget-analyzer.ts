@@ -26,10 +26,7 @@ export interface BudgetLineItem {
   source_row: number
   
   // WBS and categorization
-  wbs_code?: string
-  wbs_level1?: string
-  wbs_level2?: string
-  wbs_level3?: string
+  wbs_code?: string  // Simple codes: L-001, L-002, L-003, N-001, N-002, N-003, N-004
   discipline?: string
   category: string
   subcategory?: string
@@ -49,12 +46,14 @@ export interface BudgetLineItem {
   crew_size?: number
   duration_days?: number
   
-  // Cost breakdown
-  labor_cost: number
-  material_cost: number
+  // Simplified cost breakdown aligned with PO categories
+  labor_direct_cost: number
+  labor_indirect_cost: number
+  labor_staff_cost: number
+  materials_cost: number
   equipment_cost: number
-  subcontract_cost: number
-  other_cost: number
+  subcontracts_cost: number
+  small_tools_cost: number
   total_cost: number
   
   // Additional metadata
@@ -111,15 +110,20 @@ export interface ExcelBudgetData {
   details: Record<string, BudgetLineItem[]>
   wbsStructure: WBSNode[]
   totals: {
-    labor: number
-    material: number
+    laborDirect: number
+    laborIndirect: number
+    laborStaff: number
+    materials: number
     equipment: number
-    subcontract: number
-    other: number
-    grand_total: number
-    direct_labor_manhours: number
-    indirect_labor_manhours: number
-    total_manhours: number
+    subcontracts: number
+    smallTools: number
+    totalLabor: number
+    totalNonLabor: number
+    grandTotal: number
+    // Manhours tracking
+    directLaborManhours: number
+    indirectLaborManhours: number
+    totalManhours: number
   }
   disciplineBudgets?: BudgetSheetDiscipline[]  // From BUDGETS sheet
   validation: {
@@ -791,53 +795,239 @@ export class ExcelBudgetAnalyzer {
   }
 
   /**
-   * Convert BUDGETS sheet discipline data to BudgetLineItems
+   * Convert BUDGETS sheet discipline data to BudgetLineItems with simplified allocation logic
    */
   convertDisciplinesToLineItems(disciplines: BudgetSheetDiscipline[]): BudgetLineItem[] {
     const items: BudgetLineItem[] = []
     let rowCounter = 1
     
     disciplines.forEach(disc => {
-      Object.entries(disc.categories).forEach(([categoryName, categoryData]) => {
-        // Skip subtotal categories
-        if (['ALL LABOR', 'DISCIPLINE TOTALS'].includes(categoryName.toUpperCase())) {
-          return
-        }
-        
-        // Determine the primary cost category
-        let category = 'OTHER'
-        const costType = categoryName
-        
-        if (categoryName.toUpperCase().includes('LABOR')) {
-          category = 'LABOR'
-        } else if (categoryName.toUpperCase() === 'MATERIALS') {
-          category = 'MATERIAL'
-        } else if (categoryName.toUpperCase() === 'EQUIPMENT') {
-          category = 'EQUIPMENT'
-        } else if (categoryName.toUpperCase() === 'SUBCONTRACTS') {
-          category = 'SUBCONTRACT'
-        }
-        
-        if (categoryData.value > 0) {
-          const item: BudgetLineItem = {
-            source_sheet: 'BUDGETS',
-            source_row: rowCounter++,
-            discipline: disc.discipline,
-            category: category,
-            cost_type: costType,
-            description: `${disc.discipline} - ${categoryName}`,
-            total_cost: categoryData.value,
-            labor_cost: category === 'LABOR' ? categoryData.value : 0,
-            material_cost: category === 'MATERIAL' ? categoryData.value : 0,
-            equipment_cost: category === 'EQUIPMENT' ? categoryData.value : 0,
-            subcontract_cost: category === 'SUBCONTRACT' ? categoryData.value : 0,
-            other_cost: ['OTHER'].includes(category) ? categoryData.value : 0,
-            manhours: categoryData.manhours
-          }
-          
-          items.push(item)
-        }
-      })
+      // Calculate base amounts for proportional distributions
+      const baseAmounts = {
+        directLabor: disc.categories['DIRECT LABOR']?.value || 0,
+        indirectLabor: disc.categories['INDIRECT LABOR']?.value || 0,
+        materials: disc.categories['MATERIALS']?.value || 0,
+        equipment: disc.categories['EQUIPMENT']?.value || 0,
+        subcontracts: disc.categories['SUBCONTRACTS']?.value || 0,
+        smallTools: disc.categories['SMALL TOOLS & CONSUMABLES']?.value || 0
+      }
+      
+      // Calculate add-on amounts
+      const addOns = {
+        taxesInsurance: disc.categories['TAXES & INSURANCE']?.value || 0,
+        perdiem: disc.categories['PERDIEM']?.value || 0,
+        addOns: disc.categories['ADD ONS']?.value || 0,
+        scaffolding: disc.categories['SCAFFOLDING']?.value || 0,
+        risk: disc.categories['RISK']?.value || 0
+      }
+      
+      // Calculate total base for proportional distributions
+      const totalLaborBase = baseAmounts.directLabor + baseAmounts.indirectLabor
+      const totalAllBase = Object.values(baseAmounts).reduce((sum, val) => sum + val, 0)
+      
+      // Calculate proportional distributions
+      let directLaborAdditions = 0
+      let indirectLaborAdditions = 0
+      let staffLaborAdditions = 0
+      let materialsAdditions = 0
+      let equipmentAdditions = 0
+      let subcontractsAdditions = 0
+      let smallToolsAdditions = 0
+      
+      // Taxes & Insurance: Distribute across all labor proportionally
+      if (addOns.taxesInsurance > 0 && totalLaborBase > 0) {
+        directLaborAdditions += (baseAmounts.directLabor / totalLaborBase) * addOns.taxesInsurance
+        indirectLaborAdditions += (baseAmounts.indirectLabor / totalLaborBase) * addOns.taxesInsurance
+        // Staff gets remaining if any (in case we add staff logic later)
+      }
+      
+      // Perdiem: Distribute between Direct + Indirect proportionally
+      if (addOns.perdiem > 0 && totalLaborBase > 0) {
+        directLaborAdditions += (baseAmounts.directLabor / totalLaborBase) * addOns.perdiem
+        indirectLaborAdditions += (baseAmounts.indirectLabor / totalLaborBase) * addOns.perdiem
+      }
+      
+      // Add Ons: Add entirely to Indirect
+      indirectLaborAdditions += addOns.addOns
+      
+      // Scaffolding: Add entirely to Subcontracts
+      subcontractsAdditions += addOns.scaffolding
+      
+      // Risk: Distribute proportionally across ALL categories
+      if (addOns.risk > 0 && totalAllBase > 0) {
+        directLaborAdditions += (baseAmounts.directLabor / totalAllBase) * addOns.risk
+        indirectLaborAdditions += (baseAmounts.indirectLabor / totalAllBase) * addOns.risk
+        materialsAdditions += (baseAmounts.materials / totalAllBase) * addOns.risk
+        equipmentAdditions += (baseAmounts.equipment / totalAllBase) * addOns.risk
+        subcontractsAdditions += (baseAmounts.subcontracts / totalAllBase) * addOns.risk
+        smallToolsAdditions += (baseAmounts.smallTools / totalAllBase) * addOns.risk
+      }
+      
+      // Create simplified line items (only for categories with values > 0)
+      const finalAmounts = {
+        laborDirect: baseAmounts.directLabor + directLaborAdditions,
+        laborIndirect: baseAmounts.indirectLabor + indirectLaborAdditions,
+        laborStaff: staffLaborAdditions, // Currently 0, but ready for future use
+        materials: baseAmounts.materials + materialsAdditions,
+        equipment: baseAmounts.equipment + equipmentAdditions,
+        subcontracts: baseAmounts.subcontracts + subcontractsAdditions,
+        smallTools: baseAmounts.smallTools + smallToolsAdditions
+      }
+      
+      // Create line items for each category with positive amounts
+      if (finalAmounts.laborDirect > 0) {
+        items.push({
+          source_sheet: 'BUDGETS',
+          source_row: rowCounter++,
+          discipline: disc.discipline,
+          category: 'LABOR',
+          subcategory: 'DIRECT',
+          wbs_code: 'L-001',
+          cost_type: 'Direct Labor',
+          description: `${disc.discipline} - Direct Labor (incl. proportional add-ons)`,
+          total_cost: finalAmounts.laborDirect,
+          labor_direct_cost: finalAmounts.laborDirect,
+          labor_indirect_cost: 0,
+          labor_staff_cost: 0,
+          materials_cost: 0,
+          equipment_cost: 0,
+          subcontracts_cost: 0,
+          small_tools_cost: 0,
+          manhours: disc.categories['DIRECT LABOR']?.manhours || 0
+        })
+      }
+      
+      if (finalAmounts.laborIndirect > 0) {
+        items.push({
+          source_sheet: 'BUDGETS',
+          source_row: rowCounter++,
+          discipline: disc.discipline,
+          category: 'LABOR',
+          subcategory: 'INDIRECT',
+          wbs_code: 'L-002',
+          cost_type: 'Indirect Labor',
+          description: `${disc.discipline} - Indirect Labor (incl. add-ons, perdiem, proportional others)`,
+          total_cost: finalAmounts.laborIndirect,
+          labor_direct_cost: 0,
+          labor_indirect_cost: finalAmounts.laborIndirect,
+          labor_staff_cost: 0,
+          materials_cost: 0,
+          equipment_cost: 0,
+          subcontracts_cost: 0,
+          small_tools_cost: 0,
+          manhours: disc.categories['INDIRECT LABOR']?.manhours || 0
+        })
+      }
+      
+      if (finalAmounts.laborStaff > 0) {
+        items.push({
+          source_sheet: 'BUDGETS',
+          source_row: rowCounter++,
+          discipline: disc.discipline,
+          category: 'LABOR',
+          subcategory: 'STAFF',
+          wbs_code: 'L-003',
+          cost_type: 'Staff Labor',
+          description: `${disc.discipline} - Staff Labor`,
+          total_cost: finalAmounts.laborStaff,
+          labor_direct_cost: 0,
+          labor_indirect_cost: 0,
+          labor_staff_cost: finalAmounts.laborStaff,
+          materials_cost: 0,
+          equipment_cost: 0,
+          subcontracts_cost: 0,
+          small_tools_cost: 0,
+          manhours: 0
+        })
+      }
+      
+      if (finalAmounts.materials > 0) {
+        items.push({
+          source_sheet: 'BUDGETS',
+          source_row: rowCounter++,
+          discipline: disc.discipline,
+          category: 'NON_LABOR',
+          subcategory: 'MATERIALS',
+          wbs_code: 'N-001',
+          cost_type: 'Materials',
+          description: `${disc.discipline} - Materials (incl. proportional risk)`,
+          total_cost: finalAmounts.materials,
+          labor_direct_cost: 0,
+          labor_indirect_cost: 0,
+          labor_staff_cost: 0,
+          materials_cost: finalAmounts.materials,
+          equipment_cost: 0,
+          subcontracts_cost: 0,
+          small_tools_cost: 0,
+          manhours: 0
+        })
+      }
+      
+      if (finalAmounts.equipment > 0) {
+        items.push({
+          source_sheet: 'BUDGETS',
+          source_row: rowCounter++,
+          discipline: disc.discipline,
+          category: 'NON_LABOR',
+          subcategory: 'EQUIPMENT',
+          wbs_code: 'N-002',
+          cost_type: 'Equipment',
+          description: `${disc.discipline} - Equipment (incl. proportional risk)`,
+          total_cost: finalAmounts.equipment,
+          labor_direct_cost: 0,
+          labor_indirect_cost: 0,
+          labor_staff_cost: 0,
+          materials_cost: 0,
+          equipment_cost: finalAmounts.equipment,
+          subcontracts_cost: 0,
+          small_tools_cost: 0,
+          manhours: 0
+        })
+      }
+      
+      if (finalAmounts.subcontracts > 0) {
+        items.push({
+          source_sheet: 'BUDGETS',
+          source_row: rowCounter++,
+          discipline: disc.discipline,
+          category: 'NON_LABOR',
+          subcategory: 'SUBCONTRACTS',
+          wbs_code: 'N-003',
+          cost_type: 'Subcontracts',
+          description: `${disc.discipline} - Subcontracts (incl. scaffolding, proportional risk)`,
+          total_cost: finalAmounts.subcontracts,
+          labor_direct_cost: 0,
+          labor_indirect_cost: 0,
+          labor_staff_cost: 0,
+          materials_cost: 0,
+          equipment_cost: 0,
+          subcontracts_cost: finalAmounts.subcontracts,
+          small_tools_cost: 0,
+          manhours: 0
+        })
+      }
+      
+      if (finalAmounts.smallTools > 0) {
+        items.push({
+          source_sheet: 'BUDGETS',
+          source_row: rowCounter++,
+          discipline: disc.discipline,
+          category: 'NON_LABOR',
+          subcategory: 'SMALL_TOOLS',
+          wbs_code: 'N-004',
+          cost_type: 'Small Tools & Consumables',
+          description: `${disc.discipline} - Small Tools & Consumables (incl. proportional risk)`,
+          total_cost: finalAmounts.smallTools,
+          labor_direct_cost: 0,
+          labor_indirect_cost: 0,
+          labor_staff_cost: 0,
+          materials_cost: 0,
+          equipment_cost: 0,
+          subcontracts_cost: 0,
+          small_tools_cost: finalAmounts.smallTools,
+          manhours: 0
+        })
+      }
     })
     
     return items
@@ -1080,12 +1270,19 @@ export class ExcelBudgetAnalyzer {
       details: {},
       wbsStructure: [],
       totals: {
-        labor: 0,
-        material: 0,
+        laborDirect: 0,
+        laborIndirect: 0,
+        laborStaff: 0,
+        materials: 0,
         equipment: 0,
-        subcontract: 0,
-        other: 0,
-        grand_total: 0
+        subcontracts: 0,
+        smallTools: 0,
+        totalLabor: 0,
+        totalNonLabor: 0,
+        grandTotal: 0,
+        directLaborManhours: 0,
+        indirectLaborManhours: 0,
+        totalManhours: 0
       },
       validation: {
         warnings: [],
@@ -1114,14 +1311,30 @@ export class ExcelBudgetAnalyzer {
         budgetData.details['BUDGETS'] = budgetItems
         allItems.push(...budgetItems)
         
-        // Update totals from BUDGETS sheet
+        // Update totals from BUDGETS sheet using new structure
         budgetItems.forEach(item => {
-          budgetData.totals.labor += item.labor_cost
-          budgetData.totals.material += item.material_cost
+          budgetData.totals.laborDirect += item.labor_direct_cost
+          budgetData.totals.laborIndirect += item.labor_indirect_cost
+          budgetData.totals.laborStaff += item.labor_staff_cost
+          budgetData.totals.materials += item.materials_cost
           budgetData.totals.equipment += item.equipment_cost
-          budgetData.totals.subcontract += item.subcontract_cost
-          budgetData.totals.other += item.other_cost
-          budgetData.totals.grand_total += item.total_cost
+          budgetData.totals.subcontracts += item.subcontracts_cost
+          budgetData.totals.smallTools += item.small_tools_cost
+          
+          // Update aggregate totals
+          budgetData.totals.totalLabor += item.labor_direct_cost + item.labor_indirect_cost + item.labor_staff_cost
+          budgetData.totals.totalNonLabor += item.materials_cost + item.equipment_cost + item.subcontracts_cost + item.small_tools_cost
+          budgetData.totals.grandTotal += item.total_cost
+          
+          // Update manhours
+          if (item.manhours) {
+            if (item.subcategory === 'DIRECT') {
+              budgetData.totals.directLaborManhours += item.manhours
+            } else if (item.subcategory === 'INDIRECT') {
+              budgetData.totals.indirectLaborManhours += item.manhours
+            }
+            budgetData.totals.totalManhours += item.manhours
+          }
         })
       }
     }
@@ -1168,14 +1381,30 @@ export class ExcelBudgetAnalyzer {
         budgetData.details[sheetName] = items
         allItems.push(...items)
         
-        // Update totals
+        // Update totals using new structure
         items.forEach(item => {
-          budgetData.totals.labor += item.labor_cost
-          budgetData.totals.material += item.material_cost
+          budgetData.totals.laborDirect += item.labor_direct_cost
+          budgetData.totals.laborIndirect += item.labor_indirect_cost
+          budgetData.totals.laborStaff += item.labor_staff_cost
+          budgetData.totals.materials += item.materials_cost
           budgetData.totals.equipment += item.equipment_cost
-          budgetData.totals.subcontract += item.subcontract_cost
-          budgetData.totals.other += item.other_cost
-          budgetData.totals.grand_total += item.total_cost
+          budgetData.totals.subcontracts += item.subcontracts_cost
+          budgetData.totals.smallTools += item.small_tools_cost
+          
+          // Update aggregate totals
+          budgetData.totals.totalLabor += item.labor_direct_cost + item.labor_indirect_cost + item.labor_staff_cost
+          budgetData.totals.totalNonLabor += item.materials_cost + item.equipment_cost + item.subcontracts_cost + item.small_tools_cost
+          budgetData.totals.grandTotal += item.total_cost
+          
+          // Update manhours
+          if (item.manhours) {
+            if (item.subcategory === 'DIRECT') {
+              budgetData.totals.directLaborManhours += item.manhours
+            } else if (item.subcategory === 'INDIRECT') {
+              budgetData.totals.indirectLaborManhours += item.manhours
+            }
+            budgetData.totals.totalManhours += item.manhours
+          }
         })
         
       } catch (error) {
@@ -1275,24 +1504,47 @@ export class ExcelBudgetAnalyzer {
         if (itemsError) throw itemsError
       }
       
-      // 3. Update project budget totals
+      // 3. Calculate detailed totals for projects table
+      let laborDirectTotal = 0
+      let laborIndirectTotal = 0
+      let laborStaffTotal = 0
+      let materialsTotal = 0
+      let equipmentTotal = 0
+      let subcontractsTotal = 0
+      let smallToolsTotal = 0
+      
+      allItems.forEach(item => {
+        laborDirectTotal += item.labor_direct_cost
+        laborIndirectTotal += item.labor_indirect_cost
+        laborStaffTotal += item.labor_staff_cost
+        materialsTotal += item.materials_cost
+        equipmentTotal += item.equipment_cost
+        subcontractsTotal += item.subcontracts_cost
+        smallToolsTotal += item.small_tools_cost
+      })
+      
+      const totalLaborBudget = laborDirectTotal + laborIndirectTotal + laborStaffTotal
+      const totalNonLaborBudget = materialsTotal + equipmentTotal + subcontractsTotal + smallToolsTotal
+      const grandTotal = totalLaborBudget + totalNonLaborBudget
+      
+      // Update projects table with budget summary
       const { error: updateError } = await adminSupabase
-        .from('project_budgets')
-        .upsert({
-          project_id: projectId,
-          labor_budget: budgetData.totals.labor,
-          materials_budget: budgetData.totals.material,
-          equipment_budget: budgetData.totals.equipment,
-          subcontracts_budget: budgetData.totals.subcontract,
-          other_budget: budgetData.totals.other,
-          total_budget: budgetData.totals.grand_total,
-          budget_status: 'approved',
-          created_by: userId,
-          approved_by: userId,
-          approved_at: new Date().toISOString()
-        }, {
-          onConflict: 'project_id'
+        .from('projects')
+        .update({
+          labor_direct_budget: laborDirectTotal,
+          labor_indirect_budget: laborIndirectTotal,
+          labor_staff_budget: laborStaffTotal,
+          materials_budget: materialsTotal,
+          equipment_budget: equipmentTotal,
+          subcontracts_budget: subcontractsTotal,
+          small_tools_budget: smallToolsTotal,
+          total_labor_budget: totalLaborBudget,
+          total_non_labor_budget: totalNonLaborBudget,
+          total_budget: grandTotal,
+          budget_imported_at: new Date().toISOString(),
+          budget_imported_by: userId
         })
+        .eq('id', projectId)
       
       if (updateError) throw updateError
       
@@ -1301,8 +1553,19 @@ export class ExcelBudgetAnalyzer {
         stats: {
           wbsCodesCreated: wbsNodes.length,
           lineItemsImported: allItems.length,
-          totalBudget: budgetData.totals.grand_total,
-          byCategory: budgetData.totals
+          totalBudget: grandTotal,
+          byCategory: {
+            laborDirect: laborDirectTotal,
+            laborIndirect: laborIndirectTotal,
+            laborStaff: laborStaffTotal,
+            materials: materialsTotal,
+            equipment: equipmentTotal,
+            subcontracts: subcontractsTotal,
+            smallTools: smallToolsTotal,
+            totalLabor: totalLaborBudget,
+            totalNonLabor: totalNonLaborBudget,
+            grandTotal: grandTotal
+          }
         }
       }
       

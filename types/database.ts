@@ -58,6 +58,18 @@ export type Database = {
           state: string | null
           zip_code: string | null
           cost_to_complete_notes: string | null
+          labor_direct_budget: number
+          labor_indirect_budget: number
+          labor_staff_budget: number
+          materials_budget: number
+          equipment_budget: number
+          subcontracts_budget: number
+          small_tools_budget: number
+          total_labor_budget: number
+          total_non_labor_budget: number
+          total_budget: number
+          budget_imported_at: string | null
+          budget_imported_by: string | null
           created_at: string
           updated_at: string
           created_by: string | null
@@ -78,6 +90,18 @@ export type Database = {
           state?: string | null
           zip_code?: string | null
           cost_to_complete_notes?: string | null
+          labor_direct_budget?: number
+          labor_indirect_budget?: number
+          labor_staff_budget?: number
+          materials_budget?: number
+          equipment_budget?: number
+          subcontracts_budget?: number
+          small_tools_budget?: number
+          total_labor_budget?: number
+          total_non_labor_budget?: number
+          total_budget?: number
+          budget_imported_at?: string | null
+          budget_imported_by?: string | null
           created_at?: string
           updated_at?: string
           created_by?: string | null
@@ -98,6 +122,18 @@ export type Database = {
           state?: string | null
           zip_code?: string | null
           cost_to_complete_notes?: string | null
+          labor_direct_budget?: number
+          labor_indirect_budget?: number
+          labor_staff_budget?: number
+          materials_budget?: number
+          equipment_budget?: number
+          subcontracts_budget?: number
+          small_tools_budget?: number
+          total_labor_budget?: number
+          total_non_labor_budget?: number
+          total_budget?: number
+          budget_imported_at?: string | null
+          budget_imported_by?: string | null
           created_at?: string
           updated_at?: string
           created_by?: string | null
@@ -633,6 +669,154 @@ export type Database = {
           location_code?: string | null
           location_description?: string | null
           is_direct?: boolean
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      budget_line_items: {
+        Row: {
+          id: string
+          project_id: string
+          source_sheet: string
+          source_row: number | null
+          import_batch_id: string
+          wbs_code: string | null
+          discipline: string | null
+          category: 'LABOR' | 'NON_LABOR'
+          subcategory: string | null
+          line_number: string | null
+          description: string
+          quantity: number | null
+          unit_of_measure: string | null
+          unit_rate: number | null
+          manhours: number | null
+          crew_size: number | null
+          duration_days: number | null
+          labor_direct_cost: number
+          labor_indirect_cost: number
+          labor_staff_cost: number
+          materials_cost: number
+          equipment_cost: number
+          subcontracts_cost: number
+          small_tools_cost: number
+          total_cost: number
+          notes: string | null
+          contractor_name: string | null
+          supplier_name: string | null
+          owned_or_rented: 'OWNED' | 'RENTED' | null
+          created_at: string
+          updated_at: string
+          cost_type: string | null
+          phase: string | null
+          labor_category: string | null
+          is_add_on: boolean | null
+          discipline_group: string | null
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          source_sheet: string
+          source_row?: number | null
+          import_batch_id: string
+          wbs_code?: string | null
+          discipline?: string | null
+          category: 'LABOR' | 'NON_LABOR'
+          subcategory?: string | null
+          line_number?: string | null
+          description: string
+          quantity?: number | null
+          unit_of_measure?: string | null
+          unit_rate?: number | null
+          manhours?: number | null
+          crew_size?: number | null
+          duration_days?: number | null
+          labor_direct_cost?: number
+          labor_indirect_cost?: number
+          labor_staff_cost?: number
+          materials_cost?: number
+          equipment_cost?: number
+          subcontracts_cost?: number
+          small_tools_cost?: number
+          total_cost: number
+          notes?: string | null
+          contractor_name?: string | null
+          supplier_name?: string | null
+          owned_or_rented?: 'OWNED' | 'RENTED' | null
+          created_at?: string
+          updated_at?: string
+          cost_type?: string | null
+          phase?: string | null
+          labor_category?: string | null
+          is_add_on?: boolean | null
+          discipline_group?: string | null
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          source_sheet?: string
+          source_row?: number | null
+          import_batch_id?: string
+          wbs_code?: string | null
+          discipline?: string | null
+          category?: 'LABOR' | 'NON_LABOR'
+          subcategory?: string | null
+          line_number?: string | null
+          description?: string
+          quantity?: number | null
+          unit_of_measure?: string | null
+          unit_rate?: number | null
+          manhours?: number | null
+          crew_size?: number | null
+          duration_days?: number | null
+          labor_direct_cost?: number
+          labor_indirect_cost?: number
+          labor_staff_cost?: number
+          materials_cost?: number
+          equipment_cost?: number
+          subcontracts_cost?: number
+          small_tools_cost?: number
+          total_cost?: number
+          notes?: string | null
+          contractor_name?: string | null
+          supplier_name?: string | null
+          owned_or_rented?: 'OWNED' | 'RENTED' | null
+          created_at?: string
+          updated_at?: string
+          cost_type?: string | null
+          phase?: string | null
+          labor_category?: string | null
+          is_add_on?: boolean | null
+          discipline_group?: string | null
+        }
+      }
+      wbs_structure: {
+        Row: {
+          id: string
+          code: string
+          category: 'LABOR' | 'NON_LABOR'
+          description: string
+          sort_order: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          code: string
+          category: 'LABOR' | 'NON_LABOR'
+          description: string
+          sort_order: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          code?: string
+          category?: 'LABOR' | 'NON_LABOR'
+          description?: string
+          sort_order?: number
           is_active?: boolean
           created_at?: string
           updated_at?: string

@@ -350,6 +350,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
+    console.log('[DEBUG] POST /api/labor-forecasts/headcount received:', {
+      project_id: body.project_id,
+      weeks_count: body.weeks?.length,
+      first_week: body.weeks?.[0]
+    })
     const validatedData = headcountBatchSchema.parse(body)
 
     // Check project access
@@ -416,6 +421,7 @@ export async function POST(request: NextRequest) {
     }
     
     console.log('Category to craft type mapping:', Object.fromEntries(categoryToCraftTypeId))
+    console.log('[DEBUG] Validation passed. Processing', validatedData.weeks.length, 'weeks')
 
     // Process each week
     for (const week of validatedData.weeks) {
@@ -439,8 +445,11 @@ export async function POST(request: NextRequest) {
           
           if (!craftTypeId) {
             console.warn(`No craft type found for category: ${category}`)
+            console.log('[DEBUG] Available mappings:', Object.fromEntries(categoryToCraftTypeId))
             continue
           }
+          
+          console.log(`[DEBUG] Processing entry: category=${category}, headcount=${entry.headcount}, craftTypeId=${craftTypeId}`)
 
           // Skip if headcount is 0 (delete existing if any)
           if (entry.headcount === 0) {

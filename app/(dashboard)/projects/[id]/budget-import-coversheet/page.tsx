@@ -101,7 +101,20 @@ export default function BudgetImportCoversheetPage({
         throw new Error(result.error || 'Failed to preview file')
       }
 
-      setPreviewData(result.data)
+      // Map the new data structure to the expected format
+      const mappedData = {
+        ...result.data,
+        totals: {
+          labor: result.data.totals.totalLabor || 0,
+          material: result.data.totals.materials || 0,
+          equipment: result.data.totals.equipment || 0,
+          subcontract: result.data.totals.subcontracts || 0,
+          other: result.data.totals.smallTools || 0,
+          grand_total: result.data.totals.grandTotal || 0
+        }
+      }
+      
+      setPreviewData(mappedData)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to preview file')
     } finally {

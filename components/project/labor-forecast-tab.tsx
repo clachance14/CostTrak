@@ -947,6 +947,14 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
         firstWeek: forecastWeeks[0],
         totalEntries: forecastWeeks.reduce((sum, week) => sum + week.entries.length, 0)
       })
+      
+      // Additional debug: Show actual headcount values
+      forecastWeeks.forEach((week, idx) => {
+        console.log(`Week ${idx} (${week.week_ending}):`)
+        week.entries.forEach(entry => {
+          console.log(`  - ${entry.craft_type_id}: ${entry.headcount} headcount`)
+        })
+      })
 
       const response = await fetch('/api/labor-forecasts/headcount', {
         method: 'POST',

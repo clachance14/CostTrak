@@ -20,8 +20,8 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    if (profile?.role !== 'controller') {
-      return NextResponse.json({ error: 'Only controllers can import budgets' }, { status: 403 })
+    if (!profile?.role || !['controller', 'project_manager'].includes(profile.role)) {
+      return NextResponse.json({ error: 'Only controllers and project managers can import budgets' }, { status: 403 })
     }
 
     // Parse form data
