@@ -48,7 +48,7 @@ export default function PurchaseOrdersImportPage() {
   const [, setIsProcessing] = useState(false)
 
   // Check permissions
-  const canImport = user && ['controller', 'accounting', 'ops_manager', 'project_manager'].includes(user.role)
+  const canImport = user && user.role === 'project_manager'
 
   // Fetch projects for dropdown
   const { data: projectsData } = useQuery({

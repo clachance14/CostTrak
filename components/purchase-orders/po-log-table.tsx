@@ -1,21 +1,24 @@
 'use client'
 
-import { useState, useMemo, Fragment } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useState, useMemo, Fragment, useRef, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Badge } from '@/components/ui/badge'
-import { AlertTriangle, Settings, ChevronsUpDown, ChevronUp, ChevronDown, ChevronRight, Loader2 } from 'lucide-react'
+import { AlertTriangle, Settings, ChevronsUpDown, ChevronUp, ChevronDown, ChevronRight, Loader2, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { ExcelFilterDropdown } from '@/components/ui/excel-filter-dropdown'
 import type { SortDirection } from '@/components/ui/excel-filter-dropdown'
 import { ExpandableRow } from '@/components/ui/expandable-row'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface PurchaseOrder {
   id: string
   po_number: string
   vendor_name: string
   description: string
+  po_value?: number
   committed_amount: number
   forecast_amount?: number
   invoiced_amount?: number
@@ -28,7 +31,7 @@ interface PurchaseOrder {
   }
 }
 
-type SortField = 'po_number' | 'vendor_name' | 'description' | 'committed_amount' | 'forecast_amount' | 'invoiced_amount' | 'status' | 'cost_center'
+type SortField = 'po_number' | 'vendor_name' | 'po_value' | 'committed_amount' | 'invoiced_amount' | 'cost_center'
 
 interface SortConfig {
   field: SortField | null
@@ -41,7 +44,7 @@ interface ColumnFilter {
 }
 
 interface POLogTableProps {
-  purchaseOrders: PurchaseOrder[]
+  purchaseOrders?: PurchaseOrder[]
   className?: string
   projectId?: string
 }
@@ -282,9 +285,72 @@ function MobileExpandableCard({ purchaseOrderId, children }: { purchaseOrderId: 
   )
 }
 
-export function POLogTable({ purchaseOrders, className, projectId }: POLogTableProps) {
+export function POLogTable({ purchaseOrders: purchaseOrdersProp, className, projectId }: POLogTableProps) {
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: null, direction: null })
   const [columnFilters, setColumnFilters] = useState<ColumnFilter[]>([])
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState<string>('')
+  const queryClient = useQueryClient()
+
+  // Fetch purchase orders if not provided but projectId is available
+  const { data: fetchedPOs, isLoading: isLoadingPOs } = useQuery({
+    queryKey: ['purchase-orders', projectId],
+    queryFn: async () => {
+      const response = await fetch(`/api/purchase-orders?project_id=${projectId}&limit=all`)
+      if (!response.ok) throw new Error('Failed to fetch purchase orders')
+      const data = await response.json()
+      return data.purchase_orders || []
+    },
+    enabled: !purchaseOrdersProp && !!projectId
+  })
+
+  // Use provided purchase orders or fetched ones
+  const purchaseOrders = purchaseOrdersProp || fetchedPOs || []
+
+  // Mutation for updating revised PO value
+  const updatePOMutation = useMutation({
+    mutationFn: async ({ id, committed_amount }: { id: string; committed_amount: number }) => {
+      const url = `/api/purchase-orders/${id}`
+      const body = JSON.stringify({ committed_amount })
+      
+      console.log('Updating PO:', {
+        url,
+        method: 'PUT',
+        body,
+        parsedBody: { committed_amount }
+      })
+      
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body
+      })
+      
+      console.log('Response:', {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      })
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Error response body:', errorText)
+        throw new Error(`Failed to update PO: ${response.status} ${response.statusText}`)
+      }
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-orders', projectId] })
+      toast.success('Revised PO value updated successfully')
+      setEditingId(null)
+      setEditValue('')
+    },
+    onError: (error) => {
+      toast.error('Failed to update revised PO value')
+      console.error('Update error:', error)
+    }
+  })
 
   // Helper function to format cost center display
   const formatCostCenter = (costCenter: string | null | undefined) => {
@@ -385,9 +451,38 @@ export function POLogTable({ purchaseOrders, className, projectId }: POLogTableP
     }).format(value || 0)
   }
 
+  // Helper functions for editing
+  const startEditing = (poId: string, currentValue: number) => {
+    setEditingId(poId)
+    setEditValue(currentValue.toString())
+  }
+
+  const cancelEditing = () => {
+    setEditingId(null)
+    setEditValue('')
+  }
+
+  const saveEdit = (poId: string) => {
+    const numericValue = parseFloat(editValue.replace(/[^0-9.-]/g, ''))
+    if (!isNaN(numericValue) && numericValue >= 0) {
+      updatePOMutation.mutate({ id: poId, committed_amount: numericValue })
+    } else {
+      toast.error('Please enter a valid positive number')
+    }
+  }
+
   const calculatePercentage = (invoiced: number, poValue: number) => {
     if (poValue === 0) return 0
     return Math.round((invoiced / poValue) * 100)
+  }
+
+  // Show loading state when fetching
+  if (!purchaseOrdersProp && projectId && isLoadingPOs) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
   }
 
   return (
@@ -439,18 +534,6 @@ export function POLogTable({ purchaseOrders, className, projectId }: POLogTableP
                 Vendor
               </POLogTableHeader>
               <POLogTableHeader
-                sortKey="description"
-                currentSort={sortConfig}
-                onSort={handleSort}
-                filterable={true}
-                currentFilters={columnFilters}
-                onFilterChange={handleFilterChange}
-                className="py-3 px-2"
-                projectId={projectId}
-              >
-                Scope
-              </POLogTableHeader>
-              <POLogTableHeader
                 sortKey="cost_center"
                 currentSort={sortConfig}
                 onSort={handleSort}
@@ -463,6 +546,19 @@ export function POLogTable({ purchaseOrders, className, projectId }: POLogTableP
                 Cost Code
               </POLogTableHeader>
               <POLogTableHeader
+                sortKey="po_value"
+                currentSort={sortConfig}
+                onSort={handleSort}
+                filterable={true}
+                currentFilters={columnFilters}
+                onFilterChange={handleFilterChange}
+                className="py-3 px-2"
+                align="right"
+                projectId={projectId}
+              >
+                Fusion PO Value
+              </POLogTableHeader>
+              <POLogTableHeader
                 sortKey="committed_amount"
                 currentSort={sortConfig}
                 onSort={handleSort}
@@ -473,20 +569,7 @@ export function POLogTable({ purchaseOrders, className, projectId }: POLogTableP
                 align="right"
                 projectId={projectId}
               >
-                PO Value
-              </POLogTableHeader>
-              <POLogTableHeader
-                sortKey="forecast_amount"
-                currentSort={sortConfig}
-                onSort={handleSort}
-                filterable={true}
-                currentFilters={columnFilters}
-                onFilterChange={handleFilterChange}
-                className="py-3 px-2"
-                align="right"
-                projectId={projectId}
-              >
-                Forecast Final
+                Revised PO Value
               </POLogTableHeader>
               <POLogTableHeader
                 sortKey="invoiced_amount"
@@ -501,50 +584,72 @@ export function POLogTable({ purchaseOrders, className, projectId }: POLogTableP
               >
                 Invoiced
               </POLogTableHeader>
-              <POLogTableHeader
-                sortKey="status"
-                currentSort={sortConfig}
-                onSort={handleSort}
-                filterable={true}
-                currentFilters={columnFilters}
-                onFilterChange={handleFilterChange}
-                className="py-3 px-2"
-                align="center"
-                projectId={projectId}
-              >
-                Status
-              </POLogTableHeader>
             </tr>
           </thead>
           <tbody>
             {processedOrders.map((po, index) => {
-              const isOverInvoiced = (po.invoiced_amount || 0) > (po.committed_amount || 0)
-              const percentage = calculatePercentage(po.invoiced_amount || 0, po.committed_amount || 0)
+              const poValue = po.po_value || po.committed_amount || 0
+              const isOverInvoiced = (po.invoiced_amount || 0) > poValue
+              const percentage = calculatePercentage(po.invoiced_amount || 0, poValue)
               
               return (
-                <ExpandableRow key={po.id} purchaseOrderId={po.id} colSpan={9}>
+                <ExpandableRow key={po.id} purchaseOrderId={po.id} colSpan={7}>
                   <td className="py-4 px-2">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-gray-900">{po.po_number}</span>
                     </div>
                   </td>
                   <td className="py-4 px-2 text-gray-700">{po.vendor_name}</td>
-                  <td className="py-4 px-2 text-gray-700 max-w-xs">
-                    <span className="line-clamp-2" title={po.description}>
-                      {po.description}
-                    </span>
-                  </td>
                   <td className="py-4 px-2 text-gray-700">
                     <span>{formatCostCenter(po.cost_center)}</span>
                   </td>
                   <td className="text-right py-4 px-2 text-gray-900">
-                    {formatCurrency(po.committed_amount)}
+                    {formatCurrency(poValue)}
                   </td>
-                  <td className={cn(
-                    "text-right py-4 px-2 font-medium",
-                    (po.forecast_amount || po.committed_amount) > po.committed_amount && "text-yellow-600"
-                  )}>
-                    {formatCurrency(po.forecast_amount || po.committed_amount)}
+                  <td className="text-right py-4 px-2">
+                    {editingId === po.id ? (
+                      <div className="flex items-center gap-1 justify-end">
+                        <Input
+                          type="text"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') saveEdit(po.id)
+                            if (e.key === 'Escape') cancelEditing()
+                          }}
+                          className="w-32 h-8 text-right"
+                          autoFocus
+                        />
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          onClick={() => saveEdit(po.id)}
+                          disabled={updatePOMutation.isPending}
+                        >
+                          <Check className="h-4 w-4 text-green-600" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          onClick={cancelEditing}
+                          disabled={updatePOMutation.isPending}
+                        >
+                          <X className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => startEditing(po.id, po.committed_amount)}
+                        className={cn(
+                          "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+                          po.committed_amount > poValue && "text-yellow-600 font-medium"
+                        )}
+                      >
+                        {formatCurrency(po.committed_amount)}
+                      </button>
+                    )}
                   </td>
                   <td className="text-right py-4 px-2 relative">
                     <div className="flex items-center justify-end gap-2">
@@ -565,20 +670,12 @@ export function POLogTable({ purchaseOrders, className, projectId }: POLogTableP
                           <AlertTriangle className="h-4 w-4 text-red-600" />
                           <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block z-10">
                             <div className="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
-                              Over-invoiced by {formatCurrency((po.invoiced_amount || 0) - po.committed_amount)}
+                              Over-invoiced by {formatCurrency((po.invoiced_amount || 0) - poValue)}
                             </div>
                           </div>
                         </div>
                       )}
                     </div>
-                  </td>
-                  <td className="text-center py-4 px-2">
-                    <Badge 
-                      variant={po.status === 'open' ? 'default' : 'secondary'}
-                      className="capitalize"
-                    >
-                      {po.status}
-                    </Badge>
                   </td>
                 </ExpandableRow>
               )
@@ -590,8 +687,9 @@ export function POLogTable({ purchaseOrders, className, projectId }: POLogTableP
       {/* Mobile View */}
       <div className="md:hidden space-y-3">
         {processedOrders.map((po) => {
-          const isOverInvoiced = (po.invoiced_amount || 0) > (po.committed_amount || 0)
-          const percentage = calculatePercentage(po.invoiced_amount || 0, po.committed_amount || 0)
+          const poValue = po.po_value || po.committed_amount || 0
+          const isOverInvoiced = (po.invoiced_amount || 0) > poValue
+          const percentage = calculatePercentage(po.invoiced_amount || 0, poValue)
           
           return (
             <MobileExpandableCard key={po.id} purchaseOrderId={po.id}>
@@ -610,18 +708,11 @@ export function POLogTable({ purchaseOrders, className, projectId }: POLogTableP
                     <AlertTriangle className="h-4 w-4 text-red-600" />
                   )}
                 </div>
-                <Badge 
-                  variant={po.status === 'open' ? 'default' : 'secondary'}
-                  className="capitalize"
-                >
-                  {po.status}
-                </Badge>
               </div>
               
-              {/* Vendor & Description */}
+              {/* Vendor & Cost Code */}
               <div className="space-y-1">
                 <p className="text-sm font-medium text-gray-700">{po.vendor_name}</p>
-                <p className="text-sm text-gray-600 line-clamp-2">{po.description}</p>
                 {po.cost_center && (
                   <p className="text-sm text-gray-500">
                     Cost Code: {formatCostCenter(po.cost_center)}
@@ -632,17 +723,54 @@ export function POLogTable({ purchaseOrders, className, projectId }: POLogTableP
               {/* Financial Values */}
               <div className="pt-2 space-y-2 border-t">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">PO Value:</span>
-                  <span className="text-sm font-medium">{formatCurrency(po.committed_amount)}</span>
+                  <span className="text-sm text-gray-600">Fusion PO Value:</span>
+                  <span className="text-sm font-medium">{formatCurrency(poValue)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Forecast Final:</span>
-                  <span className={cn(
-                    "text-sm font-medium",
-                    (po.forecast_amount || po.committed_amount) > po.committed_amount && "text-yellow-600"
-                  )}>
-                    {formatCurrency(po.forecast_amount || po.committed_amount)}
-                  </span>
+                  <span className="text-sm text-gray-600">Revised PO Value:</span>
+                  {editingId === po.id ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="text"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEdit(po.id)
+                          if (e.key === 'Escape') cancelEditing()
+                        }}
+                        className="w-24 h-7 text-right text-sm"
+                        autoFocus
+                      />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={() => saveEdit(po.id)}
+                        disabled={updatePOMutation.isPending}
+                      >
+                        <Check className="h-3 w-3 text-green-600" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={cancelEditing}
+                        disabled={updatePOMutation.isPending}
+                      >
+                        <X className="h-3 w-3 text-red-600" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => startEditing(po.id, po.committed_amount)}
+                      className={cn(
+                        "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+                        po.committed_amount > poValue && "text-yellow-600"
+                      )}
+                    >
+                      {formatCurrency(po.committed_amount)}
+                    </button>
+                  )}
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Invoiced:</span>
@@ -664,7 +792,7 @@ export function POLogTable({ purchaseOrders, className, projectId }: POLogTableP
                         <AlertTriangle className="h-4 w-4 text-red-600" />
                         <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block z-10">
                           <div className="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
-                            Over-invoiced by {formatCurrency((po.invoiced_amount || 0) - po.committed_amount)}
+                            Over-invoiced by {formatCurrency((po.invoiced_amount || 0) - poValue)}
                           </div>
                         </div>
                       </div>

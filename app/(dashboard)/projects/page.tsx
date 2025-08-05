@@ -19,17 +19,24 @@ import {
   Building,
   Download,
   Settings,
-  Upload
+  Upload,
+  MoreHorizontal
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { SortableTableHeader } from '@/components/ui/sortable-table-header'
 import type { SortDirection } from '@/components/ui/sortable-table-header'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useUser } from '@/hooks/use-auth'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
-import type { Project, Division } from '@/types/api'
+import type { Project } from '@/types/api'
 
 interface CountResult {
   count: number
@@ -56,7 +63,6 @@ export default function ProjectsPage() {
   const [limit, setLimit] = useState<string>('20')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
-  const [divisionFilter, setDivisionFilter] = useState<string>('')
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: null, direction: null })
   const [columnFilters, setColumnFilters] = useState<ColumnFilter[]>([])
 
@@ -87,7 +93,7 @@ export default function ProjectsPage() {
 
   // Fetch projects
   const { data, isLoading, error } = useQuery({
-    queryKey: ['projects', page, limit, search, statusFilter, divisionFilter, columnFilters, sortConfig],
+    queryKey: ['projects', page, limit, search, statusFilter, columnFilters, sortConfig],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -95,7 +101,6 @@ export default function ProjectsPage() {
       })
       if (search) params.append('search', search)
       if (statusFilter) params.append('status', statusFilter)
-      if (divisionFilter) params.append('division_id', divisionFilter)
       
       // Apply column filters
       columnFilters.forEach(filter => {
@@ -117,18 +122,8 @@ export default function ProjectsPage() {
     }
   })
 
-  // Fetch divisions for filter
-  const { data: divisions } = useQuery({
-    queryKey: ['divisions'],
-    queryFn: async () => {
-      const response = await fetch('/api/divisions')
-      if (!response.ok) return []
-      const data = await response.json()
-      return data.divisions || []
-    }
-  })
 
-  const canCreateProject = user && ['controller', 'executive', 'ops_manager'].includes(user.role)
+  const canCreateProject = user && user.role === 'project_manager'
   const canImportBudget = !!user
 
   const getStatusColor = (status: string) => {
@@ -153,7 +148,6 @@ export default function ProjectsPage() {
   const clearAllFilters = () => {
     setSearch('')
     setStatusFilter('')
-    setDivisionFilter('')
     setColumnFilters([])
     setSortConfig({ field: null, direction: null })
     setPage(1)
@@ -163,22 +157,20 @@ export default function ProjectsPage() {
     let count = 0
     if (search) count++
     if (statusFilter) count++
-    if (divisionFilter) count++
     count += columnFilters.length
     if (sortConfig.field) count++
     return count
-  }, [search, statusFilter, divisionFilter, columnFilters.length, sortConfig.field])
+  }, [search, statusFilter, columnFilters.length, sortConfig.field])
 
   const handleExport = () => {
     if (!data?.projects) return
     
-    const headers = ['Job Number', 'Project Name', 'Status', 'Client', 'Division', 'Project Manager', 'Original Contract', 'Revised Contract', 'Start Date', 'End Date']
+    const headers = ['Job Number', 'Project Name', 'Status', 'Client', 'Project Manager', 'Original Contract', 'Revised Contract', 'Start Date', 'End Date']
     const rows = data.projects.map((project: Project) => [
       project.job_number,
       project.name,
       project.status,
       project.client?.name || '',
-      project.division?.name || '',
       project.project_manager ? `${project.project_manager.first_name} ${project.project_manager.last_name}` : '',
       project.original_contract,
       project.revised_contract,
@@ -322,28 +314,11 @@ export default function ProjectsPage() {
             <option value="cancelled">Cancelled</option>
           </select>
 
-          <select
-            value={divisionFilter}
-            onChange={(e) => {
-              setDivisionFilter(e.target.value)
-              setPage(1)
-            }}
-            className="w-full px-3 py-2 border-2 border-foreground/40 text-foreground bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-          >
-            <option value="">All Divisions</option>
-            {divisions?.map((div: Division) => (
-              <option key={div.id} value={div.id}>
-                {div.name} ({div.code})
-              </option>
-            ))}
-          </select>
-
           <button
             className="w-full px-3 py-2 border-2 border-foreground/40 text-foreground/80 bg-white rounded-md font-medium hover:bg-background hover:text-foreground transition-colors"
             onClick={() => {
               setSearch('')
               setStatusFilter('')
-              setDivisionFilter('')
               setPage(1)
             }}>
             Clear Filters
@@ -469,26 +444,9 @@ export default function ProjectsPage() {
                   >
                     Status
                   </SortableTableHeader>
-                  <SortableTableHeader
-                    sortKey="client_name"
-                    currentSort={sortConfig}
-                    onSort={handleSort}
-                    filterable={true}
-                    currentFilters={columnFilters}
-                    onFilterChange={handleFilterChange}
-                  >
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
                     Client
-                  </SortableTableHeader>
-                  <SortableTableHeader
-                    sortKey="division_name"
-                    currentSort={sortConfig}
-                    onSort={handleSort}
-                    filterable={true}
-                    currentFilters={columnFilters}
-                    onFilterChange={handleFilterChange}
-                  >
-                    Division
-                  </SortableTableHeader>
+                  </th>
                   <SortableTableHeader
                     sortKey="project_manager_name"
                     currentSort={sortConfig}
@@ -566,10 +524,7 @@ export default function ProjectsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-foreground">
-                      {project.client?.name || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-foreground">
-                      {project.division?.name || '-'}
+                      -
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-foreground">
                       {project.project_manager ? 
@@ -607,6 +562,17 @@ export default function ProjectsPage() {
                             <Edit className="h-4 w-4" />
                           </Button>
                         )}
+                        {user?.role === 'project_manager' && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -621,7 +587,7 @@ export default function ProjectsPage() {
           <div className="grid gap-4">
             {data?.projects?.map((project: Project) => {
               const progress = calculateProgress(project)
-              const changeOrderAmount = project.revised_contract - project.original_contract
+              const changeOrderAmount = 0 // Change orders removed from system
               
               return (
                 <Card key={project.id} className="p-6 hover:shadow-lg transition-shadow">
@@ -655,10 +621,7 @@ export default function ProjectsPage() {
                           <span className="font-medium">Job #:</span> {project.job_number}
                         </div>
                         <div>
-                          <span className="font-medium">Client:</span> {project.client?.name || 'N/A'}
-                        </div>
-                        <div>
-                          <span className="font-medium">Division:</span> {project.division?.name || 'N/A'}
+                          <span className="font-medium">Client:</span> N/A
                         </div>
                         <div>
                           <span className="font-medium">PM:</span> {project.project_manager ? `${project.project_manager.first_name} ${project.project_manager.last_name}` : 'N/A'}
@@ -725,6 +688,17 @@ export default function ProjectsPage() {
                               Edit
                             </Button>
                           )}
+                          {user?.role === 'project_manager' && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -762,6 +736,7 @@ export default function ProjectsPage() {
           )}
         </>
       )}
+
     </div>
   )
 }

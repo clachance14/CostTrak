@@ -72,7 +72,6 @@ export async function POST(request: NextRequest) {
         first_name: validatedData.first_name,
         last_name: validatedData.last_name,
         role: validatedData.role,
-        division_id: validatedData.division_id,
       })
       .select()
       .single()

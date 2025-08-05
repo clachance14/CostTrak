@@ -16,67 +16,21 @@ import {
   User,
   Menu,
   X,
-  TrendingUp,
-  FileCheck,
-  Bell
+  TrendingUp
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils/cn'
-import { NotificationBell } from '@/components/notifications/notification-bell'
+// Removed NotificationBell import - notifications feature removed
 import { ThemeToggle, ThemeToggleSimple } from '@/components/ui/theme-toggle-wrapper'
 
-// Navigation items based on role
-const getNavigationItems = (role: string) => {
-  const baseItems = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Projects', href: '/projects', icon: FolderOpen },
-    { name: 'Notifications', href: '/notifications', icon: Bell },
-  ]
-
-  const roleSpecificItems: Record<string, typeof baseItems> = {
-    executive: [
-      ...baseItems,
-      { name: 'Financial Snapshots', href: '/financial-snapshots', icon: TrendingUp },
-      { name: 'Reports', href: '/reports', icon: FileText },
-    ],
-    controller: [
-      ...baseItems,
-      { name: 'Purchase Orders', href: '/purchase-orders', icon: FileText },
-      { name: 'Change Orders', href: '/change-orders', icon: FileCheck },
-      { name: 'Labor', href: '/labor', icon: Calculator },
-      { name: 'Employees', href: '/employees/import', icon: User },
-      { name: 'Financial Snapshots', href: '/financial-snapshots', icon: TrendingUp },
-      { name: 'Reports', href: '/reports', icon: FileText },
-      { name: 'Settings', href: '/settings', icon: Settings },
-    ],
-    ops_manager: [
-      ...baseItems,
-      { name: 'Purchase Orders', href: '/purchase-orders', icon: FileText },
-      { name: 'Change Orders', href: '/change-orders', icon: FileCheck },
-      { name: 'Labor', href: '/labor', icon: Calculator },
-      { name: 'Employees', href: '/employees/import', icon: User },
-      { name: 'Financial Snapshots', href: '/financial-snapshots', icon: TrendingUp },
-      { name: 'Reports', href: '/reports', icon: FileSpreadsheet },
-    ],
-    project_manager: [
-      ...baseItems,
-      { name: 'Purchase Orders', href: '/purchase-orders', icon: FileText },
-      { name: 'Change Orders', href: '/change-orders', icon: FileCheck },
-      { name: 'Labor', href: '/labor', icon: Calculator },
-    ],
-    accounting: [
-      { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-      { name: 'Purchase Orders', href: '/purchase-orders', icon: FileText },
-      { name: 'Change Orders', href: '/change-orders', icon: FileCheck },
-      { name: 'Financial Snapshots', href: '/financial-snapshots', icon: TrendingUp },
-      { name: 'Reports', href: '/reports', icon: FileSpreadsheet },
-      { name: 'Exports', href: '/exports', icon: FileSpreadsheet },
-    ],
-    viewer: baseItems,
-  }
-
-  return roleSpecificItems[role] || baseItems
-}
+// Navigation items for all users (project managers)
+const navigationItems = [
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Projects', href: '/projects', icon: FolderOpen },
+  { name: 'Purchase Orders', href: '/purchase-orders', icon: FileText },
+  { name: 'Labor', href: '/labor', icon: Calculator },
+  { name: 'Settings', href: '/settings', icon: Settings },
+]
 
 export default function DashboardLayout({
   children,
@@ -96,7 +50,7 @@ export default function DashboardLayout({
     redirect('/login')
   }
 
-  const navigation = getNavigationItems(user.role)
+  const navigation = navigationItems
 
   return (
     <div className="min-h-screen bg-background">
@@ -145,7 +99,6 @@ export default function DashboardLayout({
               </div>
               <div className="flex items-center gap-2">
                 <ThemeToggle />
-                <NotificationBell />
                 <button
                   onClick={() => signOut.mutate()}
                   className="text-background/70 hover:text-background"
@@ -164,7 +117,6 @@ export default function DashboardLayout({
           <h1 className="text-xl font-semibold">CostTrak</h1>
           <div className="flex items-center gap-2">
             <ThemeToggleSimple />
-            <NotificationBell />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="rounded-md p-2 text-foreground hover:bg-foreground/10"

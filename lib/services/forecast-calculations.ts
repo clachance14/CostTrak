@@ -50,7 +50,7 @@ export class ForecastCalculationService {
     const committed = po.committed_amount || 0
     
     // Use the hierarchy: forecasted_final_cost > forecast_amount > committed_amount
-    let forecast = po.forecasted_final_cost || po.forecast_amount || committed
+    const forecast = po.forecasted_final_cost || po.forecast_amount || committed
     
     // Ensure forecast is never less than what's already invoiced
     return Math.max(forecast, invoiced)
@@ -116,7 +116,7 @@ export class ForecastCalculationService {
     runningAverageRates: Record<string, number>,
     craftTypes?: CraftType[]
   ): Promise<{ total: number; byCategory: Record<string, number> }> {
-    let craftTypeMap: Record<string, CraftType> = {}
+    const craftTypeMap: Record<string, CraftType> = {}
     
     // Get craft types if not provided
     if (!craftTypes) {

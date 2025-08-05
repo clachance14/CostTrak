@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils/cn'
 interface DocumentUploadModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  entityType: 'project' | 'purchase_order' | 'change_order'
+  entityType: 'project' | 'purchase_order'
   entityId: string
   entityName?: string
 }

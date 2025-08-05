@@ -10,8 +10,7 @@ export type Database = {
           email: string
           first_name: string
           last_name: string
-          role: 'controller' | 'executive' | 'ops_manager' | 'project_manager' | 'accounting' | 'viewer'
-          division_id: string | null
+          role: 'project_manager'
           is_active: boolean
           phone: string | null
           title: string | null
@@ -24,7 +23,6 @@ export type Database = {
           first_name: string
           last_name: string
           role: 'controller' | 'executive' | 'ops_manager' | 'project_manager' | 'accounting' | 'viewer'
-          division_id?: string | null
           is_active?: boolean
           phone?: string | null
           title?: string | null
@@ -37,7 +35,6 @@ export type Database = {
           first_name?: string
           last_name?: string
           role?: 'controller' | 'executive' | 'ops_manager' | 'project_manager' | 'accounting' | 'viewer'
-          division_id?: string | null
           is_active?: boolean
           phone?: string | null
           title?: string | null
@@ -50,8 +47,6 @@ export type Database = {
           id: string
           job_number: string
           name: string
-          division_id: string
-          client_id: string | null
           project_manager_id: string | null
           original_contract: number
           revised_contract: number
@@ -72,8 +67,6 @@ export type Database = {
           id?: string
           job_number: string
           name: string
-          division_id: string
-          client_id?: string | null
           project_manager_id?: string | null
           original_contract?: number
           revised_contract?: number
@@ -94,8 +87,6 @@ export type Database = {
           id?: string
           job_number?: string
           name?: string
-          division_id?: string
-          client_id?: string | null
           project_manager_id?: string | null
           original_contract?: number
           revised_contract?: number
@@ -113,100 +104,8 @@ export type Database = {
           deleted_at?: string | null
         }
       }
-      divisions: {
-        Row: {
-          id: string
-          name: string
-          code: string
-          is_active: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          code: string
-          is_active?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          code?: string
-          is_active?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      financial_snapshots: {
-        Row: {
-          id: string
-          snapshot_type: 'project' | 'division' | 'company'
-          project_id: string | null
-          division_id: string | null
-          snapshot_date: string
-          original_contract: number
-          approved_change_orders: number
-          revised_contract: number
-          total_po_committed: number
-          total_labor_cost: number
-          total_other_cost: number
-          total_committed: number
-          forecasted_cost: number
-          forecasted_profit: number
-          profit_margin: number
-          cost_to_complete: number
-          percent_complete: number
-          metadata: any
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          snapshot_type: 'project' | 'division' | 'company'
-          project_id?: string | null
-          division_id?: string | null
-          snapshot_date: string
-          original_contract?: number
-          approved_change_orders?: number
-          revised_contract?: number
-          total_po_committed?: number
-          total_labor_cost?: number
-          total_other_cost?: number
-          total_committed?: number
-          forecasted_cost?: number
-          forecasted_profit?: number
-          profit_margin?: number
-          cost_to_complete?: number
-          percent_complete?: number
-          metadata?: any
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          snapshot_type?: 'project' | 'division' | 'company'
-          project_id?: string | null
-          division_id?: string | null
-          snapshot_date?: string
-          original_contract?: number
-          approved_change_orders?: number
-          revised_contract?: number
-          total_po_committed?: number
-          total_labor_cost?: number
-          total_other_cost?: number
-          total_committed?: number
-          forecasted_cost?: number
-          forecasted_profit?: number
-          profit_margin?: number
-          cost_to_complete?: number
-          percent_complete?: number
-          metadata?: any
-          created_at?: string
-          updated_at?: string
-        }
-      }
+      // divisions table removed in simplification
+      // financial_snapshots table removed in simplification
       documents: {
         Row: {
           id: string
@@ -311,29 +210,53 @@ export type Database = {
           updated_at?: string
         }
       }
+      client_po_line_items: {
+        Row: {
+          id: string
+          project_id: string
+          line_number: number
+          description: string
+          amount: number
+          created_at: string
+          updated_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          line_number: number
+          description: string
+          amount: number
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          line_number?: number
+          description?: string
+          amount?: number
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+        }
+      }
       change_orders: {
         Row: {
           id: string
           project_id: string
           co_number: string
           description: string
+          pricing_type: 'LS' | 'T&M' | 'Estimate' | 'Credit'
           amount: number
           status: 'draft' | 'pending' | 'approved' | 'rejected' | 'cancelled'
-          pricing_type: 'LS' | 'T&M' | 'Estimate' | 'Credit'
-          impact_schedule_days: number
-          reason: string | null
-          manhours: number | null
-          labor_amount: number | null
-          equipment_amount: number | null
-          material_amount: number | null
-          subcontract_amount: number | null
-          markup_amount: number | null
-          tax_amount: number | null
-          submitted_date: string | null
-          approved_date: string | null
+          notes: string | null
+          client_approval_date: string | null
+          created_by: string
           approved_by: string | null
-          rejection_reason: string | null
-          created_by: string | null
+          approved_at: string | null
+          deleted_at: string | null
           created_at: string
           updated_at: string
         }
@@ -342,23 +265,15 @@ export type Database = {
           project_id: string
           co_number: string
           description: string
-          amount: number
+          pricing_type?: 'LS' | 'T&M' | 'Estimate' | 'Credit'
+          amount?: number
           status?: 'draft' | 'pending' | 'approved' | 'rejected' | 'cancelled'
-          pricing_type: 'LS' | 'T&M' | 'Estimate' | 'Credit'
-          impact_schedule_days?: number
-          reason?: string | null
-          manhours?: number | null
-          labor_amount?: number | null
-          equipment_amount?: number | null
-          material_amount?: number | null
-          subcontract_amount?: number | null
-          markup_amount?: number | null
-          tax_amount?: number | null
-          submitted_date?: string | null
-          approved_date?: string | null
+          notes?: string | null
+          client_approval_date?: string | null
+          created_by: string
           approved_by?: string | null
-          rejection_reason?: string | null
-          created_by?: string | null
+          approved_at?: string | null
+          deleted_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -367,57 +282,17 @@ export type Database = {
           project_id?: string
           co_number?: string
           description?: string
+          pricing_type?: 'LS' | 'T&M' | 'Estimate' | 'Credit'
           amount?: number
           status?: 'draft' | 'pending' | 'approved' | 'rejected' | 'cancelled'
-          pricing_type?: 'LS' | 'T&M' | 'Estimate' | 'Credit'
-          impact_schedule_days?: number
-          reason?: string | null
-          manhours?: number | null
-          labor_amount?: number | null
-          equipment_amount?: number | null
-          material_amount?: number | null
-          subcontract_amount?: number | null
-          markup_amount?: number | null
-          tax_amount?: number | null
-          submitted_date?: string | null
-          approved_date?: string | null
+          notes?: string | null
+          client_approval_date?: string | null
+          created_by?: string
           approved_by?: string | null
-          rejection_reason?: string | null
-          created_by?: string | null
+          approved_at?: string | null
+          deleted_at?: string | null
           created_at?: string
           updated_at?: string
-        }
-      }
-      co_attachments: {
-        Row: {
-          id: string
-          change_order_id: string
-          file_url: string
-          file_name: string
-          file_size: number | null
-          mime_type: string | null
-          uploaded_by: string | null
-          uploaded_at: string
-        }
-        Insert: {
-          id?: string
-          change_order_id: string
-          file_url: string
-          file_name: string
-          file_size?: number | null
-          mime_type?: string | null
-          uploaded_by?: string | null
-          uploaded_at?: string
-        }
-        Update: {
-          id?: string
-          change_order_id?: string
-          file_url?: string
-          file_name?: string
-          file_size?: number | null
-          mime_type?: string | null
-          uploaded_by?: string | null
-          uploaded_at?: string
         }
       }
       labor_actuals: {
@@ -583,41 +458,7 @@ export type Database = {
           created_at?: string
         }
       }
-      user_2fa_settings: {
-        Row: {
-          id: string
-          user_id: string
-          secret: string
-          backup_codes: string[] | null
-          enabled: boolean
-          enabled_at: string | null
-          last_used_at: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          secret: string
-          backup_codes?: string[] | null
-          enabled?: boolean
-          enabled_at?: string | null
-          last_used_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          secret?: string
-          backup_codes?: string[] | null
-          enabled?: boolean
-          enabled_at?: string | null
-          last_used_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
+      // user_2fa_settings table removed in simplification
       po_forecast_history: {
         Row: {
           id: string
@@ -834,7 +675,7 @@ export type Database = {
       }
     }
     Enums: {
-      user_role: 'controller' | 'executive' | 'ops_manager' | 'project_manager' | 'accounting' | 'viewer'
+      user_role: 'project_manager'
       project_status: 'planning' | 'active' | 'completed' | 'on_hold' | 'cancelled'
       change_order_status: 'draft' | 'pending' | 'approved' | 'rejected' | 'cancelled'
       pricing_type: 'LS' | 'T&M' | 'Estimate' | 'Credit'

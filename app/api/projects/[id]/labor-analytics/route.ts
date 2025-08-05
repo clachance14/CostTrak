@@ -37,6 +37,11 @@ interface WeeklyTrend {
   actualHours: number
   forecastedHours: number
   compositeRate: number
+  directCost: number
+  indirectCost: number
+  staffCost: number
+  overtimeHours: number
+  isForecast?: boolean
 }
 
 interface EmployeeDetail {
@@ -86,20 +91,50 @@ export async function GET(
         id,
         job_number,
         name,
-        percent_complete,
-        project_budgets (
-          labor_budget
-        )
+        percent_complete
       `)
       .eq('id', projectId)
       .single()
 
     if (projectError || !project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      console.error('Project query error:', projectError)
+      console.error('Project ID:', projectId)
+      return NextResponse.json({ error: 'Project not found', projectId }, { status: 404 })
+    }
+
+    // Get labor budget from budget_line_items
+    let laborBudget = 0
+    try {
+      const { data: budgetItems, error: budgetError } = await supabase
+        .from('budget_line_items')
+        .select('amount')
+        .eq('project_id', projectId)
+        .or('category.eq.labor,cost_type.ilike.%labor%')
+      
+      if (!budgetError && budgetItems) {
+        laborBudget = budgetItems.reduce((sum, item) => sum + (item.amount || 0), 0)
+      }
+      console.log('Labor budget calculated:', laborBudget)
+    } catch (error) {
+      console.error('Error fetching labor budget:', error)
+      // Continue with 0 budget if error
     }
 
     // Get labor actuals with craft type information
-    let laborActuals: any[] = []
+    let laborActuals: Array<{
+      week_ending: string
+      actual_hours: number | null
+      actual_cost: number | null
+      burden_rate: number | null
+      burden_amount: number | null
+      actual_cost_with_burden: number | null
+      craft_type_id: string | null
+      craft_types: {
+        code: string
+        name: string
+        billing_rate: number | null
+      } | null
+    }> = []
     try {
       // First, check if this project has any labor data at all
       const { count: laborCount } = await adminSupabase
@@ -127,7 +162,6 @@ export async function GET(
           craft_types (
             code,
             name,
-            category,
             billing_rate
           )
         `)
@@ -151,7 +185,18 @@ export async function GET(
     }
 
     // Get labor forecasts (headcount-based)
-    let laborForecasts: any[] = []
+    let laborForecasts: Array<{
+      week_starting: string
+      headcount: number
+      avg_weekly_hours: number
+      craft_type_id: string
+      craft_types: {
+        code: string
+        name: string
+        billing_rate: number | null
+        category: string | null
+      } | null
+    }> = []
     try {
       const { data, error: forecastsError } = await adminSupabase
         .from('labor_headcount_forecasts')
@@ -163,8 +208,8 @@ export async function GET(
           craft_types (
             code,
             name,
-            category,
-            billing_rate
+            billing_rate,
+            category
           )
         `)
         .eq('project_id', projectId)
@@ -181,52 +226,99 @@ export async function GET(
       laborForecasts = []
     }
 
-    // Get running averages for rate calculations
-    const { data: runningAverages, error: avgError } = await adminSupabase
-      .from('labor_running_averages')
-      .select(`
-        craft_type_id,
-        avg_rate,
-        avg_hours,
-        avg_cost
-      `)
-      .eq('project_id', projectId)
-
-    if (avgError) throw avgError
+    // Calculate running averages for rate calculations (labor_running_averages table was removed)
+    // This is now handled on-the-fly from labor_actuals data
 
     // Get weekly aggregated actuals from employee actuals table FIRST (for KPI calculations)
-    let weeklyActuals: any[] = []
+    let weeklyActuals: Array<{
+      week_ending: string
+      actual_hours: number
+      actual_cost: number
+      direct_cost: number
+      indirect_cost: number
+      staff_cost: number
+      overtime_hours: number
+    }> = []
+    const weeklyDetailedMap = new Map<string, { 
+      hours: number; 
+      cost: number; 
+      directHours: number;
+      indirectHours: number;
+      staffHours: number;
+      directCost: number; 
+      indirectCost: number; 
+      staffCost: number;
+      overtimeHours: number 
+    }>()
+    
     try {
       // Query from labor_employee_actuals which is where the import puts data
       const { data, error } = await adminSupabase
         .from('labor_employee_actuals')
-        .select('week_ending, total_hours, total_cost, total_cost_with_burden')
+        .select(`
+          week_ending, 
+          total_hours, 
+          total_cost, 
+          total_cost_with_burden,
+          ot_hours,
+          employee_id,
+          employees!inner (
+            craft_type_id,
+            category
+          )
+        `)
         .eq('project_id', projectId)
         .order('week_ending')
 
-      console.log('Early weekly employee data query for KPIs:', {
-        error,
-        dataCount: data?.length || 0
-      })
-
       if (!error && data) {
-        // Aggregate by week
-        const weekMap = new Map<string, { hours: number; cost: number }>()
+        
+        // Aggregate by week with category breakdown
         data.forEach(record => {
           const week = record.week_ending
-          if (!weekMap.has(week)) {
-            weekMap.set(week, { hours: 0, cost: 0 })
+          if (!weeklyDetailedMap.has(week)) {
+            weeklyDetailedMap.set(week, { 
+              hours: 0, 
+              cost: 0, 
+              directHours: 0,
+              indirectHours: 0,
+              staffHours: 0,
+              directCost: 0, 
+              indirectCost: 0, 
+              staffCost: 0,
+              overtimeHours: 0 
+            })
           }
-          const totals = weekMap.get(week)!
+          const totals = weeklyDetailedMap.get(week)!
+          const totalCost = record.total_cost_with_burden || record.total_cost || 0
+          const category = record.employees?.category?.toLowerCase() || 'direct'
+          
           totals.hours += record.total_hours || 0
-          totals.cost += record.total_cost_with_burden || record.total_cost || 0
+          totals.cost += totalCost
+          totals.overtimeHours += record.ot_hours || 0
+          
+          // Split costs and hours by category
+          if (category === 'direct') {
+            totals.directHours += record.total_hours || 0
+            totals.directCost += totalCost
+          } else if (category === 'indirect') {
+            totals.indirectHours += record.total_hours || 0
+            totals.indirectCost += totalCost
+          } else if (category === 'staff') {
+            totals.staffHours += record.total_hours || 0
+            totals.staffCost += totalCost
+          }
         })
 
-        weeklyActuals = Array.from(weekMap.entries()).map(([week, totals]) => ({
+        weeklyActuals = Array.from(weeklyDetailedMap.entries()).map(([week, totals]) => ({
           week_ending: week,
           actual_hours: totals.hours,
-          actual_cost: totals.cost
+          actual_cost: totals.cost,
+          direct_cost: totals.directCost,
+          indirect_cost: totals.indirectCost,
+          staff_cost: totals.staffCost,
+          overtime_hours: totals.overtimeHours
         }))
+        
       }
     } catch (error) {
       console.error('Failed to get early weekly actuals:', error)
@@ -244,20 +336,72 @@ export async function GET(
       weeklyActualsUsed: weeklyActuals.length
     })
 
+    // Calculate category-based burdened rates from actuals
+    const categoryBurdenedRates: Record<string, number> = {
+      direct: 0,
+      indirect: 0,
+      staff: 0
+    }
+    
+    const categoryHours: Record<string, number> = {
+      direct: 0,
+      indirect: 0,
+      staff: 0
+    }
+    
+    const categoryCosts: Record<string, number> = {
+      direct: 0,
+      indirect: 0,
+      staff: 0
+    }
+    
+    // Sum up actual hours and costs by category from weekly actuals
+    const weeklyDetailedData = Array.from(weeklyDetailedMap.values())
+    weeklyDetailedData.forEach(week => {
+      // Direct
+      categoryHours.direct += week.directHours
+      categoryCosts.direct += week.directCost
+      
+      // Indirect
+      categoryHours.indirect += week.indirectHours
+      categoryCosts.indirect += week.indirectCost
+      
+      // Staff
+      categoryHours.staff += week.staffHours
+      categoryCosts.staff += week.staffCost
+    })
+    
+    // Calculate weighted average burdened rate per category
+    Object.keys(categoryBurdenedRates).forEach(cat => {
+      if (categoryHours[cat] > 0) {
+        categoryBurdenedRates[cat] = categoryCosts[cat] / categoryHours[cat]
+      } else {
+        // Fallback to overall average rate if no data for category
+        categoryBurdenedRates[cat] = averageActualRate
+      }
+    })
+    
+    console.log('Category burdened rates:', {
+      direct: { hours: categoryHours.direct, cost: categoryCosts.direct, rate: categoryBurdenedRates.direct },
+      indirect: { hours: categoryHours.indirect, cost: categoryCosts.indirect, rate: categoryBurdenedRates.indirect },
+      staff: { hours: categoryHours.staff, cost: categoryCosts.staff, rate: categoryBurdenedRates.staff }
+    })
+
     // Calculate forecasted costs using headcount and rates
     let totalForecastedHours = 0
     let totalForecastedCost = 0
 
     laborForecasts?.forEach(forecast => {
       const hours = forecast.headcount * forecast.avg_weekly_hours
-      const rate = forecast.craft_types?.billing_rate || 85 // Use billing rate or default
-      const cost = hours * rate
+      const category = forecast.craft_types?.category || 'direct'
+      const burdenedRate = categoryBurdenedRates[category] || averageActualRate
+      const cost = hours * burdenedRate
       
       totalForecastedHours += hours
       totalForecastedCost += cost
     })
 
-    const totalBudgetedCost = project.project_budgets?.labor_budget || 0
+    const totalBudgetedCost = laborBudget
     const varianceDollars = totalActualCost - totalBudgetedCost
     const variancePercent = totalBudgetedCost > 0 ? (varianceDollars / totalBudgetedCost) * 100 : 0
     const averageForecastRate = totalForecastedHours > 0 ? totalForecastedCost / totalForecastedHours : 0
@@ -300,7 +444,7 @@ export async function GET(
         const craftTypeIds = [...new Set(empCraftData.map(d => d.employees?.craft_type_id).filter(Boolean))]
         const { data: craftTypes } = await adminSupabase
           .from('craft_types')
-          .select('id, code, name, category')
+          .select('id, code, name')
           .in('id', craftTypeIds)
 
         const craftTypeMap = new Map(craftTypes?.map(c => [c.id, c]) || [])
@@ -318,7 +462,7 @@ export async function GET(
             craftMap.set(key, {
               craftCode: craftType.code,
               craftName: craftType.name,
-              category: craftType.category,
+              category: 'direct', // Default category for craft types
               actualHours: 0,
               forecastedHours: 0,
               actualCost: 0,
@@ -346,7 +490,7 @@ export async function GET(
         craftMap.set(key, {
           craftCode: forecast.craft_types.code,
           craftName: forecast.craft_types.name,
-          category: forecast.craft_types.category,
+          category: 'direct', // Default to direct for craft types
           actualHours: 0,
           forecastedHours: 0,
           actualCost: 0,
@@ -358,10 +502,11 @@ export async function GET(
       
       const craft = craftMap.get(key)!
       const hours = forecast.headcount * forecast.avg_weekly_hours
-      const rate = forecast.craft_types.billing_rate || 85
+      const category = forecast.craft_types.category || 'direct'
+      const burdenedRate = categoryBurdenedRates[category] || averageActualRate
       
       craft.forecastedHours += hours
-      craft.forecastedCost += hours * rate
+      craft.forecastedCost += hours * burdenedRate
     })
 
     // Calculate variances
@@ -388,14 +533,23 @@ export async function GET(
           forecastedCost: 0,
           actualHours: 0,
           forecastedHours: 0,
-          compositeRate: 0
+          compositeRate: 0,
+          directCost: 0,
+          indirectCost: 0,
+          staffCost: 0,
+          overtimeHours: 0,
+          isForecast: false
         })
       }
       
       const weekData = weeklyMap.get(week)!
       // Fix: use the correct property names from weeklyActuals
-      weekData.actualCost = actual.actual_cost_with_burden || actual.actual_cost || 0
+      weekData.actualCost = actual.actual_cost || 0
       weekData.actualHours = actual.actual_hours || 0
+      weekData.directCost = actual.direct_cost || 0
+      weekData.indirectCost = actual.indirect_cost || 0
+      weekData.staffCost = actual.staff_cost || 0
+      weekData.overtimeHours = actual.overtime_hours || 0
       
       console.log(`Week ${week}: actual object keys:`, Object.keys(actual), 'values:', actual) // Debug to see exact structure
     })
@@ -412,16 +566,35 @@ export async function GET(
           forecastedCost: 0,
           actualHours: 0,
           forecastedHours: 0,
-          compositeRate: 0
+          compositeRate: 0,
+          directCost: 0,
+          indirectCost: 0,
+          staffCost: 0,
+          overtimeHours: 0,
+          isForecast: true
         })
       }
       
       const weekData = weeklyMap.get(week)!
       const hours = forecast.headcount * forecast.avg_weekly_hours
-      const rate = forecast.craft_types.billing_rate || 85
+      const category = forecast.craft_types.category || 'direct'
+      const burdenedRate = categoryBurdenedRates[category] || averageActualRate
+      const cost = hours * burdenedRate
       
       weekData.forecastedHours += hours
-      weekData.forecastedCost += hours * rate
+      weekData.forecastedCost += cost
+      
+      // For weeks with no actual data, also populate the category costs from forecasts
+      if (weekData.actualCost === 0 && weekData.actualHours === 0) {
+        // Add forecast costs to the appropriate category
+        if (category === 'direct') {
+          weekData.directCost += cost
+        } else if (category === 'indirect') {
+          weekData.indirectCost += cost
+        } else if (category === 'staff') {
+          weekData.staffCost += cost
+        }
+      }
     })
 
     // Calculate composite rates and validate data
@@ -458,7 +631,31 @@ export async function GET(
     })
 
     // Get employee-level actuals for period breakdown
-    let employeeActuals: any[] = []
+    let employeeActuals: Array<{
+      week_ending: string
+      employee_id: string
+      total_hours: number | null
+      total_cost: number | null
+      total_cost_with_burden: number | null
+      st_hours: number | null
+      ot_hours: number | null
+      st_wages: number | null
+      ot_wages: number | null
+      employees: {
+        id: string
+        employee_number: string
+        first_name: string
+        last_name: string
+        base_rate: number | null
+        craft_type_id: string | null
+        category: string | null
+        craft_types: {
+          id: string
+          code: string
+          name: string
+        } | null
+      } | null
+    }> = []
     try {
       // First get the employee actuals
       const { data: actualsData, error: empError } = await adminSupabase
@@ -466,7 +663,6 @@ export async function GET(
         .select('*')
         .eq('project_id', projectId)
         .order('week_ending', { ascending: false })
-        .limit(100) // Last ~10 weeks of data
 
       if (empError) {
         console.error('Employee actuals query error:', empError)
@@ -483,7 +679,8 @@ export async function GET(
             first_name,
             last_name,
             base_rate,
-            craft_type_id
+            craft_type_id,
+            category
           `)
           .in('id', employeeIds)
 
@@ -495,7 +692,7 @@ export async function GET(
         const craftTypeIds = [...new Set(employees?.map(e => e.craft_type_id).filter(Boolean) || [])]
         const { data: craftTypes, error: craftError } = await adminSupabase
           .from('craft_types')
-          .select('id, code, name, category')
+          .select('id, code, name')
           .in('id', craftTypeIds)
 
         if (craftError) {
@@ -537,7 +734,7 @@ export async function GET(
         employeeName: `${record.employees.first_name} ${record.employees.last_name}`,
         craftCode: record.employees.craft_types.code,
         craftName: record.employees.craft_types.name,
-        category: record.employees.craft_types.category,
+        category: record.employees.category || 'Direct',
         stHours: record.st_hours || 0,
         otHours: record.ot_hours || 0,
         totalHours: record.total_hours || 0,
@@ -602,8 +799,101 @@ export async function GET(
     periodBreakdown.sort((a, b) => b.weekEnding.localeCompare(a.weekEnding))
     const recentPeriods = periodBreakdown.slice(0, 8)
 
+    // Get the most recent week with actual data (not forecast)
+    const currentWeek = weeklyActuals.length > 0 ? weeklyActuals[weeklyActuals.length - 1].week_ending : null
+    
+    // Calculate FTE for the most recent week (using 50 hours per week standard)
+    const STANDARD_HOURS_PER_WEEK = 50
+    const currentWeekStats = {
+      totalFTE: 0,
+      directFTE: 0,
+      indirectFTE: 0,
+      staffFTE: 0,
+      totalHours: 0,
+      directHours: 0,
+      indirectHours: 0,
+      staffHours: 0,
+      categoryRates: categoryBurdenedRates
+    }
+    
+    // Find the most recent week with actual data
+    if (weeklyDetailedData.length > 0) {
+      const latestWeekData = weeklyDetailedData[weeklyDetailedData.length - 1]
+      
+      // Use actual hours by category from our tracking
+      currentWeekStats.directHours = latestWeekData.directHours
+      currentWeekStats.indirectHours = latestWeekData.indirectHours
+      currentWeekStats.staffHours = latestWeekData.staffHours
+      currentWeekStats.totalHours = latestWeekData.hours
+      
+      // Calculate FTE
+      currentWeekStats.totalFTE = currentWeekStats.totalHours / STANDARD_HOURS_PER_WEEK
+      currentWeekStats.directFTE = currentWeekStats.directHours / STANDARD_HOURS_PER_WEEK
+      currentWeekStats.indirectFTE = currentWeekStats.indirectHours / STANDARD_HOURS_PER_WEEK
+      currentWeekStats.staffFTE = currentWeekStats.staffHours / STANDARD_HOURS_PER_WEEK
+      
+    }
+
+    // Transform employee details for the frontend
+    const allEmployeeDetails: Array<{
+      weekEnding: string
+      employee_id: string
+      employeeNumber: string
+      firstName: string
+      lastName: string
+      craft: string
+      craftCode: string
+      category: string
+      st_hours: number
+      ot_hours: number
+      st_wages: number
+      ot_wages: number
+      hourlyRate: number
+      totalCostWithBurden: number
+    }> = []
+    employeeActuals.forEach(record => {
+      if (!record.employees || !record.employees.craft_types) return
+      
+      allEmployeeDetails.push({
+        weekEnding: record.week_ending,
+        employee_id: record.employee_id,
+        employeeNumber: record.employees.employee_number,
+        firstName: record.employees.first_name,
+        lastName: record.employees.last_name,
+        craft: record.employees.craft_types.name,
+        craftCode: record.employees.craft_types.code,
+        category: record.employees.category || 'Direct',
+        st_hours: record.st_hours || 0,
+        ot_hours: record.ot_hours || 0,
+        st_wages: record.st_wages || 0,
+        ot_wages: record.ot_wages || 0,
+        hourlyRate: record.employees.base_rate || 0,
+        totalCostWithBurden: record.total_cost_with_burden || record.total_cost || 0
+      })
+    })
+
+    // Transform weekly data for the new UI
+    const weeklyData = weeklyTrends.map(week => ({
+      weekEnding: week.weekEnding,
+      directCost: week.directCost || 0,
+      indirectCost: week.indirectCost || 0,
+      staffCost: week.staffCost || 0,
+      actualCost: week.actualCost || 0,
+      actualHours: week.actualHours || 0,
+      overtimeHours: week.overtimeHours || 0,
+      variance: week.variance || 0,
+      isForecast: week.isForecast || false
+    }))
+
     // Validate response data
     const response = {
+      project: {
+        id: projectId,
+        job_number: project.job_number,
+        name: project.name
+      },
+      currentWeek,
+      currentWeekStats,
       kpis: {
         totalActualCost: isFinite(kpis.totalActualCost) ? kpis.totalActualCost : 0,
         totalForecastedCost: isFinite(kpis.totalForecastedCost) ? kpis.totalForecastedCost : 0,
@@ -626,19 +916,12 @@ export async function GET(
         isFinite(w.forecastedCost) && isFinite(w.forecastedHours) &&
         isFinite(w.compositeRate)
       ),
+      weeklyData,
+      employeeDetails: allEmployeeDetails,
       periodBreakdown: recentPeriods,
       lastUpdated: new Date().toISOString()
     }
 
-    // Debug logging
-    console.log('Labor Analytics API Response:', {
-      projectId,
-      weeklyTrendsCount: response.weeklyTrends.length,
-      sampleWeeklyTrend: response.weeklyTrends[0],
-      craftBreakdownCount: response.craftBreakdown.length,
-      periodBreakdownCount: response.periodBreakdown.length,
-      kpisValid: Object.values(response.kpis).every(v => isFinite(v))
-    })
 
     return NextResponse.json(response)
 

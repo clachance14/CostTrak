@@ -1,606 +1,440 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { changeOrderFormSchema, type ChangeOrderFormData } from '@/lib/validations/change-order'
-import { AlertCircle } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { z } from 'zod'
+import { format } from 'date-fns'
+import { Calendar } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { CurrencyInput } from '@/components/ui/currency-input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import { Separator } from '@/components/ui/separator'
 
-interface Project {
-  id: string
-  job_number: string
-  name: string
-  division: {
-    id: string
-    name: string
-  }
-}
+const changeOrderSchema = z.object({
+  co_number: z.string().min(1, 'CO number is required'),
+  description: z.string().min(1, 'Description is required'),
+  pricing_type: z.enum(['LS', 'T&M', 'Estimate', 'Credit']),
+  impact_schedule_days: z.coerce.number().int().default(0),
+  submitted_date: z.string(),
+  // Cost breakdown
+  labor_amount: z.coerce.number().min(0).nullable().default(null),
+  manhours: z.coerce.number().min(0).nullable().default(null),
+  equipment_amount: z.coerce.number().min(0).nullable().default(null),
+  material_amount: z.coerce.number().min(0).nullable().default(null),
+  subcontract_amount: z.coerce.number().min(0).nullable().default(null),
+  markup_amount: z.coerce.number().min(0).nullable().default(null),
+  tax_amount: z.coerce.number().min(0).nullable().default(null),
+})
+
+type ChangeOrderFormData = z.infer<typeof changeOrderSchema>
 
 interface ChangeOrderFormProps {
-  mode: 'create' | 'edit'
+  projectId: string
+  projectName?: string
+  jobNumber?: string
   initialData?: Partial<ChangeOrderFormData>
-  changeOrderId?: string
+  onSubmit: (data: ChangeOrderFormData & { amount: number }) => Promise<void>
+  onCancel: () => void
+  isLoading?: boolean
+  mode?: 'create' | 'edit'
 }
 
-export default function ChangeOrderForm({ mode, initialData, changeOrderId }: ChangeOrderFormProps) {
-  const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [projects, setProjects] = useState<Project[]>([])
-  const [userRole, setUserRole] = useState<string | null>(null)
-  const supabase = createClient()
+export function ChangeOrderForm({
+  projectId,
+  projectName,
+  jobNumber,
+  initialData,
+  onSubmit,
+  onCancel,
+  isLoading = false,
+  mode = 'create'
+}: ChangeOrderFormProps) {
+  const [totalAmount, setTotalAmount] = useState(0)
+  const [nextCoNumber, setNextCoNumber] = useState('')
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    setValue,
-    watch
-  } = useForm({
-    resolver: zodResolver(changeOrderFormSchema),
+  const form = useForm<ChangeOrderFormData>({
+    resolver: zodResolver(changeOrderSchema),
     defaultValues: {
-      project_id: initialData?.project_id || '',
       co_number: initialData?.co_number || '',
       description: initialData?.description || '',
-      amount: initialData?.amount || '',
-      status: initialData?.status || 'pending' as const,
-      pricing_type: initialData?.pricing_type || 'LS' as const,
-      impact_schedule_days: initialData?.impact_schedule_days || '0',
-      submitted_date: initialData?.submitted_date || new Date().toISOString().split('T')[0],
-      reason: initialData?.reason || '',
-      manhours: initialData?.manhours || '0',
-      labor_amount: initialData?.labor_amount || '0',
-      equipment_amount: initialData?.equipment_amount || '0',
-      material_amount: initialData?.material_amount || '0',
-      subcontract_amount: initialData?.subcontract_amount || '0',
-      markup_amount: initialData?.markup_amount || '0',
-      tax_amount: initialData?.tax_amount || '0'
+      pricing_type: initialData?.pricing_type || 'LS',
+      impact_schedule_days: initialData?.impact_schedule_days || 0,
+      submitted_date: initialData?.submitted_date || format(new Date(), 'yyyy-MM-dd\'T\'HH:mm:ss\'Z\''),
+      labor_amount: initialData?.labor_amount ?? null,
+      manhours: initialData?.manhours ?? null,
+      equipment_amount: initialData?.equipment_amount ?? null,
+      material_amount: initialData?.material_amount ?? null,
+      subcontract_amount: initialData?.subcontract_amount ?? null,
+      markup_amount: initialData?.markup_amount ?? null,
+      tax_amount: initialData?.tax_amount ?? null,
     }
   })
 
-  const selectedProjectId = watch('project_id')
-  const laborAmount = watch('labor_amount')
-  const equipmentAmount = watch('equipment_amount')
-  const materialAmount = watch('material_amount')
-  const subcontractAmount = watch('subcontract_amount')
-  const markupAmount = watch('markup_amount')
-  const taxAmount = watch('tax_amount')
-  const pricingType = watch('pricing_type')
-  const amount = watch('amount')
-
-  const fetchProjectsAndUserRole = useCallback(async () => {
-    try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      if (userError || !user) {
-        router.push('/login')
-        return
-      }
-
-      // Get user role
-      const { data: userDetails } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-      if (userDetails) {
-        setUserRole(userDetails.role)
-      }
-
-      // Fetch projects based on user role
-      let query = supabase
-        .from('projects')
-        .select(`
-          id,
-          job_number,
-          name,
-          division:divisions!inner(id, name)
-        `)
-        .is('deleted_at', null)
-        .eq('status', 'active')
-        .order('job_number')
-
-      // Project managers can only see their projects
-      if (userDetails?.role === 'project_manager') {
-        query = query.eq('project_manager_id', user.id)
-      }
-
-      const { data: projectsData, error: projectsError } = await query as { 
-        data: Project[] | null
-        error: Error | null
-      }
-
-      if (projectsError) throw projectsError
-      setProjects(projectsData || [])
-    } catch (err) {
-      console.error('Error fetching data:', err)
-      setError('Failed to load projects')
+  // Fetch next CO number if creating new
+  useEffect(() => {
+    if (mode === 'create' && projectId) {
+      fetch(`/api/change-orders?project_id=${projectId}&limit=1`)
+        .then(res => res.json())
+        .then(data => {
+          const changeOrders = data.change_orders || []
+          const lastNumber = changeOrders.length > 0 
+            ? parseInt(changeOrders[0].co_number.replace('CO-', '')) || 0
+            : 0
+          const nextNumber = String(lastNumber + 1).padStart(3, '0')
+          setNextCoNumber(`CO-${nextNumber}`)
+          form.setValue('co_number', `CO-${nextNumber}`)
+        })
+        .catch(console.error)
     }
-  }, [router, supabase])
+  }, [projectId, mode, form])
 
-  const generateCoNumber = useCallback(async (projectId: string) => {
-    try {
-      const response = await fetch(`/api/change-orders?project_id=${projectId}&limit=100`)
-      const data = await response.json()
-      
-      if (response.ok) {
-        const existingNumbers = data.changeOrders
-          .map((co: { coNumber: string }) => co.coNumber)
-          .filter((num: string) => num.startsWith('CO-'))
-          .map((num: string) => parseInt(num.replace('CO-', '')) || 0)
-        
-        const nextNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : 1
-        setValue('co_number', `CO-${nextNumber.toString().padStart(3, '0')}`)
-      }
-    } catch {
-      // Default to CO-001 if there's an error
-      setValue('co_number', 'CO-001')
-    }
-  }, [setValue])
+  // Calculate total amount when cost breakdown changes
+  const watchedFields = form.watch([
+    'labor_amount',
+    'equipment_amount',
+    'material_amount',
+    'subcontract_amount',
+    'markup_amount',
+    'tax_amount'
+  ])
 
   useEffect(() => {
-    fetchProjectsAndUserRole()
-  }, [fetchProjectsAndUserRole])
+    const [labor, equipment, material, subcontract, markup, tax] = watchedFields
+    const total = (labor ?? 0) + (equipment ?? 0) + (material ?? 0) + 
+                  (subcontract ?? 0) + (markup ?? 0) + (tax ?? 0)
+    setTotalAmount(total)
+  }, [watchedFields])
 
-  useEffect(() => {
-    if (mode === 'create' && selectedProjectId && projects.length > 0) {
-      // Auto-generate CO number for new change orders
-      generateCoNumber(selectedProjectId)
-    }
-  }, [selectedProjectId, projects, mode, generateCoNumber])
-
-  // Calculate total from breakdown amounts
-  useEffect(() => {
-    const amounts = [
-      laborAmount,
-      equipmentAmount,
-      materialAmount,
-      subcontractAmount,
-      markupAmount,
-      taxAmount
-    ]
-    
-    const hasBreakdown = amounts.some(amt => amt && parseFloat(amt) > 0)
-    
-    if (hasBreakdown) {
-      const total = amounts.reduce((sum, amt) => {
-        const value = parseFloat(amt || '0')
-        return sum + (isNaN(value) ? 0 : value)
-      }, 0)
-      
-      setValue('amount', total.toFixed(2))
-    }
-  }, [laborAmount, equipmentAmount, materialAmount, subcontractAmount, markupAmount, taxAmount, setValue])
-
-  const onSubmit = async (formData: ChangeOrderFormData) => {
-    console.log('Form submission data:', formData)
-    setLoading(true)
-    setError(null)
-
-    try {
-      // Log the data being sent
-      console.log('Submitting form data:', formData)
-      // Transform form data to API format
-      const apiData = {
-        project_id: formData.project_id,
-        co_number: formData.co_number,
-        description: formData.description,
-        amount: parseFloat(formData.amount),
-        impact_schedule_days: parseInt(formData.impact_schedule_days || '0'),
-        submitted_date: formData.submitted_date,
-        status: formData.status,
-        pricing_type: formData.pricing_type,
-        reason: formData.reason || undefined,
-        manhours: parseFloat(formData.manhours || '0'),
-        labor_amount: parseFloat(formData.labor_amount || '0'),
-        equipment_amount: parseFloat(formData.equipment_amount || '0'),
-        material_amount: parseFloat(formData.material_amount || '0'),
-        subcontract_amount: parseFloat(formData.subcontract_amount || '0'),
-        markup_amount: parseFloat(formData.markup_amount || '0'),
-        tax_amount: parseFloat(formData.tax_amount || '0')
-      }
-
-      const url = mode === 'create' 
-        ? '/api/change-orders' 
-        : `/api/change-orders/${changeOrderId}`
-      
-      const method = mode === 'create' ? 'POST' : 'PATCH'
-
-      console.log('API data to send:', apiData)
-      
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(apiData)
-      })
-
-      const result = await response.json()
-      console.log('API response:', result)
-
-      if (!response.ok) {
-        console.error('API error response:', result)
-        
-        // Handle validation errors with more detail
-        if (result.details && Array.isArray(result.details)) {
-          // This is a Zod validation error
-          const errorMessages = result.details.map((detail: { path?: string[]; message: string }) => {
-            const field = detail.path?.join('.') || 'Field'
-            return `${field}: ${detail.message}`
-          }).join(', ')
-          throw new Error(`Validation failed: ${errorMessages}`)
-        } else if (result.error) {
-          // Regular error message
-          throw new Error(result.error)
-        } else {
-          throw new Error(`Failed to ${mode} change order`)
-        }
-      }
-
-      // Redirect to project overview Change Orders tab
-      router.push(`/projects/${result.changeOrder.projectId}/overview?tab=change-orders`)
-    } catch (err) {
-      console.error(`Error ${mode}ing change order:`, err)
-      if (err instanceof Error) {
-        setError(err.message)
-      } else {
-        setError(`Failed to ${mode} change order`)
-      }
-    } finally {
-      setLoading(false)
-    }
+  const handleSubmit = async (data: ChangeOrderFormData) => {
+    await onSubmit({
+      ...data,
+      amount: totalAmount
+    })
   }
 
-  const canEditStatus = userRole && ['controller', 'ops_manager'].includes(userRole)
-
   return (
-    <form onSubmit={handleSubmit(onSubmit, (errors) => {
-      console.error('Form validation errors:', errors)
-      // Log detailed validation errors for debugging
-      Object.entries(errors).forEach(([field, error]) => {
-        console.error(`Field '${field}' error:`, error)
-      })
-      setError('Please fix the validation errors below')
-    })} className="space-y-6">
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
-            <p className="text-red-800">{error}</p>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        {/* Project Info */}
+        {(projectName || jobNumber) && (
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-600">Project</p>
+            <p className="font-medium">{projectName} {jobNumber && `(Job #${jobNumber})`}</p>
           </div>
-        </div>
-      )}
-
-      <div>
-        <label htmlFor="project_id" className="block text-sm font-medium text-foreground/80">
-          Project *
-        </label>
-        <select
-          {...register('project_id')}
-          disabled={mode === 'edit'}
-          className="mt-1 block w-full rounded-md border-foreground/30 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-foreground/5"
-        >
-          <option value="">Select a project</option>
-          {projects.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.job_number} - {project.name} ({project.division.name})
-            </option>
-          ))}
-        </select>
-        {errors.project_id && (
-          <p className="mt-1 text-sm text-red-600">{errors.project_id.message}</p>
         )}
-      </div>
 
-      <div>
-        <label htmlFor="co_number" className="block text-sm font-medium text-foreground/80">
-          CO Number *
-        </label>
-        <input
-          type="text"
-          {...register('co_number')}
-          className="mt-1 block w-full rounded-md border-foreground/30 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          placeholder="CO-001"
-        />
-        {errors.co_number && (
-          <p className="mt-1 text-sm text-red-600">{errors.co_number.message}</p>
-        )}
-        <p className="mt-1 text-xs text-gray-500">Format: CO-001, CO-002, etc.</p>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        <div>
-          <label htmlFor="pricing_type" className="block text-sm font-medium text-foreground/80">
-            Pricing Type *
-          </label>
-          <select
-            {...register('pricing_type')}
-            className="mt-1 block w-full rounded-md border-foreground/30 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          >
-            <option value="LS">Lump Sum (LS)</option>
-            <option value="T&M">Time & Materials (T&M)</option>
-            <option value="Estimate">Estimate</option>
-            <option value="Credit">Credit</option>
-          </select>
-          {errors.pricing_type && (
-            <p className="mt-1 text-sm text-red-600">{errors.pricing_type.message}</p>
-          )}
-        </div>
-
-        <div>
-          <label htmlFor="manhours" className="block text-sm font-medium text-foreground/80">
-            Manhours
-          </label>
-          <input
-            type="number"
-            {...register('manhours')}
-            className="mt-1 block w-full rounded-md border-foreground/30 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            placeholder="0"
-            step="0.5"
+        {/* Basic Information */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Basic Information</h3>
+          
+          <FormField
+            control={form.control}
+            name="co_number"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>CO Number *</FormLabel>
+                <FormControl>
+                  <Input 
+                    {...field} 
+                    placeholder={nextCoNumber || "CO-001"}
+                    disabled={mode === 'edit'}
+                  />
+                </FormControl>
+                <FormDescription>
+                  {mode === 'create' && 'Auto-generated or enter manually'}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          {errors.manhours && (
-            <p className="mt-1 text-sm text-red-600">{errors.manhours.message}</p>
-          )}
-        </div>
-      </div>
 
-      <div>
-        <label htmlFor="description" className="block text-sm font-medium text-foreground/80">
-          Description of Work *
-        </label>
-        <textarea
-          {...register('description')}
-          rows={4}
-          className="mt-1 block w-full rounded-md border-foreground/30 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          placeholder="Describe the change order work..."
-        />
-        {errors.description && (
-          <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
-        )}
-      </div>
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description *</FormLabel>
+                <FormControl>
+                  <Textarea 
+                    {...field}
+                    placeholder="Describe the change order..."
+                    rows={3}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-      <div>
-        <label htmlFor="reason" className="block text-sm font-medium text-foreground/80">
-          Reason/Justification
-        </label>
-        <textarea
-          {...register('reason')}
-          rows={3}
-          className="mt-1 block w-full rounded-md border-foreground/30 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          placeholder="Explain the reason for this change order..."
-        />
-        {errors.reason && (
-          <p className="mt-1 text-sm text-red-600">{errors.reason.message}</p>
-        )}
-      </div>
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="pricing_type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Pricing Type *</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select pricing type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="LS">Lump Sum (LS)</SelectItem>
+                      <SelectItem value="T&M">Time & Material (T&M)</SelectItem>
+                      <SelectItem value="Estimate">Estimate</SelectItem>
+                      <SelectItem value="Credit">Credit</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        <div>
-          <label htmlFor="amount" className="block text-sm font-medium text-foreground/80">
-            Amount *
-          </label>
-          <div className="mt-1 relative rounded-md shadow-sm">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <span className="text-foreground/80 sm:text-sm">$</span>
-            </div>
-            <input
-              type="text"
-              {...register('amount')}
-              className="block w-full pl-7 pr-3 rounded-md border-foreground/30 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              placeholder="0.00"
+            <FormField
+              control={form.control}
+              name="impact_schedule_days"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Schedule Impact (days)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      {...field}
+                      type="number"
+                      placeholder="0"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Positive for delays, negative for acceleration
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
           </div>
-          {errors.amount && (
-            <p className="mt-1 text-sm text-red-600">{errors.amount.message}</p>
-          )}
-          {!errors.amount && amount === '0' && pricingType !== 'Credit' && (
-            <p className="mt-1 text-sm text-amber-600">Warning: Amount cannot be zero unless pricing type is Credit</p>
-          )}
-          {!errors.amount && amount === '0' && pricingType === 'Credit' && (
-            <p className="mt-1 text-sm text-green-600">Zero amount is allowed for Credit type change orders</p>
-          )}
         </div>
 
-        <div>
-          <label htmlFor="impact_schedule_days" className="block text-sm font-medium text-foreground/80">
-            Schedule Impact (days)
-          </label>
-          <input
-            type="number"
-            {...register('impact_schedule_days')}
-            className="mt-1 block w-full rounded-md border-foreground/30 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            placeholder="0"
+        <Separator />
+
+        {/* Cost Breakdown */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Cost Breakdown</h3>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="labor_amount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Labor Amount</FormLabel>
+                  <FormControl>
+                    <CurrencyInput 
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="$0.00"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="manhours"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Manhours</FormLabel>
+                  <FormControl>
+                    <Input 
+                      {...field}
+                      type="number"
+                      step="0.01"
+                      placeholder="0"
+                      value={field.value ?? ''}
+                      onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
+                      onFocus={(e) => setTimeout(() => e.target.select(), 0)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="equipment_amount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Equipment Amount</FormLabel>
+                  <FormControl>
+                    <CurrencyInput 
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="$0.00"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="material_amount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Material Amount</FormLabel>
+                  <FormControl>
+                    <CurrencyInput 
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="$0.00"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="subcontract_amount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Subcontract Amount</FormLabel>
+                  <FormControl>
+                    <CurrencyInput 
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="$0.00"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="markup_amount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Markup Amount</FormLabel>
+                  <FormControl>
+                    <CurrencyInput 
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="$0.00"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={form.control}
+            name="tax_amount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tax Amount</FormLabel>
+                <FormControl>
+                  <CurrencyInput 
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="$0.00"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          {errors.impact_schedule_days && (
-            <p className="mt-1 text-sm text-red-600">{errors.impact_schedule_days.message}</p>
-          )}
-          <p className="mt-1 text-xs text-foreground/80">Positive for delays, negative for acceleration</p>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        <div>
-          <label htmlFor="submitted_date" className="block text-sm font-medium text-foreground/80">
-            Submitted Date
-          </label>
-          <input
-            type="date"
-            {...register('submitted_date')}
-            className="mt-1 block w-full rounded-md border-foreground/30 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          {/* Total Amount Display */}
+          <div className="pt-4 border-t">
+            <div className="flex justify-between items-center">
+              <Label className="text-lg font-medium">Total Amount *</Label>
+              <p className="text-2xl font-bold">
+                ${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Additional Fields */}
+        <div className="space-y-4">
+          <FormField
+            control={form.control}
+            name="submitted_date"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Submitted Date</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Input 
+                      {...field}
+                      type="date"
+                      value={field.value ? format(new Date(field.value), 'yyyy-MM-dd') : ''}
+                      onChange={(e) => {
+                        const date = new Date(e.target.value)
+                        field.onChange(format(date, 'yyyy-MM-dd\'T\'HH:mm:ss\'Z\''))
+                      }}
+                    />
+                    <Calendar className="absolute right-3 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          {errors.submitted_date && (
-            <p className="mt-1 text-sm text-red-600">{errors.submitted_date.message}</p>
-          )}
+
         </div>
 
-        {canEditStatus && (
-          <div>
-            <label htmlFor="status" className="block text-sm font-medium text-foreground/80">
-              Status
-            </label>
-            <select
-              {...register('status')}
-              className="mt-1 block w-full rounded-md border-foreground/30 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            >
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-            {errors.status && (
-              <p className="mt-1 text-sm text-red-600">{errors.status.message}</p>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Cost Breakdown Section */}
-      <div className="border-t pt-6">
-        <h3 className="text-lg font-medium text-foreground/90 mb-4">Cost Breakdown (Optional)</h3>
-        <p className="text-sm text-foreground/70 mb-4">
-          Enter individual cost components below. The total will be calculated automatically.
-        </p>
-        
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div>
-            <label htmlFor="labor_amount" className="block text-sm font-medium text-foreground/80">
-              Labor
-            </label>
-            <div className="mt-1 relative rounded-md shadow-sm">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span className="text-foreground/80 sm:text-sm">$</span>
-              </div>
-              <input
-                type="text"
-                {...register('labor_amount')}
-                className="block w-full pl-7 pr-3 rounded-md border-foreground/30 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                placeholder="0.00"
-              />
-            </div>
-            {errors.labor_amount && (
-              <p className="mt-1 text-sm text-red-600">{errors.labor_amount.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="material_amount" className="block text-sm font-medium text-foreground/80">
-              Materials
-            </label>
-            <div className="mt-1 relative rounded-md shadow-sm">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span className="text-foreground/80 sm:text-sm">$</span>
-              </div>
-              <input
-                type="text"
-                {...register('material_amount')}
-                className="block w-full pl-7 pr-3 rounded-md border-foreground/30 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                placeholder="0.00"
-              />
-            </div>
-            {errors.material_amount && (
-              <p className="mt-1 text-sm text-red-600">{errors.material_amount.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="equipment_amount" className="block text-sm font-medium text-foreground/80">
-              Equipment
-            </label>
-            <div className="mt-1 relative rounded-md shadow-sm">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span className="text-foreground/80 sm:text-sm">$</span>
-              </div>
-              <input
-                type="text"
-                {...register('equipment_amount')}
-                className="block w-full pl-7 pr-3 rounded-md border-foreground/30 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                placeholder="0.00"
-              />
-            </div>
-            {errors.equipment_amount && (
-              <p className="mt-1 text-sm text-red-600">{errors.equipment_amount.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="subcontract_amount" className="block text-sm font-medium text-foreground/80">
-              Subcontractor
-            </label>
-            <div className="mt-1 relative rounded-md shadow-sm">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span className="text-foreground/80 sm:text-sm">$</span>
-              </div>
-              <input
-                type="text"
-                {...register('subcontract_amount')}
-                className="block w-full pl-7 pr-3 rounded-md border-foreground/30 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                placeholder="0.00"
-              />
-            </div>
-            {errors.subcontract_amount && (
-              <p className="mt-1 text-sm text-red-600">{errors.subcontract_amount.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="markup_amount" className="block text-sm font-medium text-foreground/80">
-              Markup/Overhead
-            </label>
-            <div className="mt-1 relative rounded-md shadow-sm">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span className="text-foreground/80 sm:text-sm">$</span>
-              </div>
-              <input
-                type="text"
-                {...register('markup_amount')}
-                className="block w-full pl-7 pr-3 rounded-md border-foreground/30 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                placeholder="0.00"
-              />
-            </div>
-            {errors.markup_amount && (
-              <p className="mt-1 text-sm text-red-600">{errors.markup_amount.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="tax_amount" className="block text-sm font-medium text-foreground/80">
-              Tax
-            </label>
-            <div className="mt-1 relative rounded-md shadow-sm">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span className="text-foreground/80 sm:text-sm">$</span>
-              </div>
-              <input
-                type="text"
-                {...register('tax_amount')}
-                className="block w-full pl-7 pr-3 rounded-md border-foreground/30 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                placeholder="0.00"
-              />
-            </div>
-            {errors.tax_amount && (
-              <p className="mt-1 text-sm text-red-600">{errors.tax_amount.message}</p>
-            )}
-          </div>
+        {/* Form Actions */}
+        <div className="flex justify-end space-x-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={isLoading || totalAmount === 0}
+          >
+            {isLoading ? 'Saving...' : mode === 'create' ? 'Submit Change Order' : 'Save Changes'}
+          </Button>
         </div>
-      </div>
-
-      <div className="flex justify-end gap-4">
-        <button
-          type="button"
-          onClick={() => router.push('/change-orders')}
-          className="px-4 py-2 border border-foreground/30 rounded-md shadow-sm text-sm font-medium text-foreground/80 bg-white hover:bg-background focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Saving...' : mode === 'create' ? 'Create Change Order' : 'Update Change Order'}
-        </button>
-      </div>
-    </form>
+      </form>
+    </Form>
   )
 }

@@ -21,38 +21,27 @@ export async function GET(
       .from('projects')
       .select(`
         *,
-        client:clients!projects_client_id_fkey(id, name, contact_name, contact_email, contact_phone),
-        division:divisions!projects_division_id_fkey(id, name, code),
         project_manager:profiles!projects_project_manager_id_fkey(id, first_name, last_name, email),
         created_by_user:profiles!projects_created_by_fkey(id, first_name, last_name),
+        client_po_line_items(
+          id,
+          line_number,
+          description,
+          amount,
+          created_at
+        ),
         purchase_orders(
           id,
           po_number,
           vendor_name,
           description,
-          amount,
-          status,
-          created_at
-        ),
-        change_orders(
-          id,
-          co_number,
-          description,
-          amount,
+          total_amount,
           status,
           created_at
         ),
         labor_forecasts(
           id,
           week_ending,
-          forecasted_cost,
-          actual_cost,
-          created_at
-        ),
-        financial_snapshots(
-          id,
-          snapshot_date,
-          committed_cost,
           forecasted_cost,
           actual_cost,
           created_at
@@ -68,29 +57,7 @@ export async function GET(
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
 
-    // Fetch project divisions data
-    const { data: projectDivisions } = await supabase
-      .from('project_divisions')
-      .select(`
-        *,
-        division:divisions!project_divisions_division_id_fkey(id, name, code),
-        division_pm:profiles!project_divisions_division_pm_id_fkey(id, first_name, last_name, email)
-      `)
-      .eq('project_id', id)
-      .order('is_lead_division', { ascending: false })
-
-    // Add divisions to project object
-    if (projectDivisions && projectDivisions.length > 0) {
-      project.divisions = projectDivisions.map(pd => ({
-        division_id: pd.division_id,
-        division_name: pd.division?.name,
-        division_code: pd.division?.code,
-        is_lead_division: pd.is_lead_division,
-        division_pm_id: pd.division_pm_id,
-        division_pm_name: pd.division_pm ? `${pd.division_pm.first_name} ${pd.division_pm.last_name}` : null,
-        budget_allocated: pd.budget_allocated
-      }))
-    }
+    // No divisions in simplified schema
 
     return NextResponse.json({ project })
   } catch (error) {
@@ -117,37 +84,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user role
-    const { data: userProfile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    // Only certain roles can update projects
-    const allowedRoles = ['controller', 'executive', 'ops_manager', 'project_manager']
-    if (!userProfile || !allowedRoles.includes(userProfile.role)) {
-      return NextResponse.json(
-        { error: 'Insufficient permissions to update projects' },
-        { status: 403 }
-      )
-    }
-
-    // Project managers can only update their own projects
-    if (userProfile.role === 'project_manager') {
-      const { data: existingProject } = await supabase
-        .from('projects')
-        .select('project_manager_id')
-        .eq('id', id)
-        .single()
-
-      if (existingProject?.project_manager_id !== user.id) {
-        return NextResponse.json(
-          { error: 'You can only update projects you manage' },
-          { status: 403 }
-        )
-      }
-    }
+    // In simplified schema, all authenticated users are project managers and can update any project
+    // No role-based restrictions needed
 
     // Validate request body
     const updateSchema = z.object({
@@ -174,8 +112,6 @@ export async function PATCH(
       .eq('id', id)
       .select(`
         *,
-        client:clients!projects_client_id_fkey(id, name),
-        division:divisions!projects_division_id_fkey(id, name, code),
         project_manager:profiles!projects_project_manager_id_fkey(id, first_name, last_name, email)
       `)
       .single()
@@ -216,20 +152,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user role
-    const { data: userProfile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    // Only controllers can delete projects
-    if (userProfile?.role !== 'controller') {
-      return NextResponse.json(
-        { error: 'Only controllers can delete projects' },
-        { status: 403 }
-      )
-    }
+    // In simplified schema, all authenticated users are project managers and can delete projects
+    // No role-based restrictions needed
 
     // Soft delete by setting deleted_at
     const { error } = await supabase

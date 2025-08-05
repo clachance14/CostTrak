@@ -62,7 +62,8 @@ async function testLaborBurdenCalculations() {
         const expectedBurden = labor.actual_cost * (labor.burden_rate || 0)
         const expectedTotal = labor.actual_cost + expectedBurden
         
-        console.log(`\n  Project: ${labor.projects.job_number} - ${labor.projects.name}`)
+        const project = Array.isArray(labor.projects) ? labor.projects[0] : labor.projects
+        console.log(`\n  Project: ${project?.job_number} - ${project?.name}`)
         console.log(`  Week: ${labor.week_ending}`)
         console.log(`  Base Cost: $${labor.actual_cost.toFixed(2)}`)
         console.log(`  Burden Rate: ${((labor.burden_rate || 0) * 100).toFixed(1)}%`)
@@ -108,7 +109,8 @@ async function testLaborBurdenCalculations() {
         const expectedSTBurden = emp.st_wages * (emp.burden_rate || 0)
         const expectedTotal = emp.st_wages + expectedSTBurden + emp.ot_wages
         
-        console.log(`\n  Employee: ${emp.employees.employee_number} - ${emp.employees.first_name} ${emp.employees.last_name}`)
+        const employee = Array.isArray(emp.employees) ? emp.employees[0] : emp.employees
+        console.log(`\n  Employee: ${employee?.employee_number} - ${employee?.first_name} ${employee?.last_name}`)
         console.log(`  Week: ${emp.week_ending}`)
         console.log(`  ST Hours: ${emp.st_hours}, Wages: $${emp.st_wages.toFixed(2)}`)
         console.log(`  OT Hours: ${emp.ot_hours}, Wages: $${emp.ot_wages.toFixed(2)}`)

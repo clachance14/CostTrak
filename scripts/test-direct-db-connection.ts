@@ -24,7 +24,7 @@ async function testDirectConnection() {
   console.log('\nFor now, let\'s test with the Supabase client library instead...\n')
   
   // We can't test direct connection without the actual database password
-  const connectionStrings = []
+  const connectionStrings: { name: string; url: string }[] = []
   
   console.log('=== Testing Direct Database Connections ===\n')
   
@@ -40,7 +40,7 @@ async function testDirectConnection() {
       console.log(`✅ Success! Found ${result.rows[0].count} projects`)
       await client.end()
     } catch (error) {
-      console.log(`❌ Failed: ${error.message}`)
+      console.log(`❌ Failed: ${error instanceof Error ? error.message : String(error)}`)
     }
     console.log()
   }

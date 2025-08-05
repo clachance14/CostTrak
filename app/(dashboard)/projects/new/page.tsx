@@ -529,8 +529,6 @@ export default function ProjectSetupForm() {
     const submissionData = {
       name: formData.projectTitle,
       job_number: formData.icsProjectNumber,
-      client_id: formData.clientId,
-      division_id: formData.divisionId,
       project_manager_id: formData.projectManagerId,
       superintendent_id: formData.projectManagerId,
       original_contract: totalContractAmount,
@@ -545,12 +543,7 @@ export default function ProjectSetupForm() {
         subcontracts_budget: formData.subcontracts,
         other_budget: formData.otherBudget,
       },
-      contract_breakdown: {
-        client_po_number: formData.clientPONumber,
-        client_representative: formData.clientRepresentative,
-        uses_line_items: true,
-      },
-      po_line_items: formData.poLineItems.map((item, index) => ({
+      client_po_line_items: formData.poLineItems.map((item, index) => ({
         line_number: index + 1,
         description: item.description,
         amount: item.amount

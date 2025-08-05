@@ -14,7 +14,7 @@ import {
   ChevronDown,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
-import { formatWeekEnding, getWeekEndingDate } from '@/lib/validations/labor-forecast-v2'
+import { formatWeekEnding, getWeekEndingDate, getWeekStartingDate } from '@/lib/validations/labor-forecast-v2'
 
 interface CraftType {
   id: string
@@ -34,6 +34,7 @@ interface CategoryEntry {
 interface WeekData {
   weekEnding: string
   isActual: boolean
+  hoursPerWeek: number
   categories: {
     direct: CategoryEntry
     indirect: CategoryEntry
@@ -73,9 +74,12 @@ interface CompositeRateInfo {
 
 interface ActualData {
   weekEnding: string
-  craftTypeId: string
+  craftTypeId?: string
+  laborCategory?: string
   totalHours: number
   totalCost: number
+  actualHours?: number
+  actualCost?: number
 }
 
 interface ForecastEntry {
@@ -125,7 +129,7 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
       // Retry logic for craft types
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-          const craftTypesResponse = await fetch('/api/craft-types')
+          const craftTypesResponse = await fetch('/api/craft-types', { credentials: 'include' })
           console.log(`Craft types fetch attempt ${attempt}, status:`, craftTypesResponse.status)
           
           if (!craftTypesResponse.ok) {
@@ -180,7 +184,8 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
       // Fetch running averages
       let fetchedRunningAverages: RunningAverage[] = []
       const avgResponse = await fetch(
-        `/api/labor-forecasts/running-averages?project_id=${projectId}&weeks_back=${historicalWeeks}`
+        `/api/labor-forecasts/running-averages?project_id=${projectId}&weeks_back=${historicalWeeks}`,
+        { credentials: 'include' }
       )
       if (!avgResponse.ok) {
         const errorText = await avgResponse.text()
@@ -198,39 +203,110 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
       setRunningAverages(fetchedRunningAverages)
 
       // Fetch composite rate
+      console.log(`[DEBUG] Fetching composite rate for project ${projectId} with ${historicalWeeks} weeks back`)
       const compositeResponse = await fetch(
-        `/api/labor-forecasts/composite-rate?project_id=${projectId}&weeks_back=${historicalWeeks}`
+        `/api/labor-forecasts/composite-rate?project_id=${projectId}&weeks_back=${historicalWeeks}`,
+        { credentials: 'include' }
       )
       if (!compositeResponse.ok) {
-        console.error('Composite rate fetch failed:', compositeResponse.status)
+        const errorText = await compositeResponse.text()
+        console.error('[DEBUG] Composite rate fetch failed:', {
+          status: compositeResponse.status,
+          statusText: compositeResponse.statusText,
+          errorText
+        })
         // Don't throw error, just continue without composite rate
         setCompositeRateInfo(null)
       } else {
         const compositeData = await compositeResponse.json()
+        console.log('[DEBUG] Composite rate response:', compositeData)
+        console.log('[DEBUG] Composite rate info:', {
+          overall: compositeData.compositeRate?.overall,
+          totalHours: compositeData.compositeRate?.totalHours,
+          totalCost: compositeData.compositeRate?.totalCost,
+          weeksOfData: compositeData.compositeRate?.weeksOfData,
+          categoryRates: compositeData.compositeRate?.categoryRates
+        })
         setCompositeRateInfo(compositeData.compositeRate)
       }
 
       // Fetch historical actuals
       const actualsResponse = await fetch(
-        `/api/labor-forecasts/weekly-actuals?project_id=${projectId}`
+        `/api/labor-forecasts/weekly-actuals?project_id=${projectId}`,
+        { credentials: 'include' }
       )
-      if (!actualsResponse.ok) throw new Error('Failed to fetch actuals')
+      if (!actualsResponse.ok) {
+        const errorText = await actualsResponse.text()
+        console.error('Actuals fetch failed:', {
+          status: actualsResponse.status,
+          statusText: actualsResponse.statusText,
+          errorText
+        })
+        throw new Error(`Failed to fetch actuals: ${actualsResponse.status} ${actualsResponse.statusText}`)
+      }
       const actualsData = await actualsResponse.json()
       
       // Debug logging
-      console.log('Actuals data from API:', actualsData)
-      console.log('Number of actuals:', actualsData.actuals?.length || 0)
+      console.log('[DEBUG] Actuals data from API:', actualsData)
+      console.log('[DEBUG] Number of actuals:', actualsData.actuals?.length || 0)
       if (actualsData.actuals?.length > 0) {
-        console.log('First actual record:', actualsData.actuals[0])
-        console.log('Actual dates:', actualsData.actuals.map((a: { weekEnding: string }) => a.weekEnding))
+        console.log('[DEBUG] First actual record:', actualsData.actuals[0])
+        console.log('[DEBUG] Actual dates:', actualsData.actuals.map((a: { weekEnding: string }) => a.weekEnding))
+        // Check data format
+        const hasLaborCategory = actualsData.actuals.some((a: ActualData) => a.laborCategory)
+        const hasCraftTypeId = actualsData.actuals.some((a: ActualData) => a.craftTypeId)
+        console.log('[DEBUG] Data format - hasLaborCategory:', hasLaborCategory, 'hasCraftTypeId:', hasCraftTypeId)
       }
 
-      // Fetch headcount forecasts
+      // Calculate start date for forecast API based on actuals
+      let forecastStartDate: Date
+      if (actualsData.actuals?.length > 0) {
+        const actualDates = actualsData.actuals.map((a: any) => new Date(a.weekEnding))
+        const earliestActualDate = new Date(Math.min(...actualDates.map((d: Date) => d.getTime())))
+        // Start 2 weeks before the earliest actual data
+        forecastStartDate = new Date(earliestActualDate)
+        forecastStartDate.setDate(forecastStartDate.getDate() - 14) // 2 weeks before
+      } else {
+        // No actuals, use default logic
+        forecastStartDate = new Date()
+        forecastStartDate.setDate(forecastStartDate.getDate() - historicalWeeks * 7)
+      }
+      const startDateParam = forecastStartDate.toISOString().split('T')[0]
+
+      // Fetch headcount forecasts with calculated start date
+      // Note: We need to fetch enough weeks to cover both historical and future forecast data
+      const totalWeeksToFetch = Math.max(forecastWeeks + 52, 78) // At least 78 weeks to cover from March to following February
+      console.log(`[DEBUG] Fetching forecast data starting from ${startDateParam} for ${totalWeeksToFetch} weeks`)
       const forecastResponse = await fetch(
-        `/api/labor-forecasts/headcount?project_id=${projectId}&weeks_ahead=${forecastWeeks}`
+        `/api/labor-forecasts/headcount?project_id=${projectId}&weeks_ahead=${totalWeeksToFetch}&start_date=${startDateParam}`,
+        { credentials: 'include' }
       )
-      if (!forecastResponse.ok) throw new Error('Failed to fetch forecasts')
+      if (!forecastResponse.ok) {
+        const errorText = await forecastResponse.text()
+        console.error('Forecast fetch failed:', {
+          status: forecastResponse.status,
+          statusText: forecastResponse.statusText,
+          errorText
+        })
+        throw new Error(`Failed to fetch forecasts: ${forecastResponse.status} ${forecastResponse.statusText}`)
+      }
       const forecastData = await forecastResponse.json()
+      
+      // Debug logging for forecast data
+      console.log('[DEBUG] Forecast data from API:', forecastData)
+      console.log('[DEBUG] Number of forecast weeks:', forecastData.weeks?.length || 0)
+      if (forecastData.weeks?.length > 0) {
+        console.log('[DEBUG] First forecast week:', forecastData.weeks[0])
+        console.log('[DEBUG] Forecast week dates:', forecastData.weeks.map((w: any) => w.weekEnding))
+        // Check the structure of entries
+        const firstWeekWithData = forecastData.weeks.find((w: any) => 
+          w.entries?.some((e: any) => e.headcount > 0)
+        )
+        if (firstWeekWithData) {
+          console.log('[DEBUG] First week with headcount data:', firstWeekWithData.weekEnding)
+          console.log('[DEBUG] Entry structure:', firstWeekWithData.entries[0])
+        }
+      }
 
       // Combine actuals and forecasts into unified weekly data
       const combinedWeeks: WeekData[] = []
@@ -269,34 +345,70 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
         console.log('Sample craft type:', loadedCraftTypes[0])
       }
       
-      // Calculate category average rates from running averages
+      // Calculate weighted average rates by category from actuals
       const categoryRates = {
         direct: 0,
         indirect: 0,
         staff: 0
       }
       
-      const categoryCounts = {
+      const categoryHours = {
         direct: 0,
         indirect: 0,
         staff: 0
       }
       
-      // Calculate weighted average rates by category
-      loadedCraftTypes.forEach(craft => {
-        const runningAvg = fetchedRunningAverages.find(ra => ra.craftTypeId === craft.id)
-        if (runningAvg && runningAvg.avgRate > 0) {
-          categoryRates[craft.category] += runningAvg.avgRate
-          categoryCounts[craft.category]++
+      const categoryCosts = {
+        direct: 0,
+        indirect: 0,
+        staff: 0
+      }
+      
+      // Sum up hours and costs by category from labor actuals
+      // Handle both craft-type-based and category-based actuals
+      if (actualsData.actuals && actualsData.actuals.length > 0) {
+        // Check if we have category-based data
+        const hasCategoryData = actualsData.actuals.some((a: ActualData) => a.laborCategory)
+        
+        if (hasCategoryData) {
+          // New category-based approach
+          console.log('[DEBUG] Processing category-based actuals')
+          actualsData.actuals.forEach((actual: ActualData) => {
+            if (actual.laborCategory && actual.laborCategory in categoryHours) {
+              const category = actual.laborCategory as 'direct' | 'indirect' | 'staff'
+              const hours = actual.actualHours || actual.totalHours || 0
+              const cost = actual.actualCost || actual.totalCost || 0
+              categoryHours[category] += hours
+              categoryCosts[category] += cost
+              console.log(`[DEBUG] Added ${hours} hours and $${cost} cost to ${category}`)
+            }
+          })
+        } else {
+          // Legacy craft-type-based approach
+          console.log('[DEBUG] Processing craft-type-based actuals')
+          loadedCraftTypes.forEach(craft => {
+            const craftActuals = actualsData.actuals?.filter((a: ActualData) => a.craftTypeId === craft.id) || []
+            const totalHours = craftActuals.reduce((sum, a) => sum + (a.actualHours || a.totalHours || 0), 0)
+            const totalCost = craftActuals.reduce((sum, a) => sum + (a.actualCost || a.totalCost || 0), 0)
+            
+            categoryHours[craft.category] += totalHours
+            categoryCosts[craft.category] += totalCost
+          })
+        }
+      }
+      
+      // Calculate weighted average rate per category
+      Object.keys(categoryRates).forEach(cat => {
+        const category = cat as 'direct' | 'indirect' | 'staff'
+        if (categoryHours[category] > 0) {
+          categoryRates[category] = categoryCosts[category] / categoryHours[category]
         }
       })
       
-      // Average the rates
-      Object.keys(categoryRates).forEach(cat => {
-        const category = cat as 'direct' | 'indirect' | 'staff'
-        if (categoryCounts[category] > 0) {
-          categoryRates[category] = categoryRates[category] / categoryCounts[category]
-        }
+      console.log('Category rates calculated:', {
+        direct: { hours: categoryHours.direct, cost: categoryCosts.direct, rate: categoryRates.direct },
+        indirect: { hours: categoryHours.indirect, cost: categoryCosts.indirect, rate: categoryRates.indirect },
+        staff: { hours: categoryHours.staff, cost: categoryCosts.staff, rate: categoryRates.staff }
       })
 
       // Create a map of actuals by week for faster lookup
@@ -320,7 +432,7 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
       allWeeks.forEach((weekDate, weekIndex) => {
         const weekString = weekDate.toISOString()
         const weekDateOnly = weekDate.toISOString().split('T')[0] // Get YYYY-MM-DD format
-        const isActual = weekDate <= new Date()
+        const isActual = actualsMap.has(weekDateOnly) // Only mark as actual if we have data
         
         // Initialize categories
         const categories: WeekData['categories'] = {
@@ -329,42 +441,129 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
           staff: { category: 'staff', headcount: 0, hours: 0, cost: 0, rate: categoryRates.staff }
         }
         
-        if (isActual && actualsMap.has(weekDateOnly)) {
+        if (isActual) {
           // Process actuals for this week
           const weekActuals = actualsMap.get(weekDateOnly)!
           console.log(`Processing ${weekActuals.length} actuals for week ${weekDateOnly}`)
           
           weekActuals.forEach(actual => {
-            const craft = loadedCraftTypes.find(c => c.id === actual.craftTypeId)
-            if (craft) {
-              console.log(`Found craft ${craft.name} (${craft.category}) with ${actual.totalHours} hours`)
-              const cat = categories[craft.category]
-              const oldHeadcount = cat.headcount
-              cat.headcount += actual.totalHours / HOURS_PER_PERSON
-              cat.hours += actual.totalHours
-              cat.cost += actual.totalCost
-              cat.rate = cat.hours > 0 ? cat.cost / cat.hours : categoryRates[craft.category]
-              console.log(`Updated ${craft.category}: headcount ${oldHeadcount} -> ${cat.headcount}, hours: ${actual.totalHours}`)
-            } else {
-              console.log(`WARNING: No craft found for craftTypeId: ${actual.craftTypeId}`)
-              console.log('Available craft type IDs:', loadedCraftTypes.map(c => c.id))
+            // Handle category-based actuals
+            if (actual.laborCategory) {
+              const category = actual.laborCategory as 'direct' | 'indirect' | 'staff'
+              if (category in categories) {
+                const cat = categories[category]
+                const hours = actual.actualHours || actual.totalHours || 0
+                const cost = actual.actualCost || actual.totalCost || 0
+                const oldHeadcount = cat.headcount
+                cat.headcount += hours / HOURS_PER_PERSON
+                cat.hours += hours
+                cat.cost += cost
+                cat.rate = cat.hours > 0 ? cat.cost / cat.hours : categoryRates[category]
+                console.log(`[DEBUG] Category-based actual - Updated ${category}: headcount ${oldHeadcount.toFixed(2)} -> ${cat.headcount.toFixed(2)}, hours: ${hours}, cost: $${cost}`)
+              }
+            } 
+            // Handle craft-type-based actuals (legacy)
+            else if (actual.craftTypeId) {
+              const craft = loadedCraftTypes.find(c => c.id === actual.craftTypeId)
+              if (craft) {
+                console.log(`Found craft ${craft.name} (${craft.category}) with ${actual.totalHours} hours`)
+                const cat = categories[craft.category]
+                const hours = actual.actualHours || actual.totalHours || 0
+                const cost = actual.actualCost || actual.totalCost || 0
+                const oldHeadcount = cat.headcount
+                cat.headcount += hours / HOURS_PER_PERSON
+                cat.hours += hours
+                cat.cost += cost
+                cat.rate = cat.hours > 0 ? cat.cost / cat.hours : categoryRates[craft.category]
+                console.log(`Updated ${craft.category}: headcount ${oldHeadcount} -> ${cat.headcount}, hours: ${hours}`)
+              } else {
+                console.log(`WARNING: No craft found for craftTypeId: ${actual.craftTypeId}`)
+                console.log('Available craft type IDs:', loadedCraftTypes.map(c => c.id))
+              }
             }
           })
-        } else if (isActual && weekIndex === 0) {
-          console.log(`No actuals found for week ${weekDateOnly}`)
         } else {
-          // Sum forecasts by category
-          const forecastWeek = forecastData.weeks?.find((w: { weekEnding: string }) => w.weekEnding === weekString)
-          if (forecastWeek) {
-            forecastWeek.entries?.forEach((entry: ForecastEntry) => {
+          // Use forecast data when no actuals exist
+          const forecastWeek = forecastData.weeks?.find((w: { weekEnding: string }) => {
+            // Convert both dates to date-only format for comparison
+            // Handle timezone differences by normalizing to local date strings
+            const wDate = new Date(w.weekEnding)
+            const wDateLocal = `${wDate.getFullYear()}-${String(wDate.getMonth() + 1).padStart(2, '0')}-${String(wDate.getDate()).padStart(2, '0')}`
+            const targetDateLocal = `${weekDate.getFullYear()}-${String(weekDate.getMonth() + 1).padStart(2, '0')}-${String(weekDate.getDate()).padStart(2, '0')}`
+            
+            const match = wDateLocal === targetDateLocal
+            if (match) {
+              console.log(`[DEBUG] Date match found: API ${wDateLocal} === Frontend ${targetDateLocal}`)
+            }
+            return match
+          })
+          
+          if (forecastWeek && forecastWeek.entries) {
+            console.log(`[DEBUG] Found forecast data for week ${weekDateOnly}:`, forecastWeek)
+            console.log(`[DEBUG] Number of entries: ${forecastWeek.entries.length}`)
+            if (forecastWeek.entries.length > 0) {
+              const sampleEntry = forecastWeek.entries[0]
+              console.log('[DEBUG] Sample forecast entry structure:', {
+                hasLaborCategory: !!sampleEntry.laborCategory,
+                hasCraftTypeId: !!sampleEntry.craftTypeId,
+                laborCategory: sampleEntry.laborCategory,
+                headcount: sampleEntry.headcount,
+                hoursPerPerson: sampleEntry.hoursPerPerson,
+                totalHours: sampleEntry.totalHours
+              })
+            }
+            
+            // Count unique craft types per category to detect if data was distributed
+            const craftTypesPerCategory = new Map<string, Set<string>>()
+            forecastWeek.entries.forEach((entry: any) => {
               const craft = loadedCraftTypes.find(c => c.id === entry.craftTypeId)
-              if (craft && entry.headcount > 0) {
-                const cat = categories[craft.category]
-                cat.headcount += entry.headcount
-                cat.hours += entry.totalHours
-                cat.cost += entry.forecastedCost
+              if (craft) {
+                if (!craftTypesPerCategory.has(craft.category)) {
+                  craftTypesPerCategory.set(craft.category, new Set())
+                }
+                craftTypesPerCategory.get(craft.category)!.add(craft.id)
               }
             })
+            
+            // Process forecast entries - handle both category-based and craft-type-based data
+            forecastWeek.entries.forEach((entry: {
+              craftTypeId?: string
+              laborCategory?: string
+              categoryName?: string
+              headcount: number
+              hoursPerPerson?: number
+              totalHours: number
+              forecastedCost: number
+              avgRate?: number
+            }) => {
+              // Handle category-based entries (new format from headcount API)
+              if (entry.laborCategory && entry.laborCategory in categories) {
+                const category = entry.laborCategory as 'direct' | 'indirect' | 'staff'
+                const cat = categories[category]
+                const hoursToAdd = entry.totalHours || (entry.headcount * (entry.hoursPerPerson || HOURS_PER_PERSON))
+                cat.headcount += entry.headcount
+                cat.hours += hoursToAdd
+                // Use the rate from the entry if available, otherwise use category rate
+                const rate = entry.avgRate || categoryRates[category]
+                cat.cost += hoursToAdd * rate
+                console.log(`[DEBUG] Category-based forecast - Added ${entry.headcount} headcount to ${category} for week ${weekDateOnly}, hours: ${hoursToAdd}, rate: $${rate}`)
+              }
+              // Handle craft-type-based entries (legacy format)
+              else if (entry.craftTypeId) {
+                const craft = loadedCraftTypes.find(c => c.id === entry.craftTypeId)
+                if (craft && entry.headcount > 0) {
+                  const cat = categories[craft.category]
+                  const hoursToAdd = entry.totalHours || (entry.headcount * HOURS_PER_PERSON)
+                  cat.headcount += entry.headcount
+                  cat.hours += hoursToAdd
+                  // Always use category rate for forecast calculations
+                  cat.cost += hoursToAdd * categoryRates[craft.category]
+                  console.log(`Added ${entry.headcount} headcount to ${craft.category} for week ${weekDateOnly}, hours: ${hoursToAdd}, rate: ${categoryRates[craft.category]}`)
+                }
+              }
+            })
+          } else {
+            console.log(`No forecast data found for week ${weekDateOnly}`)
           }
         }
 
@@ -381,9 +580,30 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
         cumulativeHours += weekTotals.hours
         cumulativeCost += weekTotals.cost
 
+        // Determine hours per week for this week
+        let weekHoursPerPerson = HOURS_PER_PERSON // Default to 50
+        
+        // For forecast weeks, check if we have saved hours data
+        if (!isActual && forecastData.weeks) {
+          const forecastWeek = forecastData.weeks.find((w: { weekEnding: string }) => {
+            const wDate = new Date(w.weekEnding).toISOString().split('T')[0]
+            const targetDate = weekDate.toISOString().split('T')[0]
+            return wDate === targetDate
+          })
+          
+          if (forecastWeek && forecastWeek.entries && forecastWeek.entries.length > 0) {
+            // Use hours from the first entry (they should all be the same for simplified data)
+            const firstEntry = forecastWeek.entries[0]
+            if (firstEntry.hoursPerPerson) {
+              weekHoursPerPerson = firstEntry.hoursPerPerson
+            }
+          }
+        }
+
         combinedWeeks.push({
           weekEnding: weekString,
           isActual,
+          hoursPerWeek: weekHoursPerPerson,
           categories,
           totals: {
             ...weekTotals,
@@ -512,7 +732,7 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
       
       if (categoryEntry) {
         categoryEntry.headcount = headcount
-        categoryEntry.hours = headcount * HOURS_PER_PERSON
+        categoryEntry.hours = headcount * week.hoursPerWeek
         categoryEntry.cost = categoryEntry.hours * categoryEntry.rate
         
         // Recalculate week totals
@@ -542,6 +762,50 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
     })
   }
 
+  const updateHoursPerWeek = (weekIndex: number, value: string) => {
+    const hours = parseFloat(value) || 50
+    const cellKey = `${weekIndex}-hours`
+    
+    setEditedCells(prev => new Set(prev).add(cellKey))
+    
+    setWeeklyData(prev => {
+      const newData = [...prev]
+      const week = newData[weekIndex]
+      
+      week.hoursPerWeek = hours
+      
+      // Recalculate all category hours based on new hours per week
+      Object.values(week.categories).forEach(cat => {
+        cat.hours = cat.headcount * hours
+        cat.cost = cat.hours * cat.rate
+      })
+      
+      // Recalculate week totals
+      week.totals = Object.values(week.categories).reduce((totals, cat) => ({
+        headcount: totals.headcount + cat.headcount,
+        hours: totals.hours + cat.hours,
+        cost: totals.cost + cat.cost,
+        avgRate: 0
+      }), { headcount: 0, hours: 0, cost: 0, avgRate: 0 })
+      
+      week.totals.avgRate = week.totals.hours > 0 ? week.totals.cost / week.totals.hours : 0
+      
+      // Recalculate cumulative totals
+      let cumulativeHours = 0
+      let cumulativeCost = 0
+      newData.forEach(w => {
+        cumulativeHours += w.totals.hours
+        cumulativeCost += w.totals.cost
+        w.cumulative = {
+          hours: cumulativeHours,
+          cost: cumulativeCost
+        }
+      })
+      
+      return newData
+    })
+  }
+
   const copyWeekForward = (fromIndex: number, toEnd: boolean = true) => {
     setWeeklyData(prev => {
       const newData = [...prev]
@@ -552,6 +816,10 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
       
       for (let i = fromIndex + 1; i < endIndex; i++) {
         if (!newData[i].isActual) {
+          // Copy hours per week
+          newData[i].hoursPerWeek = fromWeek.hoursPerWeek
+          setEditedCells(prev => new Set(prev).add(`${i}-hours`))
+          
           // Copy category values
           Object.keys(newData[i].categories).forEach(cat => {
             const category = cat as 'direct' | 'indirect' | 'staff'
@@ -559,7 +827,7 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
             const toCat = newData[i].categories[category]
             
             toCat.headcount = fromCat.headcount
-            toCat.hours = toCat.headcount * HOURS_PER_PERSON
+            toCat.hours = toCat.headcount * newData[i].hoursPerWeek
             toCat.cost = toCat.hours * toCat.rate
             setEditedCells(prev => new Set(prev).add(`${i}-${category}`))
           })
@@ -643,27 +911,20 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
       setSuccessMessage(null)
 
       // Prepare forecast data (only non-actual weeks)
-      // We need to convert categories back to individual craft types for saving
+      // Send category names as craft_type_id as expected by the API
       const forecastWeeks = weeklyData
         .filter(week => !week.isActual)
         .map(week => {
           const entries: any[] = []
           
-          // For each category with headcount, distribute evenly among craft types
+          // Save one entry per category with the category name as craft_type_id
           Object.entries(week.categories).forEach(([cat, data]) => {
             if (data.headcount > 0) {
-              const categoryCrafts = craftTypes.filter(ct => ct.category === cat)
-              if (categoryCrafts.length > 0) {
-                // Distribute headcount evenly among craft types in this category
-                const headcountPerCraft = data.headcount / categoryCrafts.length
-                categoryCrafts.forEach(craft => {
-                  entries.push({
-                    craft_type_id: craft.id,
-                    headcount: headcountPerCraft,
-                    hours_per_person: HOURS_PER_PERSON
-                  })
-                })
-              }
+              entries.push({
+                craft_type_id: cat, // Send category name: "direct", "indirect", or "staff"
+                headcount: data.headcount,
+                hours_per_person: week.hoursPerWeek
+              })
             }
           })
           
@@ -679,8 +940,17 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
         return
       }
 
+      // Debug logging
+      console.log('Saving forecast data:', {
+        project_id: projectId,
+        weeks: forecastWeeks.length,
+        firstWeek: forecastWeeks[0],
+        totalEntries: forecastWeeks.reduce((sum, week) => sum + week.entries.length, 0)
+      })
+
       const response = await fetch('/api/labor-forecasts/headcount', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           project_id: projectId,
@@ -688,13 +958,39 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
         })
       })
 
-      const data = await response.json()
+      let data
+      try {
+        data = await response.json()
+        console.log('API Response:', data)
+      } catch (jsonError) {
+        console.error('Failed to parse API response:', jsonError)
+        console.log('Response status:', response.status)
+        console.log('Response ok:', response.ok)
+        throw new Error('Invalid response from server')
+      }
 
       if (!response.ok) {
+        console.error('API Error:', data.error || 'Unknown error')
         throw new Error(data.error || 'Failed to save data')
       }
 
-      setSuccessMessage(`Forecast saved successfully!`)
+      // Show detailed success message with what was actually saved
+      const { summary } = data
+      if (summary) {
+        const parts = []
+        if (summary.created > 0) parts.push(`${summary.created} created`)
+        if (summary.updated > 0) parts.push(`${summary.updated} updated`)
+        if (summary.deleted > 0) parts.push(`${summary.deleted} deleted`)
+        
+        if (parts.length > 0) {
+          setSuccessMessage(`Forecast saved: ${parts.join(', ')}`)
+        } else {
+          setSuccessMessage('No changes were saved (all headcount values may be 0)')
+        }
+      } else {
+        setSuccessMessage('Forecast saved successfully!')
+      }
+      
       setEditedCells(new Set())
     } catch (err) {
       console.error('Error saving:', err)
@@ -797,7 +1093,17 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-foreground">Composite Rate</p>
-              <p className="text-2xl font-bold text-foreground">${compositeRateInfo?.overall.toFixed(2) || '0.00'}/hr</p>
+              <p className="text-2xl font-bold text-foreground">
+                ${(() => {
+                  const rate = compositeRateInfo?.overall || 0
+                  console.log('[DEBUG] Displaying composite rate:', {
+                    compositeRateInfo,
+                    overall: compositeRateInfo?.overall,
+                    displayedRate: rate.toFixed(2)
+                  })
+                  return rate.toFixed(2)
+                })()}/hr
+              </p>
               <p className="text-xs text-foreground/60 mt-1">
                 {compositeRateInfo?.weeksOfData || 0} weeks of data
               </p>
@@ -860,6 +1166,9 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Staff
                 </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Hours/Week
+                </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-100">
                   Total HC
                 </th>
@@ -906,7 +1215,8 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
                         value={week.categories.direct.headcount || ''}
                         onChange={(e) => updateHeadcount(weekIndex, 'direct', e.target.value)}
                         className={`w-20 px-2 py-1 text-sm text-center border rounded ${
-                          editedCells.has(`${weekIndex}-direct`) ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+                          editedCells.has(`${weekIndex}-direct`) ? 'border-blue-500 bg-blue-50' : 
+                          week.categories.direct.headcount > 0 ? 'border-gray-300 bg-green-50' : 'border-gray-300'
                         } focus:ring-2 focus:ring-blue-500`}
                         placeholder="0"
                       />
@@ -927,7 +1237,8 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
                         value={week.categories.indirect.headcount || ''}
                         onChange={(e) => updateHeadcount(weekIndex, 'indirect', e.target.value)}
                         className={`w-20 px-2 py-1 text-sm text-center border rounded ${
-                          editedCells.has(`${weekIndex}-indirect`) ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+                          editedCells.has(`${weekIndex}-indirect`) ? 'border-blue-500 bg-blue-50' : 
+                          week.categories.indirect.headcount > 0 ? 'border-gray-300 bg-green-50' : 'border-gray-300'
                         } focus:ring-2 focus:ring-blue-500`}
                         placeholder="0"
                       />
@@ -948,12 +1259,37 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
                         value={week.categories.staff.headcount || ''}
                         onChange={(e) => updateHeadcount(weekIndex, 'staff', e.target.value)}
                         className={`w-20 px-2 py-1 text-sm text-center border rounded ${
-                          editedCells.has(`${weekIndex}-staff`) ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+                          editedCells.has(`${weekIndex}-staff`) ? 'border-blue-500 bg-blue-50' : 
+                          week.categories.staff.headcount > 0 ? 'border-gray-300 bg-green-50' : 'border-gray-300'
                         } focus:ring-2 focus:ring-blue-500`}
                         placeholder="0"
                       />
                     )}
                   </td>
+                  
+                  {/* Hours/Week */}
+                  <td className="px-4 py-2 text-center">
+                    {week.isActual ? (
+                      <span className="text-sm text-gray-900">
+                        {week.hoursPerWeek}
+                      </span>
+                    ) : (
+                      <input
+                        type="number"
+                        step="1"
+                        min="0"
+                        max="80"
+                        value={week.hoursPerWeek || ''}
+                        onChange={(e) => updateHoursPerWeek(weekIndex, e.target.value)}
+                        className={`w-16 px-2 py-1 text-sm text-center border rounded ${
+                          editedCells.has(`${weekIndex}-hours`) ? 'border-blue-500 bg-blue-50' : 
+                          (week.categories.direct.headcount > 0 || week.categories.indirect.headcount > 0 || week.categories.staff.headcount > 0) ? 'border-gray-300 bg-green-50' : 'border-gray-300'
+                        } focus:ring-2 focus:ring-blue-500`}
+                        placeholder="50"
+                      />
+                    )}
+                  </td>
+                  
                   <td className="px-4 py-2 text-center text-sm font-medium bg-gray-50">
                     {week.totals.headcount.toFixed(1)}
                   </td>
@@ -1038,7 +1374,7 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
           <span>Historical Actuals</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-white border border-gray-300"></div>
+          <div className="w-4 h-4 bg-green-50 border border-gray-300"></div>
           <span>Forecast</span>
         </div>
         <div className="flex items-center gap-2">

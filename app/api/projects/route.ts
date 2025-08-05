@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     // Get query parameters
     const searchParams = request.nextUrl.searchParams
     const status = searchParams.get('status')
-    const divisionId = searchParams.get('division_id')
+    // Division filtering removed - divisions table no longer exists
     const search = searchParams.get('search')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = searchParams.get('limit') === 'all' ? null : parseInt(searchParams.get('limit') || '20')
@@ -34,13 +34,11 @@ export async function GET(request: NextRequest) {
     
     const offset = limit ? (page - 1) * limit : 0
 
-    // Build query - simplified to isolate issue
+    // Build query - simplified after database migration
     let query = supabase
       .from('projects')
       .select(`
         *,
-        client:clients!projects_client_id_fkey(id, name),
-        division:divisions!projects_division_id_fkey(id, name, code),
         project_manager:profiles!projects_project_manager_id_fkey(id, first_name, last_name, email)
       `, { count: 'exact' })
       .is('deleted_at', null)
@@ -49,9 +47,7 @@ export async function GET(request: NextRequest) {
     if (status) {
       query = query.eq('status', status)
     }
-    if (divisionId) {
-      query = query.eq('division_id', divisionId)
-    }
+    // Division filtering removed
     if (search) {
       query = query.or(`name.ilike.%${search}%,job_number.ilike.%${search}%`)
     }
@@ -130,7 +126,6 @@ export async function GET(request: NextRequest) {
       console.error('Projects fetch error:', error)
       console.error('Query details:', { 
         status, 
-        divisionId, 
         search, 
         columnFilters: Object.fromEntries(columnFilters), 
         sort_by, 
@@ -139,25 +134,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
 
-    // Fetch division counts for each project
-    if (projects && projects.length > 0) {
-      const projectIds = projects.map(p => p.id)
-      const { data: divisionCounts } = await supabase
-        .from('project_divisions')
-        .select('project_id')
-        .in('project_id', projectIds)
-
-      // Count divisions per project
-      const divisionCountMap = new Map<string, number>()
-      divisionCounts?.forEach(pd => {
-        divisionCountMap.set(pd.project_id, (divisionCountMap.get(pd.project_id) || 0) + 1)
-      })
-
-      // Add division count to each project
-      projects.forEach(project => {
-        project.division_count = divisionCountMap.get(project.id) || 1
-      })
-    }
+    // Division counts removed - no longer using divisions
 
     // Calculate total pages
     const totalPages = limit ? Math.ceil((count || 0) / limit) : 1
@@ -198,9 +175,8 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    // Only certain roles can create projects
-    const allowedRoles = ['controller', 'executive', 'ops_manager']
-    if (!userProfile || !allowedRoles.includes(userProfile.role)) {
+    // Only project managers can create projects
+    if (!userProfile || userProfile.role !== 'project_manager') {
       return NextResponse.json(
         { error: 'Insufficient permissions to create projects' },
         { status: 403 }
@@ -211,8 +187,7 @@ export async function POST(request: NextRequest) {
     const projectSchema = z.object({
       name: z.string().min(1).max(200),
       job_number: z.string().min(1).max(50),
-      client_id: z.string().uuid(),
-      division_id: z.string().uuid(),
+      // Client and division removed from schema
       project_manager_id: z.string().uuid(),
       superintendent_id: z.string().uuid().optional(),
       original_contract: z.number().min(0),
@@ -235,19 +210,8 @@ export async function POST(request: NextRequest) {
         other_budget_description: z.string().optional(),
         notes: z.string().optional()
       }).optional(),
-      contract_breakdown: z.object({
-        client_po_number: z.string().optional(),
-        client_representative: z.string().optional(),
-        uses_line_items: z.boolean().default(false),
-        // Legacy fields for compatibility
-        labor_po_amount: z.number().min(0).default(0),
-        materials_po_amount: z.number().min(0).default(0),
-        demo_po_amount: z.number().min(0).default(0),
-        contract_date: z.string().optional(),
-        contract_terms: z.string().optional()
-      }).optional(),
-      // New fields for dynamic PO line items
-      po_line_items: z.array(z.object({
+      // Client PO line items that make up the contract value
+      client_po_line_items: z.array(z.object({
         line_number: z.number().min(1),
         description: z.string().min(1),
         amount: z.number().min(0)
@@ -271,8 +235,6 @@ export async function POST(request: NextRequest) {
       .insert({
         name: validatedData.name,
         job_number: validatedData.job_number,
-        client_id: validatedData.client_id,
-        division_id: validatedData.division_id,
         project_manager_id: validatedData.project_manager_id,
         superintendent_id: validatedData.superintendent_id,
         original_contract: validatedData.original_contract,
@@ -316,36 +278,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create contract breakdown if provided
-    if (validatedData.contract_breakdown) {
-      // Only include fields that exist in the database schema
-      // Note: total_contract_amount is a generated column and should not be included
-      const contractData = {
-        project_id: project.id,
-        client_po_number: validatedData.contract_breakdown.client_po_number,
-        client_representative: validatedData.contract_breakdown.client_representative,
-        labor_po_amount: validatedData.contract_breakdown.labor_po_amount || 0,
-        materials_po_amount: validatedData.contract_breakdown.materials_po_amount || 0,
-        demo_po_amount: validatedData.contract_breakdown.demo_po_amount || 0,
-        contract_date: validatedData.contract_breakdown.contract_date,
-        contract_terms: validatedData.contract_breakdown.contract_terms,
-        created_by: user.id
-      }
-
-      const { error: contractError } = await supabase
-        .from('project_contract_breakdowns')
-        .insert(contractData)
-
-      if (contractError) {
-        console.error('Contract breakdown creation error:', contractError)
-        console.error('Attempted data:', contractData)
-        // Don't fail the whole request, just log the error
-      }
-    }
-
-    // Create PO line items if provided
-    if (validatedData.po_line_items && validatedData.po_line_items.length > 0) {
-      const lineItems = validatedData.po_line_items.map(item => ({
+    // Create client PO line items if provided
+    if (validatedData.client_po_line_items && validatedData.client_po_line_items.length > 0) {
+      const lineItems = validatedData.client_po_line_items.map(item => ({
         project_id: project.id,
         line_number: item.line_number,
         description: item.description,
@@ -354,11 +289,11 @@ export async function POST(request: NextRequest) {
       }))
 
       const { error: lineItemsError } = await supabase
-        .from('project_po_line_items')
+        .from('client_po_line_items')
         .insert(lineItems)
 
       if (lineItemsError) {
-        console.error('PO line items creation error:', lineItemsError)
+        console.error('Client PO line items creation error:', lineItemsError)
         // Don't fail the whole request, just log the error
       }
     }
@@ -392,8 +327,6 @@ export async function POST(request: NextRequest) {
       .from('projects')
       .select(`
         *,
-        client:clients!projects_client_id_fkey(id, name),
-        division:divisions!projects_division_id_fkey(id, name, code),
         project_manager:profiles!projects_project_manager_id_fkey(id, first_name, last_name, email),
         superintendent:profiles!projects_superintendent_id_fkey(id, first_name, last_name, email)
       `)

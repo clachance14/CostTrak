@@ -83,13 +83,31 @@ export function LaborTrendCharts({ weeklyTrends, budgetedCost }: LaborTrendChart
   // Calculate cumulative costs for burn rate
   let cumulativeActual = 0
   let cumulativeForecast = 0
-  const cumulativeData = weeklyTrends.map(week => {
-    cumulativeActual += week.actualCost
-    cumulativeForecast += week.forecastedCost
+  let lastActualWeekIndex = -1
+  
+  // First pass: find the last week with actual data
+  weeklyTrends.forEach((week, index) => {
+    if (week.actualCost > 0) {
+      lastActualWeekIndex = index
+    }
+  })
+  
+  const cumulativeData = weeklyTrends.map((week, index) => {
+    // Track cumulative actual if we have actual data
+    if (week.actualCost > 0) {
+      cumulativeActual += week.actualCost
+      cumulativeForecast = cumulativeActual // Keep forecast in sync with actual
+    }
+    
+    // For weeks after the last actual, add forecast to the cumulative
+    if (index > lastActualWeekIndex && week.forecastedCost > 0) {
+      cumulativeForecast += week.forecastedCost
+    }
+    
     return {
       ...week,
-      cumulativeActual,
-      cumulativeForecast,
+      cumulativeActual: week.actualCost > 0 ? cumulativeActual : null,
+      cumulativeForecast: index >= lastActualWeekIndex && (week.actualCost > 0 || week.forecastedCost > 0) ? cumulativeForecast : null,
     }
   })
 
@@ -298,15 +316,16 @@ export function LaborTrendCharts({ weeklyTrends, budgetedCost }: LaborTrendChart
                   strokeWidth={3}
                   name="Actual (Cumulative)"
                   dot={{ r: 4 }}
+                  connectNulls={false}
                 />
                 <Line
                   type="monotone"
                   dataKey="cumulativeForecast"
                   stroke="#10b981"
                   strokeWidth={3}
-                  strokeDasharray="5 5"
                   name="Forecast (Cumulative)"
                   dot={{ r: 4 }}
+                  connectNulls={true}
                 />
               </LineChart>
             </ResponsiveContainer>

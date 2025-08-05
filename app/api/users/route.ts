@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     // Build query
     let query = supabase
       .from('profiles')
-      .select('id, email, first_name, last_name, role, division_id')
+      .select('id, email, first_name, last_name, role')
       .order('first_name')
 
     // Apply role filter if provided

@@ -115,17 +115,6 @@ export async function POST(request: NextRequest) {
       role: userProfile?.role,
     })
 
-    // TODO: Add two_factor_enabled field to profiles table
-    // For now, skip 2FA check
-    /*
-    if (userProfile?.two_factor_enabled) {
-      return NextResponse.json({
-        requiresTwoFactor: true,
-        sessionId: data.session?.access_token, // Temporary session for 2FA
-      })
-    }
-    */
-
     // Return success with user data
     return NextResponse.json({
       user: data.user,

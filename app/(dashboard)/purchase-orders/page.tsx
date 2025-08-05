@@ -36,11 +36,6 @@ interface PurchaseOrder {
     id: string
     job_number: string
     name: string
-    division: {
-      id: string
-      name: string
-      code: string
-    }
   }
   po_line_items: { count: number; total_amount: number }
 }
@@ -63,7 +58,7 @@ export default function PurchaseOrdersPage() {
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: null, direction: null })
   const [columnFilters, setColumnFilters] = useState<ColumnFilter[]>([])
 
-  const canImport = user && ['controller', 'accounting', 'ops_manager', 'project_manager'].includes(user.role)
+  const canImport = user && user.role === 'project_manager'
 
   // Sort handler
   const handleSort = (field: string) => {

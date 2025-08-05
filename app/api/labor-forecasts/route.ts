@@ -284,32 +284,7 @@ export async function POST(request: NextRequest) {
 
     if (createError) throw createError
 
-    // Check for variance and create notification if needed
-    const hourVariance = calculateVariance(
-      laborForecast.forecasted_hours,
-      laborForecast.actual_hours
-    )
-    const costVariance = calculateVariance(
-      laborForecast.forecasted_cost,
-      laborForecast.actual_cost
-    )
-
-    if (hourVariance.exceeds_threshold || costVariance.exceeds_threshold) {
-      await supabase.from('notifications').insert({
-        user_id: project.project_manager_id,
-        type: 'labor_variance',
-        title: 'Labor Variance Alert',
-        message: `Labor forecast variance exceeds 10% for ${laborForecast.craft_type.name} in week ${formatWeekEnding(new Date(laborForecast.week_ending))}`,
-        priority: 'medium',
-        related_entity_type: 'labor_forecast',
-        related_entity_id: laborForecast.id,
-        data: {
-          project_id: project.id,
-          hour_variance: hourVariance.percentage,
-          cost_variance: costVariance.percentage
-        }
-      })
-    }
+    // Notifications removed in simplification
 
     // Log to audit trail
     await supabase.from('audit_log').insert({

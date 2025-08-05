@@ -1,161 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { 
-  changeOrderUpdateSchema,
-  validateStatusTransition,
-  validateChangeOrderAmount
-} from '@/lib/validations/change-order'
 import { z } from 'zod'
-
-export const dynamic = 'force-dynamic'
 
 // GET /api/change-orders/[id] - Get single change order
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createClient()
   const { id } = await params
-  const changeOrderId = id
-  
-  // Check authentication
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  // Get user details
-  const { data: userDetails } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!userDetails) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 })
-  }
-
-  // Viewers don't have access to change orders
-  if (userDetails.role === 'viewer') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
-
   try {
-    // Fetch change order with related data
+    const supabase = await createClient()
+    
+    // Check authentication
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { data: changeOrder, error } = await supabase
       .from('change_orders')
       .select(`
         *,
-        project:projects!inner(
+        project:projects(
           id,
           job_number,
           name,
-          project_manager_id,
-          original_contract,
-          revised_contract,
-          division:divisions!inner(id, name, code),
-          client:clients!inner(id, name)
+          project_manager_id
         ),
         created_by_user:profiles!change_orders_created_by_fkey(
           id,
           first_name,
-          last_name,
-          email
+          last_name
         ),
         approved_by_user:profiles!change_orders_approved_by_fkey(
           id,
           first_name,
-          last_name,
-          email
+          last_name
         )
       `)
-      .eq('id', changeOrderId)
-      .is('deleted_at', null)
+      .eq('id', id)
       .single()
 
-    if (error || !changeOrder) {
-      return NextResponse.json({ error: 'Change order not found' }, { status: 404 })
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return NextResponse.json({ error: 'Change order not found' }, { status: 404 })
+      }
+      return NextResponse.json({ error: error.message }, { status: 400 })
     }
 
-    // Check access for project managers
-    if (userDetails.role === 'project_manager' && 
-        changeOrder.project.project_manager_id !== user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    // Get audit log for this change order
-    const { data: auditLogs } = await supabase
-      .from('audit_log')
-      .select('*')
-      .eq('entity_type', 'change_order')
-      .eq('entity_id', changeOrderId)
-      .order('created_at', { ascending: false })
-      .limit(10)
-
-    // Format response with camelCase properties to match the frontend interface
-    const response = {
-      changeOrder: {
-        id: changeOrder.id,
-        projectId: changeOrder.project_id,
-        coNumber: changeOrder.co_number,
-        description: changeOrder.description,
-        amount: changeOrder.amount,
-        status: changeOrder.status,
-        pricingType: changeOrder.pricing_type,
-        impactScheduleDays: changeOrder.impact_schedule_days,
-        reason: changeOrder.reason,
-        manhours: changeOrder.manhours,
-        laborAmount: changeOrder.labor_amount,
-        equipmentAmount: changeOrder.equipment_amount,
-        materialAmount: changeOrder.material_amount,
-        subcontractAmount: changeOrder.subcontract_amount,
-        markupAmount: changeOrder.markup_amount,
-        taxAmount: changeOrder.tax_amount,
-        submittedDate: changeOrder.submitted_date,
-        approvedDate: changeOrder.approved_date,
-        rejectionReason: changeOrder.rejection_reason,
-        createdAt: changeOrder.created_at,
-        updatedAt: changeOrder.updated_at,
-        project: {
-          id: changeOrder.project.id,
-          jobNumber: changeOrder.project.job_number,
-          name: changeOrder.project.name,
-          originalContract: changeOrder.project.original_contract,
-          revisedContract: changeOrder.project.revised_contract,
-          division: {
-            id: changeOrder.project.division.id,
-            name: changeOrder.project.division.name,
-            code: changeOrder.project.division.code
-          },
-          client: {
-            id: changeOrder.project.client.id,
-            name: changeOrder.project.client.name
-          }
-        },
-        createdBy: changeOrder.created_by_user ? {
-          id: changeOrder.created_by_user.id,
-          name: `${changeOrder.created_by_user.first_name} ${changeOrder.created_by_user.last_name}`,
-          email: changeOrder.created_by_user.email
-        } : null,
-        approvedBy: changeOrder.approved_by_user ? {
-          id: changeOrder.approved_by_user.id,
-          name: `${changeOrder.approved_by_user.first_name} ${changeOrder.approved_by_user.last_name}`,
-          email: changeOrder.approved_by_user.email
-        } : null
-      },
-      auditTrail: auditLogs?.map(log => ({
-        action: log.action,
-        changes: log.changes,
-        timestamp: log.created_at,
-        user: 'System' // TODO: Fetch user name from profiles table using performed_by field
-      })) || []
-    }
-
-    return NextResponse.json(response)
+    return NextResponse.json({ change_order: changeOrder })
   } catch (error) {
-    console.error('Change order fetch error:', error)
+    console.error('Get change order error:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch change order' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
@@ -166,159 +63,127 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createClient()
   const { id } = await params
-  const changeOrderId = id
-  
-  // Check authentication
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  // Get user details
-  const { data: userDetails } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!userDetails) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 })
-  }
-
-  // Check permissions
-  if (['viewer', 'accounting', 'executive'].includes(userDetails.role)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
-
   try {
-    const body = await request.json()
-    const validatedData = changeOrderUpdateSchema.parse(body)
+    const supabase = await createClient()
+    
+    // Check authentication
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     // Get existing change order
     const { data: existingCO, error: fetchError } = await supabase
       .from('change_orders')
-      .select(`
-        *,
-        project:projects!inner(project_manager_id)
-      `)
-      .eq('id', changeOrderId)
-      .is('deleted_at', null)
+      .select('*, project:projects(project_manager_id)')
+      .eq('id', id)
       .single()
 
     if (fetchError || !existingCO) {
       return NextResponse.json({ error: 'Change order not found' }, { status: 404 })
     }
 
-    // Check access for project managers
-    if (userDetails.role === 'project_manager' && 
-        existingCO.project.project_manager_id !== user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    // Cannot edit approved or cancelled change orders
-    if (existingCO.status && ['approved', 'cancelled'].includes(existingCO.status)) {
+    // All authenticated users can edit pending change orders
+    if (existingCO.status !== 'pending' && !validatedData.status) {
       return NextResponse.json(
-        { error: 'Cannot edit change orders with status: ' + existingCO.status },
+        { error: 'Can only edit pending change orders' },
         { status: 400 }
       )
     }
 
-    // Validate status transition if status is being changed
-    if (validatedData.status && validatedData.status !== existingCO.status && existingCO.status) {
-      const statusValidation = validateStatusTransition(
-        existingCO.status,
-        validatedData.status,
-        userDetails.role
-      )
-      
-      if (!statusValidation.valid) {
-        return NextResponse.json(
-          { error: statusValidation.message },
-          { status: 403 }
-        )
-      }
+    // Validate request body
+    const updateSchema = z.object({
+      description: z.string().min(1).optional(),
+      pricing_type: z.enum(['LS', 'T&M', 'Estimate', 'Credit']).optional(),
+      amount: z.number().optional(),
+      submitted_date: z.string().datetime().optional(),
+      status: z.enum(['pending', 'approved', 'rejected']).optional(),
+      // Cost breakdown fields
+      manhours: z.number().optional(),
+      labor_amount: z.number().optional(),
+      equipment_amount: z.number().optional(),
+      material_amount: z.number().optional(),
+      subcontract_amount: z.number().optional(),
+      markup_amount: z.number().optional(),
+      tax_amount: z.number().optional(),
+      impact_schedule_days: z.number().optional()
+    })
 
-      // Validate amount for approval
-      if (validatedData.status === 'approved') {
-        const amount = validatedData.amount || existingCO.amount
-        const amountValidation = validateChangeOrderAmount(amount, userDetails.role)
-        
-        if (!amountValidation.valid) {
-          return NextResponse.json(
-            { error: amountValidation.message },
-            { status: 403 }
-          )
-        }
-      }
-    }
+    const body = await request.json()
+    const validatedData = updateSchema.parse(body)
 
-    // Prepare update data
-    const updateData: Record<string, unknown> = { ...validatedData }
-    
+    // Track status changes
+    const wasApproved = existingCO.status === 'approved'
+    const isNowApproved = validatedData.status === 'approved'
+    const isNowRejected = validatedData.status === 'rejected'
+
     // If approving, set approved_by and approved_date
-    if (validatedData.status === 'approved') {
-      updateData.approved_by = user.id
-      updateData.approved_date = new Date().toISOString()
+    if (!wasApproved && isNowApproved) {
+      validatedData.approved_by = user.id
+      validatedData.approved_date = new Date().toISOString()
     }
 
-    // Update the change order
-    const { data: updatedCO, error: updateError } = await supabase
+    // If rejecting, soft delete by setting deleted_at
+    if (isNowRejected) {
+      validatedData.deleted_at = new Date().toISOString()
+    }
+
+    // Update change order
+    const { data: changeOrder, error } = await supabase
       .from('change_orders')
-      .update(updateData)
-      .eq('id', changeOrderId)
-      .select()
+      .update(validatedData)
+      .eq('id', id)
+      .select(`
+        *,
+        project:projects(
+          id,
+          job_number,
+          name
+        ),
+        created_by_user:profiles!change_orders_created_by_fkey(
+          id,
+          first_name,
+          last_name
+        ),
+        approved_by_user:profiles!change_orders_approved_by_fkey(
+          id,
+          first_name,
+          last_name
+        )
+      `)
       .single()
 
-    if (updateError) throw updateError
-
-    // Log changes to audit trail
-    const changes: Record<string, unknown> = {}
-    Object.keys(validatedData).forEach(key => {
-      const existingValue = (existingCO as Record<string, unknown>)[key]
-      const newValue = (validatedData as Record<string, unknown>)[key]
-      if (existingValue !== newValue) {
-        changes[key] = {
-          from: existingValue,
-          to: newValue
-        }
-      }
-    })
-
-    if (Object.keys(changes).length > 0) {
-      await supabase.from('audit_log').insert({
-        performed_by: user.id,
-        action: 'update',
-        entity_type: 'change_order',
-        entity_id: changeOrderId,
-        changes: changes as any // TODO: Fix Json type
-      })
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 })
     }
 
-    return NextResponse.json({
-      changeOrder: {
-        id: updatedCO.id,
-        projectId: updatedCO.project_id,
-        coNumber: updatedCO.co_number,
-        description: updatedCO.description,
-        amount: updatedCO.amount,
-        status: updatedCO.status,
-        impactScheduleDays: updatedCO.impact_schedule_days,
-        submittedDate: updatedCO.submitted_date,
-        approvedDate: updatedCO.approved_date
-      }
+    // Update project revised contract if status changed
+    if (wasApproved !== isNowApproved) {
+      await updateProjectRevisedContract(supabase, existingCO.project_id)
+    }
+
+    // Log to audit trail
+    await supabase.from('audit_log').insert({
+      entity_type: 'change_order',
+      entity_id: id,
+      action: 'update',
+      changes: validatedData,
+      performed_by: user.id
     })
+
+    return NextResponse.json({ change_order: changeOrder })
   } catch (error) {
-    console.error('Change order update error:', error)
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { error: 'Validation error', details: error.errors },
         { status: 400 }
       )
     }
+
+    console.error('Update change order error:', error)
     return NextResponse.json(
-      { error: 'Failed to update change order' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
@@ -329,78 +194,96 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createClient()
   const { id } = await params
-  const changeOrderId = id
-  
-  // Check authentication
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  // Get user details
-  const { data: userDetails } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!userDetails) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 })
-  }
-
-  // Only controllers can delete change orders
-  if (userDetails.role !== 'controller') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
-
   try {
+    const supabase = await createClient()
+    
+    // Check authentication
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     // Get existing change order
     const { data: existingCO, error: fetchError } = await supabase
       .from('change_orders')
-      .select('id, status, co_number')
-      .eq('id', changeOrderId)
-      .is('deleted_at', null)
+      .select('*, project:projects(project_manager_id)')
+      .eq('id', id)
       .single()
 
     if (fetchError || !existingCO) {
       return NextResponse.json({ error: 'Change order not found' }, { status: 404 })
     }
 
-    // Cannot delete approved change orders
-    if (existingCO.status === 'approved') {
+    // All authenticated users can delete pending change orders
+
+    // Only allow deletion of pending change orders
+    if (existingCO.status !== 'pending') {
       return NextResponse.json(
-        { error: 'Cannot delete approved change orders' },
+        { error: 'Can only delete pending change orders' },
         { status: 400 }
       )
     }
 
-    // Change orders don't have soft delete - we just change status to cancelled
-    const { error: deleteError } = await supabase
+    // Soft delete by updating status to rejected
+    const { error } = await supabase
       .from('change_orders')
-      .update({ status: 'cancelled' })
-      .eq('id', changeOrderId)
+      .update({ 
+        status: 'rejected',
+        deleted_at: new Date().toISOString()
+      })
+      .eq('id', id)
 
-    if (deleteError) throw deleteError
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 })
+    }
 
     // Log to audit trail
     await supabase.from('audit_log').insert({
-      performed_by: user.id,
-      action: 'delete',
       entity_type: 'change_order',
-      entity_id: changeOrderId,
-      changes: { deleted: true, co_number: existingCO.co_number } as any // TODO: Fix Json type
+      entity_id: id,
+      action: 'delete',
+      changes: { status: 'rejected' },
+      performed_by: user.id
     })
 
-    return NextResponse.json({ 
-      message: 'Change order deleted successfully' 
-    })
+    return NextResponse.json({ message: 'Change order deleted successfully' })
   } catch (error) {
-    console.error('Change order deletion error:', error)
+    console.error('Delete change order error:', error)
     return NextResponse.json(
-      { error: 'Failed to delete change order' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
+  }
+}
+
+// Helper function to update project revised contract
+async function updateProjectRevisedContract(supabase: ReturnType<typeof createClient>, projectId: string) {
+  // Get all approved change orders for the project
+  const { data: approvedChangeOrders } = await supabase
+    .from('change_orders')
+    .select('amount')
+    .eq('project_id', projectId)
+    .eq('status', 'approved')
+
+  if (approvedChangeOrders) {
+    const totalChangeOrders = approvedChangeOrders.reduce((sum: number, co: { amount: number }) => sum + (co.amount || 0), 0)
+    
+    // Get project original contract
+    const { data: project } = await supabase
+      .from('projects')
+      .select('original_contract')
+      .eq('id', projectId)
+      .single()
+
+    if (project) {
+      const revisedContract = (project.original_contract || 0) + totalChangeOrders
+      
+      // Update project revised contract
+      await supabase
+        .from('projects')
+        .update({ revised_contract: revisedContract })
+        .eq('id', projectId)
+    }
   }
 }

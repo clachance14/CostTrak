@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
-// GET /api/labor-forecasts/running-averages - Get running average rates
+// GET /api/labor-forecasts/running-averages - Get running average rates by category
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
   
@@ -11,17 +11,6 @@ export async function GET(request: NextRequest) {
   const { data: { user }, error: userError } = await supabase.auth.getUser()
   if (userError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  // Get user details
-  const { data: userDetails } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!userDetails) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
   try {
@@ -35,10 +24,25 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Check project access
+    // Single query to check project and get category rates
+    const { data: categoryRates, error: ratesError } = await supabase
+      .rpc('get_labor_category_rates', {
+        p_project_id: projectId,
+        p_weeks_back: weeksBack
+      })
+
+    if (ratesError) {
+      // If error is about project not found, return 404
+      if (ratesError.message?.includes('project')) {
+        return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      }
+      throw ratesError
+    }
+
+    // Get project info for response
     const { data: project } = await supabase
       .from('projects')
-      .select('id, job_number, name, project_manager_id')
+      .select('id, job_number, name')
       .eq('id', projectId)
       .single()
 
@@ -46,151 +50,43 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    // Check access permissions
-    if (userDetails.role === 'project_manager' && project.project_manager_id !== user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    // Transform data for frontend compatibility
+    const averages = (categoryRates || []).map(rate => ({
+      laborCategory: rate.category,
+      avgRate: Number(rate.avg_rate) || 0,
+      totalHours: Number(rate.total_hours) || 0,
+      totalCost: Number(rate.total_cost) || 0,
+      weeksOfData: rate.week_count || 0
+    }))
+
+    // Calculate summary
+    const summary = {
+      totalCategories: averages.length,
+      categoriesWithData: averages.filter(a => a.weeksOfData > 0).length,
+      avgWeeksOfData: averages.length 
+        ? Math.round(averages.reduce((sum, a) => sum + a.weeksOfData, 0) / averages.length)
+        : 0,
+      totalHours: averages.reduce((sum, a) => sum + a.totalHours, 0),
+      totalCost: averages.reduce((sum, a) => sum + a.totalCost, 0),
+      overallAvgRate: averages.reduce((sum, a) => sum + a.totalHours, 0) > 0
+        ? averages.reduce((sum, a) => sum + a.totalCost, 0) / averages.reduce((sum, a) => sum + a.totalHours, 0)
+        : 0
     }
 
-    if (userDetails.role === 'viewer') {
-      const { data: access } = await supabase
-        .from('user_project_access')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('project_id', projectId)
-        .single()
-
-      if (!access) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      }
-    }
-
-    // Try to get running averages from the table first
-    const result = await supabase
-      .from('labor_running_averages')
-      .select(`
-        *,
-        craft_type:craft_types(
-          id,
-          name,
-          code,
-          category
-        )
-      `)
-      .eq('project_id', projectId)
-    
-    let runningAverages = result.data
-    const error = result.error
-
-    // If no data or error, calculate from labor_actuals
-    if (error || !runningAverages || runningAverages.length === 0) {
-      if (error) {
-        console.error('Error fetching running averages:', JSON.stringify(error, null, 2))
-      }
-      console.log(`No running averages found for project ${projectId}, calculating from actuals...`)
-      
-      // Get all craft types
-      const { data: craftTypes } = await supabase
-        .from('craft_types')
-        .select('*')
-        .eq('is_active', true)
-      
-      // Calculate date range
-      const endDate = new Date()
-      const startDate = new Date()
-      startDate.setDate(startDate.getDate() - weeksBack * 7)
-      
-      // Get labor actuals for the period
-      const { data: laborActuals } = await supabase
-        .from('labor_actuals')
-        .select('*')
-        .eq('project_id', projectId)
-        .gte('week_ending', startDate.toISOString())
-        .lte('week_ending', endDate.toISOString())
-        .gt('actual_hours', 0)
-      
-      // Calculate running averages from actuals
-      runningAverages = craftTypes?.map(craft => {
-        const craftActuals = laborActuals?.filter(a => a.craft_type_id === craft.id) || []
-        const totalHours = craftActuals.reduce((sum, a) => sum + (a.actual_hours || 0), 0)
-        const totalCost = craftActuals.reduce((sum, a) => sum + (a.actual_cost || 0), 0)
-        const avgRate = totalHours > 0 ? totalCost / totalHours : 0
-        
-        return {
-          craft_type_id: craft.id,
-          craft_type: craft,
-          avg_rate: avgRate,
-          total_hours: totalHours,
-          total_cost: totalCost,
-          week_count: craftActuals.length,
-          last_updated: craftActuals.length > 0 
-            ? craftActuals.sort((a, b) => new Date(b.week_ending).getTime() - new Date(a.week_ending).getTime())[0].week_ending
-            : null,
-          // Add fields expected by the frontend
-          avg_cost: totalCost,
-          avg_hours: totalHours
-        }
-      }) || []
-    }
-
-    // Also get historical data for trend analysis
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - weeksBack * 7)
-
-    const { data: historicalData } = await supabase
-      .from('labor_actuals')
-      .select(`
-        week_ending,
-        craft_type_id,
-        actual_hours,
-        actual_cost
-      `)
-      .eq('project_id', projectId)
-      .gte('week_ending', startDate.toISOString())
-      .gt('actual_hours', 0)
-      .order('week_ending', { ascending: true })
-
-    // Group historical data by craft type
-    interface TrendData {
-      weekEnding: string
-      rate: number
-      hours: number
-      cost: number
-    }
-    const trendsMap = new Map<string, TrendData[]>()
-    historicalData?.forEach(row => {
-      if (!trendsMap.has(row.craft_type_id)) {
-        trendsMap.set(row.craft_type_id, [])
-      }
-      trendsMap.get(row.craft_type_id)?.push({
-        weekEnding: row.week_ending,
-        rate: row.actual_hours > 0 ? row.actual_cost / row.actual_hours : 0,
-        hours: row.actual_hours,
-        cost: row.actual_cost
-      })
-    })
-
-    // Format response
     const response = {
       project: {
         id: project.id,
         jobNumber: project.job_number,
         name: project.name
       },
-      averages: (runningAverages || []).map(avg => ({
-        craftTypeId: avg.craft_type_id,
-        craftName: avg.craft_type?.name || 'Unknown',
-        laborCategory: avg.craft_type?.category || 'direct',
-        avgRate: avg.avg_rate || ((avg as any).total_hours && (avg as any).total_hours > 0 ? (avg as any).total_cost / (avg as any).total_hours : 0),
-        weeksOfData: avg.week_count || 0,
-        lastActualWeek: avg.last_updated,
-        trends: trendsMap.get(avg.craft_type_id) || []
-      })) || [],
-      summary: {
-        totalCraftTypes: runningAverages?.length || 0,
-        craftTypesWithData: runningAverages?.filter(a => a.week_count > 0).length || 0,
-        avgWeeksOfData: runningAverages?.length 
-          ? Math.round(runningAverages.reduce((sum, a) => sum + (a.week_count || 0), 0) / runningAverages.length)
-          : 0
+      averages,
+      summary,
+      parameters: {
+        weeksBack,
+        dateRange: {
+          start: new Date(Date.now() - weeksBack * 7 * 24 * 60 * 60 * 1000).toISOString(),
+          end: new Date().toISOString()
+        }
       }
     }
 
@@ -198,9 +94,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Running averages fetch error:', {
       error,
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      projectId
+      message: error instanceof Error ? error.message : 'Unknown error'
     })
     return NextResponse.json(
       { 

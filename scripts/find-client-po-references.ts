@@ -66,7 +66,9 @@ async function findClientPOReferences() {
       clientReferences.push({
         icsPoNumber: po.po_number,
         vendor: po.vendor_name,
-        project: `${po.project?.job_number} - ${po.project?.name}`,
+        project: Array.isArray(po.project) 
+          ? `${po.project[0]?.job_number} - ${po.project[0]?.name}`
+          : `${po.project?.job_number} - ${po.project?.name}`,
         description: po.description || '',
         extractedReference: extractedRef
       })

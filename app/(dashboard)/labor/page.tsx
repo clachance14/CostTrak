@@ -51,10 +51,10 @@ export default function LaborDashboardPage() {
   
   const supabase = createClient()
 
-  const fetchProjectSummary = useCallback(async (projectId: string) => {
+  const fetchProjectSummary = useCallback(async (projectId: string, projectsList: ProjectInfo[]) => {
     try {
       // Get project info
-      const project = projects.find(p => p.id === projectId)
+      const project = projectsList.find(p => p.id === projectId)
       if (project) {
         setProjectInfo(project)
       }
@@ -157,7 +157,7 @@ export default function LaborDashboardPage() {
     } catch (error) {
       console.error('Error fetching project summary:', error)
     }
-  }, [projects, supabase])
+  }, [supabase])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -184,12 +184,13 @@ export default function LaborDashboardPage() {
         const projectsResponse = await fetch('/api/projects?limit=100')
         if (projectsResponse.ok) {
           const projectsData = await projectsResponse.json()
-          setProjects(projectsData.projects || [])
-        }
-
-        // If project is selected, fetch summary data
-        if (selectedProject) {
-          await fetchProjectSummary(selectedProject)
+          const projectsList = projectsData.projects || []
+          setProjects(projectsList)
+          
+          // If project is selected, fetch summary data
+          if (selectedProject) {
+            await fetchProjectSummary(selectedProject, projectsList)
+          }
         }
 
         setLoading(false)
@@ -200,7 +201,7 @@ export default function LaborDashboardPage() {
     }
 
     fetchData()
-  }, [selectedProject, router, supabase, fetchProjectSummary])
+  }, [selectedProject, router, supabase])
 
   const handleProjectChange = (value: string) => {
     setSelectedProject(value)

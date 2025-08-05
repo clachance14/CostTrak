@@ -25,16 +25,8 @@ export async function GET(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Get user details
-  const { data: userDetails } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!userDetails) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 })
-  }
+  // Simplified authentication - no role checking required
+  // All authenticated users can access project data
 
   try {
     // Fetch labor forecast with related data
@@ -71,24 +63,8 @@ export async function GET(
       return NextResponse.json({ error: 'Labor forecast not found' }, { status: 404 })
     }
 
-    // Check access for project managers and viewers
-    if (userDetails.role === 'project_manager' && 
-        laborForecast.project.project_manager_id !== user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    if (userDetails.role === 'viewer') {
-      const { data: access } = await supabase
-        .from('user_project_access')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('project_id', laborForecast.project_id)
-        .single()
-
-      if (!access) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      }
-    }
+    // Simplified access control - all authenticated users can view project data
+    // No complex role-based permissions needed
 
     // Get audit log for this forecast
     const { data: auditLogs } = await supabase
@@ -190,21 +166,8 @@ export async function PATCH(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Get user details
-  const { data: userDetails } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!userDetails) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 })
-  }
-
-  // Check permissions
-  if (['viewer', 'executive', 'accounting'].includes(userDetails.role)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  // Simplified authentication - authenticated users can modify data
+  // No complex role-based restrictions
 
   try {
     const body = await request.json()
@@ -225,11 +188,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Labor forecast not found' }, { status: 404 })
     }
 
-    // Check access for project managers
-    if (userDetails.role === 'project_manager' && 
-        existingForecast.project.project_manager_id !== user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
+    // Simplified access control - authenticated users can update data
+    // No complex role-based restrictions
 
     // Prepare update data
     const updateData: Record<string, unknown> = { ...validatedData }
@@ -286,22 +246,7 @@ export async function PATCH(
         .eq('id', existingForecast.craft_type_id)
         .single()
 
-      if (projectData) {
-        await supabase.from('notifications').insert({
-          user_id: projectData.project_manager_id,
-          type: 'labor_variance',
-          title: 'Labor Variance Alert',
-          message: `Labor forecast variance now exceeds 10% for ${craftData?.name} in week ${formatWeekEnding(new Date(existingForecast.week_ending))}`,
-          priority: 'medium',
-          related_entity_type: 'labor_forecast',
-          related_entity_id: forecastId,
-          data: {
-            project_id: existingForecast.project_id,
-            hour_variance: newHourVariance.percentage,
-            cost_variance: newCostVariance.percentage
-          }
-        })
-      }
+      // Notifications removed in simplification
     }
 
     // Log changes to audit trail
@@ -373,21 +318,8 @@ export async function DELETE(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Get user details
-  const { data: userDetails } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!userDetails) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 })
-  }
-
-  // Only controllers and ops managers can delete
-  if (!['controller', 'ops_manager'].includes(userDetails.role)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  // Simplified authentication - authenticated users can delete data
+  // No complex role-based restrictions
 
   try {
     // Get existing forecast

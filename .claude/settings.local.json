@@ -23,7 +23,18 @@
       "Bash(pnpm build:*)",
       "Bash(npx tsc:*)",
       "mcp__postgres__query",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(pnpm db:start:*)",
+      "Bash(npm:*)",
+      "Bash(pnpm:*)",
+      "Bash(git clone:*)",
+      "Bash(cipher:*)",
+      "Bash(cat:*)",
+      "Bash(curl:*)",
+      "Bash(claude mcp add:*)",
+      "mcp__agent-os__list_directory",
+      "mcp__agent-os__read_text_file"
     ],
     "deny": []
   }

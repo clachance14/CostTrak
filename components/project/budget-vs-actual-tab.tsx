@@ -4,9 +4,12 @@ import { useState, Fragment } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Card } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/utils'
-import { ChevronRight, ChevronDown } from 'lucide-react'
+import { ChevronRight, ChevronDown, BarChart3, FolderTree } from 'lucide-react'
 import { BudgetCategoryPOModal } from './budget-category-po-modal'
+// DivisionFilter removed - divisions no longer used
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface BudgetVsActualTabProps {
   projectId: string
@@ -21,21 +24,67 @@ interface BudgetCategory {
   forecastedFinal: number
   variance: number
   subcategories?: BudgetCategory[] | null
+  wbs_code?: string
+  has_detail?: boolean
 }
+
+interface BudgetData {
+  categories?: BudgetCategory[]
+  hasDetailedBudget?: boolean
+  wbsView?: BudgetCategory[]
+  categoryView?: BudgetCategory[]
+  totals?: {
+    budget: number
+    committed: number
+    actuals: number
+    forecastedFinal: number
+    variance: number
+  }
+}
+
+// Division interface removed - no longer used
 
 export function BudgetVsActualTab({ projectId, contractValue }: BudgetVsActualTabProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
+  // Division filtering removed
+  const [viewMode, setViewMode] = useState<'category' | 'wbs'>('category')
+
+  // Division fetching removed - no longer used
+
+  // Check if project has detailed budget data
+  const { data: hasDetailedBudget } = useQuery({
+    queryKey: ['has-detailed-budget', projectId],
+    queryFn: async () => {
+      const response = await fetch(`/api/project-budgets/import-coversheet?projectId=${projectId}`)
+      if (!response.ok) return false
+      const data = await response.json()
+      return data.hasExistingData || false
+    }
+  })
 
   // Fetch budget vs actual data
-  const { data: budgetData, isLoading } = useQuery({
-    queryKey: ['budget-vs-actual', projectId],
+  const { data: budgetData, isLoading } = useQuery<BudgetData>({
+    queryKey: ['budget-vs-actual', projectId, hasDetailedBudget, viewMode],
     queryFn: async () => {
-      const response = await fetch(`/api/projects/${projectId}/budget-vs-actual`)
+      const params = new URLSearchParams()
+      
+      // Use enhanced endpoint if detailed budget exists and WBS view is selected
+      const endpoint = hasDetailedBudget && viewMode === 'wbs' 
+        ? 'budget-vs-actual-enhanced' 
+        : 'budget-vs-actual'
+      
+      if (hasDetailedBudget && viewMode === 'wbs') {
+        params.append('use_wbs', 'true')
+      }
+      
+      const url = `/api/projects/${projectId}/${endpoint}${params.toString() ? `?${params.toString()}` : ''}`
+      const response = await fetch(url)
       if (!response.ok) throw new Error('Failed to fetch budget data')
       return response.json()
-    }
+    },
+    enabled: hasDetailedBudget !== undefined
   })
 
   const handleCategoryClick = (category: string, hasSubcategories: boolean) => {
@@ -71,48 +120,77 @@ export function BudgetVsActualTab({ projectId, contractValue }: BudgetVsActualTa
     )
   }
 
-  const categories: BudgetCategory[] = budgetData?.categories || []
+  // Use appropriate data based on view mode
+  const categories: BudgetCategory[] = 
+    viewMode === 'wbs' && budgetData?.wbsView 
+      ? budgetData.wbsView 
+      : (budgetData?.categories || budgetData?.categoryView || [])
 
-  const totals = categories.reduce((acc, cat) => ({
+  const totals = budgetData?.totals || categories.reduce((acc, cat) => ({
     budget: acc.budget + cat.budget,
     actuals: acc.actuals + cat.actuals,
     forecastedFinal: acc.forecastedFinal + cat.forecastedFinal,
     variance: acc.variance + cat.variance
   }), { budget: 0, actuals: 0, forecastedFinal: 0, variance: 0 })
 
+  // Use contract value directly
+  const displayContractValue = contractValue
+
   return (
     <div className="space-y-6">
       {/* Contract Value Header */}
-      {contractValue && (
+      {displayContractValue && (
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-sm text-muted-foreground">Contract Value</p>
-            <p className="text-2xl font-bold">{formatCurrency(contractValue)}</p>
+            <p className="text-sm text-muted-foreground">
+              Contract Value
+            </p>
+            <p className="text-2xl font-bold">{formatCurrency(displayContractValue)}</p>
           </div>
           <div className="text-right">
             <p className="text-sm text-muted-foreground">Forecasted Profit</p>
             <p className={cn(
               "text-2xl font-bold",
-              contractValue - totals.forecastedFinal >= 0 ? "text-green-600" : "text-red-600"
+              displayContractValue - totals.forecastedFinal >= 0 ? "text-green-600" : "text-red-600"
             )}>
-              {formatCurrency(contractValue - totals.forecastedFinal)}
+              {formatCurrency(displayContractValue - totals.forecastedFinal)}
             </p>
             <p className="text-sm text-muted-foreground">
-              Margin: {((contractValue - totals.forecastedFinal) / contractValue * 100).toFixed(1)}%
+              Margin: {displayContractValue > 0 ? ((displayContractValue - totals.forecastedFinal) / displayContractValue * 100).toFixed(1) : '0.0'}%
             </p>
           </div>
         </div>
       )}
 
+      {/* Division Filter removed - no longer used */}
+
       {/* Budget vs Actual Table */}
       <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Budget vs Actual by Category</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">
+            Budget vs Actual by {viewMode === 'wbs' ? 'WBS' : 'Category'}
+          </h3>
+          {hasDetailedBudget && (
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'category' | 'wbs')}>
+              <TabsList className="grid w-[200px] grid-cols-2">
+                <TabsTrigger value="category">
+                  <BarChart3 className="h-4 w-4 mr-1" />
+                  Category
+                </TabsTrigger>
+                <TabsTrigger value="wbs">
+                  <FolderTree className="h-4 w-4 mr-1" />
+                  WBS
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
+        </div>
         
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b">
-                <th className="text-left py-3 px-4">Budget Category</th>
+                <th className="text-left py-3 px-4">{viewMode === 'wbs' ? 'WBS Code' : 'Budget Category'}</th>
                 <th className="text-right py-3 px-4">Budget</th>
                 <th className="text-right py-3 px-4">Actuals</th>
                 <th className="text-right py-3 px-4">Left to Spend</th>
@@ -124,11 +202,11 @@ export function BudgetVsActualTab({ projectId, contractValue }: BudgetVsActualTa
             <tbody>
               {categories.map((category) => {
                 const hasSubcategories = category.subcategories && category.subcategories.length > 0
-                const isClickable = hasSubcategories || (
+                const isClickable = viewMode === 'category' && (hasSubcategories || (
                   category.category !== 'LABOR' && 
                   category.category !== 'ADD ONS' && 
                   category.category !== 'RISK'
-                )
+                ))
                 const isExpanded = expandedCategories.has(category.category)
                 
                 return (

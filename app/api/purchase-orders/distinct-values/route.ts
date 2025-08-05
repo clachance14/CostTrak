@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
       'status': 'status',
       'order_date': 'order_date',
       'description': 'description',
+      'po_value': 'po_value',
       'committed_amount': 'committed_amount',
       'forecast_amount': 'forecast_amount',
       'invoiced_amount': 'invoiced_amount',
@@ -145,6 +146,7 @@ export async function GET(request: NextRequest) {
           case 'order_date':
             value = row.order_date ? new Date(row.order_date as string).toLocaleDateString() : null
             break
+          case 'po_value':
           case 'committed_amount':
           case 'forecast_amount':
           case 'invoiced_amount':

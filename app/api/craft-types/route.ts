@@ -79,21 +79,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user role
-    const { data: userProfile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    // Check permissions
-    const allowedRoles = ['controller', 'ops_manager']
-    if (!userProfile || !allowedRoles.includes(userProfile.role)) {
-      return NextResponse.json(
-        { error: 'Insufficient permissions to create craft types' },
-        { status: 403 }
-      )
-    }
+    // Simplified authentication - no role checking required
+    // All authenticated users can create craft types
 
     const body = await request.json()
     

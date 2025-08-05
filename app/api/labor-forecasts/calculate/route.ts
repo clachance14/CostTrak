@@ -30,13 +30,62 @@ export async function POST(request: NextRequest) {
     const startDate = start_date ? new Date(start_date) : new Date()
     const firstWeekEnding = getWeekEndingDate(startDate)
 
-    // Get running averages for the project
-    const { data: runningAverages, error: avgError } = await supabase
-      .from('labor_running_averages')
+    // Calculate running averages from labor_actuals (labor_running_averages table was removed)
+    const { data: craftTypes } = await supabase
+      .from('craft_types')
+      .select('*')
+      .eq('is_active', true)
+    
+    // Get labor actuals for the last 8 weeks
+    const endDate = new Date()
+    const startDateForAvg = new Date()
+    startDateForAvg.setDate(startDateForAvg.getDate() - 8 * 7)
+    
+    const { data: laborActuals } = await supabase
+      .from('labor_actuals')
       .select('*')
       .eq('project_id', project_id)
-
-    if (avgError) throw avgError
+      .gte('week_ending', startDateForAvg.toISOString())
+      .lte('week_ending', endDate.toISOString())
+      .gt('actual_hours', 0)
+    
+    // Calculate weighted average rates per category
+    const categoryRates = {
+      direct: 0,
+      indirect: 0,
+      staff: 0
+    }
+    
+    const categoryHours = {
+      direct: 0,
+      indirect: 0,
+      staff: 0
+    }
+    
+    const categoryCosts = {
+      direct: 0,
+      indirect: 0,
+      staff: 0
+    }
+    
+    // Sum up hours and costs by category
+    craftTypes?.forEach(craft => {
+      const craftActuals = laborActuals?.filter(a => a.craft_type_id === craft.id) || []
+      const totalHours = craftActuals.reduce((sum, a) => sum + (a.actual_hours || 0), 0)
+      const totalCost = craftActuals.reduce((sum, a) => sum + (a.actual_cost || 0), 0)
+      
+      const category = craft.category as 'direct' | 'indirect' | 'staff'
+      categoryHours[category] += totalHours
+      categoryCosts[category] += totalCost
+    })
+    
+    // Calculate weighted average rate per category
+    Object.keys(categoryRates).forEach(cat => {
+      const category = cat as 'direct' | 'indirect' | 'staff'
+      if (categoryHours[category] > 0) {
+        categoryRates[category] = categoryCosts[category] / categoryHours[category]
+      }
+    })
 
     // Get headcount forecasts for the project
     const { data: headcountForecasts, error: hcError } = await supabase
@@ -51,29 +100,25 @@ export async function POST(request: NextRequest) {
         )
       `)
       .eq('project_id', project_id)
-      .gte('week_ending', firstWeekEnding.toISOString())
-      .lte('week_ending', addWeeks(firstWeekEnding, weeks_ahead - 1).toISOString())
-      .order('week_ending')
+      .gte('week_starting', firstWeekEnding.toISOString())
+      .lte('week_starting', addWeeks(firstWeekEnding, weeks_ahead - 1).toISOString())
+      .order('week_starting')
       .order('craft_type_id')
 
     if (hcError) throw hcError
-
-    // Create a map of craft type running averages
-    const avgRateMap = new Map<string, number>(
-      runningAverages?.map(ra => [ra.craft_type_id, Number(ra.avg_rate)]) || []
-    )
 
     // Standard work week hours (40 hours per person)
     const HOURS_PER_PERSON_PER_WEEK = 40
 
     // Process the headcount data to calculate forecasted hours and costs
     const processedData = headcountForecasts?.map(hc => {
-      const avgRate = avgRateMap.get(hc.craft_type_id) || 0
+      const category = hc.craft_types?.category as 'direct' | 'indirect' | 'staff' || 'direct'
+      const avgRate = categoryRates[category] || 0
       const totalHours = hc.headcount * HOURS_PER_PERSON_PER_WEEK
       const totalCost = totalHours * avgRate
 
       return {
-        week_ending: hc.week_ending,
+        week_ending: hc.week_starting,
         craft_type_id: hc.craft_type_id,
         craft_name: hc.craft_types?.name || '',
         craft_code: hc.craft_types?.code || '',

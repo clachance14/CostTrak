@@ -29,7 +29,7 @@ export function BudgetBreakdownTab({ projectId }: BudgetBreakdownTabProps) {
   const { data: user } = useUser()
   const [selectedDiscipline, setSelectedDiscipline] = useState<string | null>(null)
 
-  const canImport = user?.role === 'controller'
+  const canImport = user?.role === 'project_manager'
 
   // Fetch budget breakdown summary
   const { data: summary, isLoading } = useQuery({

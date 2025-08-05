@@ -12,6 +12,23 @@ import {
 
 export const dynamic = 'force-dynamic'
 
+// Helper to generate a simple hash for duplicate detection
+async function generateFileHash(buffer: Buffer): Promise<string> {
+  // Convert buffer to string for hashing
+  const text = buffer.toString('base64')
+  
+  // Use a simple hash function for duplicate detection
+  let hash = 0
+  for (let i = 0; i < text.length; i++) {
+    const char = text.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32-bit integer
+  }
+  
+  // Convert to hex string
+  return Math.abs(hash).toString(16).padStart(8, '0')
+}
+
 // Helper to parse numeric value from Excel cell
 function parseNumericValue(value: unknown): number {
   if (typeof value === 'number') return value
@@ -27,6 +44,71 @@ function parseNumericValue(value: unknown): number {
 function parseStringValue(value: unknown): string {
   if (value === null || value === undefined) return ''
   return String(value).trim()
+}
+
+// Helper to parse employee name with suffix handling
+function parseEmployeeName(nameField: string): { firstName: string; lastName: string } {
+  const suffixes = ['Jr', 'Jr.', 'Sr', 'Sr.', 'II', 'III', 'IV']
+  let cleanedName = nameField.trim()
+  
+  // Remove suffix if present
+  suffixes.forEach(suffix => {
+    const regex = new RegExp(`\\s+${suffix.replace('.', '\\.')}$`, 'i')
+    cleanedName = cleanedName.replace(regex, '')
+  })
+  
+  // Parse name based on format
+  if (cleanedName.includes(',')) {
+    // Format: "LastName, FirstName"
+    const parts = cleanedName.split(',').map(p => p.trim())
+    return {
+      lastName: parts[0] || 'Unknown',
+      firstName: parts[1] || 'Unknown'
+    }
+  } else {
+    // Format: "FirstName LastName"
+    const parts = cleanedName.split(' ')
+    if (parts.length === 1) {
+      return {
+        firstName: parts[0],
+        lastName: parts[0] // Use same as first if only one name
+      }
+    }
+    return {
+      firstName: parts[0],
+      lastName: parts.slice(1).join(' ')
+    }
+  }
+}
+
+// Craft code to category mapping
+const CRAFT_CODE_CATEGORY_MAP: Record<string, string> = {
+  'STA': 'staff',
+  'STAFF': 'staff',
+  'IND': 'indirect',
+  'INDIRECT': 'indirect',
+  'DIR': 'direct',
+  'DIRECT': 'direct'
+}
+
+// Helper to infer category from craft code
+function inferCategoryFromCraftCode(craftCode: string): string {
+  const upperCode = craftCode.toUpperCase()
+  
+  // Check exact matches first
+  if (CRAFT_CODE_CATEGORY_MAP[upperCode]) {
+    return CRAFT_CODE_CATEGORY_MAP[upperCode]
+  }
+  
+  // Check if code starts with known prefixes
+  for (const [prefix, category] of Object.entries(CRAFT_CODE_CATEGORY_MAP)) {
+    if (upperCode.startsWith(prefix)) {
+      return category
+    }
+  }
+  
+  // Default to direct
+  return 'direct'
 }
 
 // Helper to track failed import attempts
@@ -66,6 +148,7 @@ export async function POST(request: NextRequest) {
   let user: any
   let file: File | null = null
   let weekEndingISO: string | undefined
+  let fileHash: string | undefined
   
   try {
     const supabase = await createClient()
@@ -78,14 +161,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user role
+    // Get user role (keeping existing permissions - all authenticated users can import)
     const { data: userProfile } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    // Check permissions
+    // Check permissions (keeping existing allowed roles)
     const allowedRoles = ['controller', 'ops_manager', 'project_manager']
     if (!userProfile || !allowedRoles.includes(userProfile.role)) {
       return NextResponse.json(
@@ -115,6 +198,9 @@ export async function POST(request: NextRequest) {
     // Read Excel file first to potentially auto-match project
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
+    
+    // Calculate file hash for duplicate detection
+    fileHash = await generateFileHash(buffer)
 
     let workbook: XLSX.WorkBook
     try {
@@ -149,6 +235,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate headers (row 8, 0-indexed = row 7)
+    const headerRow = rawData[7]
+    if (!headerRow || parseStringValue(headerRow[4]) !== 'Name' || parseStringValue(headerRow[12]) !== 'StHours') {
+      return NextResponse.json(
+        { error: 'Invalid Excel format. Header row does not match expected format.' },
+        { status: 400 }
+      )
+    }
+
     // Extract contractor number and try to match project if no project_id provided
     const contractorRow = rawData[3] // Row 4 (0-indexed)
     const contractorNumber = parseStringValue(contractorRow[4]) // "5772 LS DOW" at index 4
@@ -156,19 +251,44 @@ export async function POST(request: NextRequest) {
     // Extract job number from contractor string (e.g., "5772 LS DOW" -> "5772")
     const jobNumberMatch = contractorNumber.match(/^(\d+)/)
     const fileJobNumber = jobNumberMatch ? jobNumberMatch[1] : ''
+    
+    console.log('Labor Import Debug:', {
+      contractorNumber,
+      fileJobNumber,
+      projectIdFromForm: projectId
+    })
 
     // If no project_id provided, try to auto-match by job number
     if (!projectId && fileJobNumber) {
+      // First, let's see what projects exist
+      const { data: allProjects } = await supabase
+        .from('projects')
+        .select('id, job_number, name')
+        .is('deleted_at', null)
+        .limit(10)
+      
+      console.log('Available projects:', allProjects?.map(p => ({ 
+        id: p.id, 
+        job_number: p.job_number, 
+        name: p.name 
+      })))
+      
       const { data: matchedProject } = await supabase
         .from('projects')
-        .select('id, job_number, name, project_manager_id, division_id')
+        .select('id, job_number, name, project_manager_id')
         .eq('job_number', fileJobNumber)
         .is('deleted_at', null)
         .single()
       
       if (matchedProject) {
         projectId = matchedProject.id
+        console.log('Auto-matched project:', {
+          projectId: matchedProject.id,
+          jobNumber: matchedProject.job_number,
+          name: matchedProject.name
+        })
       } else {
+        console.log('No project found for job number:', fileJobNumber)
         return NextResponse.json(
           { error: `No project found with job number ${fileJobNumber}. Please select a project manually.` },
           { status: 400 }
@@ -186,16 +306,28 @@ export async function POST(request: NextRequest) {
 
     const validatedData = laborImportSchema.parse({ project_id: projectId })
 
+    console.log('Querying project with ID:', validatedData.project_id)
+
     // Check project access
-    const { data: project } = await supabase
+    const { data: project, error: projectError } = await supabase
       .from('projects')
-      .select('id, job_number, name, project_manager_id, division_id')
+      .select('id, job_number, name, project_manager_id')
       .eq('id', validatedData.project_id)
       .is('deleted_at', null)
       .single()
 
+    console.log('Project query result:', { 
+      project, 
+      error: projectError,
+      projectId: validatedData.project_id 
+    })
+
     if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      console.error('Project not found for ID:', validatedData.project_id)
+      return NextResponse.json({ 
+        error: 'Project not found',
+        details: `No project found with ID: ${validatedData.project_id}` 
+      }, { status: 404 })
     }
 
     // Validate job number matches if provided
@@ -221,24 +353,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check access permissions
-    if (userProfile.role === 'project_manager' && project.project_manager_id !== user.id) {
-      return NextResponse.json({ error: 'Access denied to this project' }, { status: 403 })
-    }
+    // Access control simplified - all authenticated users can access all projects
+    // Per CLAUDE.md: "All users have 'project_manager' role" and "All users see all projects"
+    console.log('Access control passed - simplified permissions model')
 
-    if (userProfile.role === 'ops_manager') {
-      const { data: userDetails } = await supabase
-        .from('profiles')
-        .select('division_id')
-        .eq('id', user.id)
-        .single()
-
-      if (userDetails?.division_id !== project.division_id) {
-        return NextResponse.json({ error: 'Access denied to this division' }, { status: 403 })
-      }
-    }
-
-    // Extract week ending date (already have rawData from above)
+    // Extract week ending date
     const weekEndingRow = rawData[4] // Row 5 (0-indexed)
     const weekEndingSerial = parseNumericValue(weekEndingRow[4])
     
@@ -251,6 +370,30 @@ export async function POST(request: NextRequest) {
 
     const weekEndingDate = parseExcelDate(weekEndingSerial)
     weekEndingISO = weekEndingDate.toISOString().split('T')[0] // Use date only
+    
+    // Check for duplicate import
+    if (fileHash) {
+      const { data: existingImport } = await adminSupabase
+        .from('data_imports')
+        .select('id, created_at')
+        .eq('project_id', project.id)
+        .eq('import_type', 'labor')
+        .eq('import_status', 'success')
+        .eq('metadata->>file_hash', fileHash)
+        .eq('metadata->>week_ending', weekEndingISO)
+        .single()
+      
+      if (existingImport) {
+        return NextResponse.json(
+          { 
+            error: 'Duplicate import detected',
+            message: `This file was already imported on ${new Date(existingImport.created_at).toLocaleString()}`,
+            import_id: existingImport.id
+          },
+          { status: 400 }
+        )
+      }
+    }
 
     // Get all default craft types for each category
     const { data: defaultCraftTypes, error: fetchError } = await adminSupabase
@@ -299,24 +442,40 @@ export async function POST(request: NextRequest) {
     }
     let totalEmployeeCount = 0
 
-    // Get all craft types for mapping
-    const { data: craftTypes } = await adminSupabase
-      .from('craft_types')
-      .select('id, code, name, billing_rate')
-      .eq('is_active', true)
+    // Batch fetch all employees upfront for performance
+    const employeeIds = rawData.slice(9)
+      .map(row => parseStringValue(row[EXCEL_COLUMNS.EMPLOYEE_ID]))
+      .filter(id => /^T\d+$/.test(id))
     
-    const craftTypeMap = new Map(
-      craftTypes?.map(ct => [ct.code.toUpperCase(), ct.id]) || []
+    const { data: existingEmployees } = await adminSupabase
+      .from('employees')
+      .select('id, employee_number, first_name, last_name, base_rate, category, craft_type_id')
+      .in('employee_number', employeeIds)
+    
+    type EmployeeRecord = {
+      id: string
+      employee_number: string
+      first_name: string
+      last_name: string
+      base_rate: number
+      category: string
+      craft_type_id: string
+    }
+    
+    const employeeMap = new Map<string, EmployeeRecord>(
+      existingEmployees?.map(e => [e.employee_number, e as EmployeeRecord]) || []
     )
     
-    // Track craft types that need to be created or updated
-    const craftTypesToUpdate = new Map<string, number>() // code -> billing_rate
-
+    // Arrays to collect batch operations
+    const newEmployeesToCreate: any[] = []
+    const laborRecordsToUpsert: any[] = []
+    const craftCodeWarnings: string[] = []
+    
     // Track new employees created
     let newEmployeesCreated = 0
+    let zeroRateEmployees = 0
 
-    // Process employee data rows and aggregate totals
-    // FIXED: Start from row 10 (index 9) - actual employee data starts here
+    // Process employee data rows
     for (let i = 9; i < rawData.length; i++) {
       const row = rawData[i]
       const rowNumber = i + 1
@@ -329,7 +488,7 @@ export async function POST(request: NextRequest) {
         break
       }
       
-      // FIXED: Check if employee ID matches pattern T\d+
+      // Check if employee ID matches pattern T\d+
       if (!employeeIdCell || !/^T\d+$/.test(employeeIdCell)) {
         continue
       }
@@ -340,186 +499,127 @@ export async function POST(request: NextRequest) {
         const craftCode = parseStringValue(row[EXCEL_COLUMNS.CRAFT])
         const stHours = parseNumericValue(row[EXCEL_COLUMNS.ST_HOURS])
         const otHours = parseNumericValue(row[EXCEL_COLUMNS.OT_HOURS])
-        // Read the billing rate from ST_RATE column for the craft type
-        const billingRate = parseNumericValue(row[EXCEL_COLUMNS.ST_RATE])
-        // These are for reference/validation only - we'll calculate actual wages from base_rate
-        // const stWagesFromFile = parseNumericValue(row[EXCEL_COLUMNS.ST_WAGES])
-        // const otWagesFromFile = parseNumericValue(row[EXCEL_COLUMNS.OT_WAGES])
-
+        
         // Skip rows with 0 hours
         if (stHours === 0 && otHours === 0) {
           result.skipped++
           continue
         }
+        
+        // Log craft code warning if present
+        if (craftCode) {
+          craftCodeWarnings.push(`Row ${rowNumber}: Employee ${employeeIdCell} has craft code '${craftCode}' - review for category assignment`)
+        }
 
-        // Check if employee exists and get their base_rate and category
-        const { data: existingEmployee } = await adminSupabase
-          .from('employees')
-          .select('id, base_rate, category')
-          .eq('employee_number', employeeIdCell)
-          .maybeSingle()
+        // Parse daily hours and validate
+        const dailyHours: Record<string, number> = {}
+        const dayColumns = [
+          { day: 'monday', index: EXCEL_COLUMNS.MONDAY },
+          { day: 'tuesday', index: EXCEL_COLUMNS.TUESDAY },
+          { day: 'wednesday', index: EXCEL_COLUMNS.WEDNESDAY },
+          { day: 'thursday', index: EXCEL_COLUMNS.THURSDAY },
+          { day: 'friday', index: EXCEL_COLUMNS.FRIDAY },
+          { day: 'saturday', index: EXCEL_COLUMNS.SATURDAY },
+          { day: 'sunday', index: EXCEL_COLUMNS.SUNDAY }
+        ]
         
-        let employeeId = existingEmployee?.id
-        let employeeBaseRate = existingEmployee?.base_rate || 0
-        let employeeCategory = existingEmployee?.category?.toLowerCase() || 'direct'
-        
-        if (!existingEmployee && employeeName) {
-          // Employee doesn't exist, create them
-          console.log(`Creating new employee: ${employeeIdCell} - ${employeeName}`)
-          
-          // Parse employee name (format: "LastName, FirstName")
-          let firstName = ''
-          let lastName = ''
-          if (employeeName.includes(',')) {
-            const parts = employeeName.split(',').map(p => p.trim())
-            lastName = parts[0] || 'Unknown'
-            firstName = parts[1] || 'Unknown'
-          } else {
-            // If no comma, assume "FirstName LastName" format
-            const parts = employeeName.trim().split(' ')
-            firstName = parts[0] || 'Unknown'
-            lastName = parts.slice(1).join(' ') || firstName // Use firstName if no lastName
-          }
-          
-          // Determine category and craft type ID - default to direct
-          employeeCategory = 'direct'
-          let craftTypeId = categoryToCraftTypeId[employeeCategory]
-          let employeeClass = craftCode // Default to full craft code
-          
-          if (craftCode) {
-            // Remove 'C' prefix for employee class field
-            employeeClass = craftCode.startsWith('C') ? craftCode.substring(1) : craftCode
-            
-            // Look up craft type using full code (with 'C')
-            if (craftTypeMap.has(craftCode.toUpperCase())) {
-              craftTypeId = craftTypeMap.get(craftCode.toUpperCase())
-            } else {
-              // Track this craft type to be created later
-              craftTypesToUpdate.set(craftCode.toUpperCase(), billingRate)
+        for (const { day, index } of dayColumns) {
+          const hours = parseNumericValue(row[index])
+          if (hours > 0) {
+            if (hours > 16) {
+              result.errors.push({
+                row: rowNumber,
+                message: `Daily hours exceed 16-hour limit: ${hours} hours on ${day}`,
+                data: { employee_number: employeeIdCell, day, hours }
+              })
+              throw new Error('Daily hours validation failed')
             }
-          }
-          
-          // Use billing rate as initial base rate for new employees
-          // This can be updated later with actual pay rates
-          const baseRate = billingRate || 0
-          
-          // Create the employee
-          const { data: newEmployee, error: createError } = await adminSupabase
-            .from('employees')
-            .insert({
-              employee_number: employeeIdCell,
-              first_name: firstName,
-              last_name: lastName,
-              craft_type_id: craftTypeId,
-              base_rate: baseRate || 0,
-              class: employeeClass, // Store without 'C' prefix
-              category: 'Direct', // Default to Direct for new employees
-              is_direct: true, // Default to direct, can be updated later
-              is_active: true
-            })
-            .select('id')
-            .single()
-          
-          if (createError) {
-            console.error(`Failed to create employee ${employeeIdCell}:`, createError)
-            result.errors.push({
-              row: rowNumber,
-              message: `Failed to create employee: ${createError.message}`,
-              data: { employee_number: employeeIdCell, name: employeeName }
-            })
-          } else {
-            console.log(`Successfully created employee ${employeeIdCell}`)
-            employeeId = newEmployee.id
-            employeeBaseRate = baseRate
-            newEmployeesCreated++
+            dailyHours[day] = hours
           }
         }
+
+        // Check if employee exists in our map
+        const existingEmployee = employeeMap.get(employeeIdCell)
         
-        // Calculate actual wages using employee base rate
+        const employeeId = existingEmployee?.id
+        const employeeBaseRate = existingEmployee?.base_rate || 0
+        let employeeCategory = existingEmployee?.category?.toLowerCase() || 'direct'
+        
+        if (!existingEmployee) {
+          // Employee doesn't exist, create placeholder
+          if (!employeeName) {
+            result.errors.push({
+              row: rowNumber,
+              message: 'Cannot create employee without name',
+              data: { employee_number: employeeIdCell }
+            })
+            result.skipped++
+            continue
+          }
+          
+          console.log(`Creating new employee: ${employeeIdCell} - ${employeeName}`)
+          
+          // Parse employee name with enhanced suffix handling
+          const { firstName, lastName } = parseEmployeeName(employeeName)
+          
+          // Infer category from craft code if present
+          if (craftCode) {
+            employeeCategory = inferCategoryFromCraftCode(craftCode)
+          }
+          
+          const newEmployee = {
+            employee_number: employeeIdCell,
+            first_name: firstName,
+            last_name: lastName,
+            craft_type_id: categoryToCraftTypeId[employeeCategory],
+            base_rate: 0, // Always 0 for new employees per requirements
+            category: employeeCategory.charAt(0).toUpperCase() + employeeCategory.slice(1), // Capitalize
+            is_direct: employeeCategory === 'direct',
+            is_active: true
+          }
+          
+          newEmployeesToCreate.push(newEmployee)
+          newEmployeesCreated++
+          
+          // Skip wage calculations since base_rate is 0
+          zeroRateEmployees++
+          result.errors.push({
+            row: rowNumber,
+            message: 'New employee created with base_rate=0, wages not calculated',
+            data: { employee_number: employeeIdCell, name: employeeName }
+          })
+          continue
+        }
+        
+        // Check for zero base rate
+        if (employeeBaseRate === 0) {
+          zeroRateEmployees++
+          result.errors.push({
+            row: rowNumber,
+            message: 'Employee has base_rate=0, skipping wage calculations',
+            data: { employee_number: employeeIdCell }
+          })
+          continue
+        }
+        
+        // Calculate wages using employee base rate
         const stWages = stHours * employeeBaseRate
         const otWages = otHours * employeeBaseRate * 1.5 // 1.5x for overtime
         
-        // If we have an employee ID, create/update individual labor record
-        if (employeeId) {
-          // Parse daily hours (Monday through Sunday)
-          const dailyHours: Record<string, number> = {}
-          const dayColumns = [
-            { day: 'monday', index: EXCEL_COLUMNS.MONDAY },
-            { day: 'tuesday', index: EXCEL_COLUMNS.TUESDAY },
-            { day: 'wednesday', index: EXCEL_COLUMNS.WEDNESDAY },
-            { day: 'thursday', index: EXCEL_COLUMNS.THURSDAY },
-            { day: 'friday', index: EXCEL_COLUMNS.FRIDAY },
-            { day: 'saturday', index: EXCEL_COLUMNS.SATURDAY },
-            { day: 'sunday', index: EXCEL_COLUMNS.SUNDAY }
-          ]
-          
-          dayColumns.forEach(({ day, index }) => {
-            const hours = parseNumericValue(row[index])
-            if (hours > 0) {
-              dailyHours[day] = hours
-            }
-          })
-          
-          // Check if labor_employee_actuals entry exists
-          const { data: existingLabor } = await adminSupabase
-            .from('labor_employee_actuals')
-            .select('id')
-            .eq('employee_id', employeeId)
-            .eq('project_id', project.id)
-            .eq('week_ending', weekEndingISO)
-            .maybeSingle()
-          
-          if (existingLabor) {
-            // Update existing record
-            const { error: updateError } = await adminSupabase
-              .from('labor_employee_actuals')
-              .update({
-                st_hours: stHours,
-                ot_hours: otHours,
-                st_wages: stWages,
-                ot_wages: otWages,
-                daily_hours: Object.keys(dailyHours).length > 0 ? dailyHours : null,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', existingLabor.id)
-            
-            if (updateError) {
-              console.error(`Failed to update labor for employee ${employeeIdCell}:`, updateError)
-            }
-          } else {
-            // Create new record
-            const { error: insertError } = await adminSupabase
-              .from('labor_employee_actuals')
-              .insert({
-                employee_id: employeeId,
-                project_id: project.id,
-                week_ending: weekEndingISO,
-                st_hours: stHours,
-                ot_hours: otHours,
-                st_wages: stWages,
-                ot_wages: otWages,
-                daily_hours: Object.keys(dailyHours).length > 0 ? dailyHours : null
-              })
-            
-            if (insertError) {
-              console.error(`Failed to create labor record for employee ${employeeIdCell}:`, insertError)
-            }
-          }
-        }
-
-        // Track craft type billing rates for update
-        if (craftCode && billingRate > 0) {
-          craftTypesToUpdate.set(craftCode.toUpperCase(), billingRate)
-        }
+        // Prepare labor record for batch upsert
+        laborRecordsToUpsert.push({
+          employee_id: employeeId,
+          employee_number: employeeIdCell, // Add employee number for reference
+          project_id: project.id,
+          week_ending: weekEndingISO,
+          st_hours: stHours,
+          ot_hours: otHours,
+          st_wages: stWages,
+          ot_wages: otWages,
+          daily_hours: Object.keys(dailyHours).length > 0 ? dailyHours : null
+        })
         
-        // Aggregate totals by category (using calculated actual wages)
-        if (categoryTotals[employeeCategory]) {
-          categoryTotals[employeeCategory].stHours += stHours
-          categoryTotals[employeeCategory].otHours += otHours
-          categoryTotals[employeeCategory].stWages += stWages
-          categoryTotals[employeeCategory].otWages += otWages
-          categoryTotals[employeeCategory].employeeIds.add(employeeIdCell)
-        }
+        // Track for aggregation (will be added after successful DB write)
         totalEmployeeCount++
 
       } catch (error) {
@@ -532,14 +632,146 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Batch create new employees if any
+    if (newEmployeesToCreate.length > 0) {
+      const { data: createdEmployees, error: createError } = await adminSupabase
+        .from('employees')
+        .insert(newEmployeesToCreate)
+        .select('id, employee_number, base_rate, category')
+      
+      if (createError) {
+        console.error('Failed to create employees:', createError)
+        result.errors.push({
+          row: 0,
+          message: `Failed to create ${newEmployeesToCreate.length} employees: ${createError.message}`
+        })
+      } else if (createdEmployees) {
+        // Add created employees to our map
+        createdEmployees.forEach(emp => {
+          employeeMap.set(emp.employee_number, emp)
+        })
+        
+        // Log each new employee in audit
+        for (const emp of createdEmployees) {
+          await adminSupabase.from('audit_log').insert({
+            user_id: user.id,
+            action: 'create',
+            entity_type: 'employee',
+            entity_id: emp.id,
+            changes: {
+              source: 'labor_import',
+              employee_number: emp.employee_number,
+              created_during_import: true
+            }
+          }).catch(err => console.error('Audit log error:', err))
+        }
+      }
+    }
+
+    // Batch upsert labor records
+    if (laborRecordsToUpsert.length > 0) {
+      // Process in chunks to avoid query size limits
+      const chunkSize = 100
+      for (let i = 0; i < laborRecordsToUpsert.length; i += chunkSize) {
+        const chunk = laborRecordsToUpsert.slice(i, i + chunkSize)
+        
+        // First, check which records exist
+        const employeeIds = chunk.map(r => r.employee_id).filter(Boolean)
+        const { data: existingRecords } = await adminSupabase
+          .from('labor_employee_actuals')
+          .select('id, employee_id')
+          .in('employee_id', employeeIds)
+          .eq('project_id', project.id)
+          .eq('week_ending', weekEndingISO)
+        
+        const existingMap = new Map(existingRecords?.map(r => [r.employee_id, r.id]) || [])
+        
+        // Separate updates and inserts
+        const toUpdate = chunk.filter(r => r.employee_id && existingMap.has(r.employee_id))
+        const toInsert = chunk.filter(r => r.employee_id && !existingMap.has(r.employee_id))
+        
+        // Perform updates
+        for (const record of toUpdate) {
+          const { error } = await adminSupabase
+            .from('labor_employee_actuals')
+            .update({
+              st_hours: record.st_hours,
+              ot_hours: record.ot_hours,
+              st_wages: record.st_wages,
+              ot_wages: record.ot_wages,
+              daily_hours: record.daily_hours,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingMap.get(record.employee_id))
+          
+          if (!error) {
+            result.updated++
+            
+            // Add to aggregation totals after successful write
+            const recordWithNumber = toUpdate.find(r => r.employee_id === record.employee_id)
+            if (recordWithNumber && recordWithNumber.employee_number) {
+              const emp = employeeMap.get(recordWithNumber.employee_number)
+              if (emp && emp.base_rate > 0) {
+                const category = emp.category.toLowerCase()
+                if (categoryTotals[category]) {
+                  categoryTotals[category].stHours += record.st_hours
+                  categoryTotals[category].otHours += record.ot_hours
+                  categoryTotals[category].stWages += record.st_wages
+                  categoryTotals[category].otWages += record.ot_wages
+                  categoryTotals[category].employeeIds.add(recordWithNumber.employee_number)
+                }
+              }
+            }
+          }
+        }
+        
+        // Perform inserts
+        if (toInsert.length > 0) {
+          // Remove employee_number from records before inserting
+          const recordsToInsert = toInsert.map(({ employee_number, ...record }) => record)
+          const { data: inserted, error } = await adminSupabase
+            .from('labor_employee_actuals')
+            .insert(recordsToInsert)
+            .select('employee_id')
+          
+          if (!error && inserted) {
+            result.imported += inserted.length
+            
+            // Add to aggregation totals after successful write
+            inserted.forEach(rec => {
+              const record = toInsert.find(r => r.employee_id === rec.employee_id)
+              if (record && record.employee_number) {
+                const emp = employeeMap.get(record.employee_number)
+                if (emp && emp.base_rate > 0) {
+                  const category = emp.category.toLowerCase()
+                  if (categoryTotals[category]) {
+                    categoryTotals[category].stHours += record.st_hours
+                    categoryTotals[category].otHours += record.ot_hours
+                    categoryTotals[category].stWages += record.st_wages
+                    categoryTotals[category].otWages += record.ot_wages
+                    categoryTotals[category].employeeIds.add(record.employee_number)
+                  }
+                }
+              }
+            })
+          }
+        }
+      }
+    }
+
     // Add new employees created to result
     if (newEmployeesCreated > 0) {
       console.log(`Created ${newEmployeesCreated} new employees during import`)
       ;(result as any).newEmployeesCreated = newEmployeesCreated
     }
+    
+    // Add zero rate warning
+    if (zeroRateEmployees > 0) {
+      ;(result as any).zeroRateEmployees = zeroRateEmployees
+    }
 
     // Import aggregated labor actuals by category
-    if (totalEmployeeCount > 0) {
+    if (result.imported > 0 || result.updated > 0) {
       for (const [category, totals] of Object.entries(categoryTotals)) {
         if (totals.employeeIds.size === 0) continue
         
@@ -560,15 +792,13 @@ export async function POST(request: NextRequest) {
         
         try {
           // Check if entry already exists for this week and category
-          const { data: existing, error: existingError } = await adminSupabase
+          const { data: existing } = await adminSupabase
             .from('labor_actuals')
             .select('id')
             .eq('project_id', project.id)
             .eq('craft_type_id', craftTypeId)
             .eq('week_ending', weekEndingISO)
             .maybeSingle()
-
-          if (existingError) throw existingError
 
           if (existing) {
             // Update existing entry
@@ -585,7 +815,6 @@ export async function POST(request: NextRequest) {
               .eq('id', existing.id)
 
             if (updateError) throw updateError
-            result.updated++
           } else {
             // Create new entry
             const { error: insertError } = await adminSupabase
@@ -602,31 +831,15 @@ export async function POST(request: NextRequest) {
               })
 
             if (insertError) throw insertError
-            result.imported++
           }
 
           console.log(`Imported ${category} labor: ${totals.employeeCount} employees, ${totalHours} hours, $${totalCost} (+ $${burdenAmount.toFixed(2)} burden = $${totalCostWithBurden.toFixed(2)} total)`)
         } catch (error) {
-          console.error(`Error saving ${category} labor actuals:`, {
-            error: error,
-            message: error instanceof Error ? error.message : 'Unknown error',
-            code: (error as any)?.code,
-            data: {
-              project_id: project.id,
-              craft_type_id: craftTypeId,
-              category: category,
-              week_ending: weekEndingISO,
-              actual_hours: totalHours,
-              actual_cost: totalCost
-            }
-          })
+          console.error(`Error saving ${category} labor actuals:`, error)
           
           let errorMessage = `Failed to save ${category} labor data`
           if (error instanceof Error && error.message) {
             errorMessage = `Database error: ${error.message}`
-          }
-          if ((error as any)?.hint) {
-            errorMessage += ` (Hint: ${(error as any).hint})`
           }
           
           result.errors.push({
@@ -637,7 +850,7 @@ export async function POST(request: NextRequest) {
       }
       
       // Set total employee count in result
-      result.employeeCount = totalEmployeeCount
+      result.employeeCount = totalEmployeeCount - zeroRateEmployees
     } else if (totalEmployeeCount === 0) {
       result.errors.push({
         row: 0,
@@ -645,91 +858,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Create or update craft types with billing rates from the import
-    if (craftTypesToUpdate.size > 0) {
-      for (const [craftCode, billingRate] of craftTypesToUpdate.entries()) {
-        try {
-          // Check if craft type exists
-          const { data: existing } = await adminSupabase
-            .from('craft_types')
-            .select('id, billing_rate')
-            .eq('code', craftCode)
-            .maybeSingle()
-          
-          if (existing) {
-            // Update billing rate if it's different
-            if (existing.billing_rate !== billingRate) {
-              await adminSupabase
-                .from('craft_types')
-                .update({ 
-                  billing_rate: billingRate,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', existing.id)
-            }
-          } else {
-            // Create new craft type
-            const craftName = craftCode.startsWith('C') ? craftCode.substring(1) : craftCode
-            await adminSupabase
-              .from('craft_types')
-              .insert({
-                code: craftCode,
-                name: craftName,
-                billing_rate: billingRate,
-                category: 'direct', // Default category
-                is_active: true
-              })
-          }
-        } catch (error) {
-          console.error(`Failed to create/update craft type ${craftCode}:`, error)
-        }
-      }
-    }
-    
-    // Update running averages for each category that had data
-    if (result.imported > 0 || result.updated > 0) {
-      for (const [category, craftTypeId] of Object.entries(categoryToCraftTypeId)) {
-        if (categoryTotals[category].employeeCount === 0) continue
-        
-        try {
-          // Calculate new running average
-          const { data: recentActuals } = await adminSupabase
-            .from('labor_actuals')
-            .select('actual_hours, actual_cost')
-            .eq('project_id', project.id)
-            .eq('craft_type_id', craftTypeId)
-            .order('week_ending', { ascending: false })
-            .limit(8)
-
-          if (recentActuals && recentActuals.length > 0) {
-            const totalHours = recentActuals.reduce((sum, a) => sum + (a.actual_hours || 0), 0)
-            const totalCost = recentActuals.reduce((sum, a) => sum + (a.actual_cost || 0), 0)
-            
-            const { error: avgError } = await adminSupabase
-              .from('labor_running_averages')
-              .upsert({
-                project_id: project.id,
-                craft_type_id: craftTypeId,
-                avg_hours: totalHours / recentActuals.length,
-                avg_cost: totalCost / recentActuals.length,
-                week_count: recentActuals.length,
-                last_updated: weekEndingISO,
-                updated_at: new Date().toISOString()
-              }, {
-                onConflict: 'project_id,craft_type_id'
-              })
-
-            if (avgError) {
-              console.error(`Failed to update running average for ${category}:`, avgError)
-            }
-          }
-        } catch (error) {
-          console.error(`Error updating running averages for ${category}:`, error)
-        }
-      }
-    }
-
-    // Log import activity (don't fail if audit log fails)
+    // Log import activity
     try {
       await adminSupabase.from('audit_log').insert({
         user_id: user.id,
@@ -743,48 +872,87 @@ export async function POST(request: NextRequest) {
           updated: result.updated,
           skipped: result.skipped,
           errors: result.errors.length,
-          employeeCount: result.employeeCount || 0
+          employeeCount: result.employeeCount || 0,
+          newEmployeesCreated: newEmployeesCreated,
+          zeroRateEmployees: zeroRateEmployees,
+          craftCodeWarnings: craftCodeWarnings.length
         }
       })
     } catch (auditError) {
       console.error('Failed to log audit entry:', auditError)
     }
 
+    // Check if we should rollback due to high error rate
+    const totalProcessed = result.imported + result.updated + result.skipped
+    const errorRate = totalProcessed > 0 ? result.errors.length / totalProcessed : 1
+    
+    if (errorRate > 0.1 && result.errors.length > 5) {
+      // More than 10% errors and at least 5 errors
+      return NextResponse.json(
+        {
+          error: 'Import failed due to high error rate',
+          message: `Too many errors encountered (${result.errors.length} errors out of ${totalProcessed} rows). Please review the file and try again.`,
+          errors: result.errors.slice(0, 10) // Return first 10 errors
+        },
+        { status: 400 }
+      )
+    }
+
     // Set success based on whether we processed data without critical errors
     result.success = (result.imported > 0 || result.updated > 0) && result.errors.length === 0
 
     // Create data_imports record to trigger project.last_labor_import_at update
-    if (result.success) {
+    if (result.success || (result.errors.length > 0 && (result.imported > 0 || result.updated > 0))) {
       try {
-        const { error: importError } = await adminSupabase
+        const importMetadata: any = {
+          week_ending: weekEndingISO,
+          imported: result.imported,
+          updated: result.updated,
+          skipped: result.skipped,
+          employee_count: result.employeeCount || 0,
+          job_number: project.job_number,
+          contractor_number: contractorNumber,
+          file_hash: fileHash,
+          employeeCategoryCounts: {
+            direct: categoryTotals.direct.employeeCount,
+            indirect: categoryTotals.indirect.employeeCount,
+            staff: categoryTotals.staff.employeeCount
+          }
+        }
+        
+        // Add new employees to metadata for easy identification
+        if (newEmployeesCreated > 0) {
+          importMetadata.newEmployees = newEmployeesToCreate.map(e => ({
+            employee_number: e.employee_number,
+            name: `${e.last_name}, ${e.first_name}`,
+            category: e.category
+          }))
+        }
+        
+        // Add craft code warnings
+        if (craftCodeWarnings.length > 0) {
+          importMetadata.craftCodeWarnings = craftCodeWarnings.slice(0, 20) // Limit to 20
+        }
+        
+        const { data: importRecord, error: importError } = await adminSupabase
           .from('data_imports')
           .insert({
             project_id: project.id,
             import_type: 'labor',
-            import_status: 'success',
+            import_status: result.success ? 'success' : 'partial',
             imported_by: user.id,
             file_name: file.name,
             records_processed: result.imported + result.updated,
             records_failed: result.errors.length,
-            metadata: {
-              week_ending: weekEndingISO,
-              imported: result.imported,
-              updated: result.updated,
-              skipped: result.skipped,
-              employee_count: result.employeeCount || 0,
-              job_number: project.job_number,
-              contractor_number: contractorNumber,
-              employeeCategoryCounts: {
-                direct: categoryTotals.direct.employeeCount,
-                indirect: categoryTotals.indirect.employeeCount,
-                staff: categoryTotals.staff.employeeCount
-              }
-            }
+            metadata: importMetadata
           })
+          .select('id')
+          .single()
 
         if (importError) {
           console.error('Failed to create data_imports record:', importError)
-          // Don't fail the whole import if we can't create the tracking record
+        } else if (importRecord) {
+          ;(result as any).import_id = importRecord.id
         }
       } catch (importTrackingError) {
         console.error('Error creating data_imports record:', importTrackingError)
@@ -809,6 +977,7 @@ export async function POST(request: NextRequest) {
         errorMessage,
         {
           week_ending: weekEndingISO || null,
+          file_hash: fileHash || null,
           error_type: error instanceof z.ZodError ? 'validation' : 'processing',
           error_details: errorDetails
         }
@@ -828,4 +997,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

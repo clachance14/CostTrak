@@ -227,7 +227,7 @@ export function DocumentList({ entityType, entityId }: DocumentListProps) {
                         <Download className="h-4 w-4" />
                       )}
                     </Button>
-                    {user?.role === 'controller' && (
+                    {user?.role === 'project_manager' && (
                       <Button
                         variant="ghost"
                         size="sm"

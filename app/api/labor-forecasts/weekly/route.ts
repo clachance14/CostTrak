@@ -360,33 +360,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create variance notifications
-    if (notifications.length > 0 && project.project_manager_id) {
-      const { data: craftTypes } = await supabase
-        .from('craft_types')
-        .select('id, name')
-        .in('id', notifications.map(n => n.craft_type_id))
-
-      const craftMap = new Map(craftTypes?.map(c => [c.id, c.name]) || [])
-      
-      await supabase.from('notifications').insert({
-        user_id: project.project_manager_id,
-        type: 'labor_variance',
-        title: 'Labor Variance Alert',
-        message: `Multiple labor forecasts exceed 10% variance for week ${formatWeekEnding(weekEndingDate)}`,
-        priority: 'medium',
-        related_entity_type: 'labor_forecast',
-        related_entity_id: validatedData.project_id,
-        data: {
-          project_id: validatedData.project_id,
-          week_ending: formattedWeekEnding,
-          variances: notifications.map(n => ({
-            craft: craftMap.get(n.craft_type_id),
-            variance: n.variance
-          }))
-        }
-      })
-    }
+    // Notifications removed in simplification
 
     return NextResponse.json({
       success: true,

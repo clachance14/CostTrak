@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { 
-  headcountBatchSchema,
-  getWeekEndingDate
+  headcountBatchSchema
 } from '@/lib/validations/labor-forecast-v2'
+import { getTuesdayWeekEndingDate, getTuesdayWeekStartingDate, getSundayWeekStartingDate } from '@/lib/utils/forecast-date-helpers'
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
-// GET /api/labor-forecasts/headcount - Get headcount forecast data
+// GET /api/labor-forecasts/headcount - Get headcount forecast data with category rates
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
   
@@ -16,17 +16,6 @@ export async function GET(request: NextRequest) {
   const { data: { user }, error: userError } = await supabase.auth.getUser()
   if (userError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  // Get user details
-  const { data: userDetails } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!userDetails) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
   try {
@@ -41,10 +30,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Check project access
+    // Get project info
     const { data: project } = await supabase
       .from('projects')
-      .select('id, job_number, name, project_manager_id')
+      .select('id, job_number, name')
       .eq('id', projectId)
       .single()
 
@@ -52,90 +41,215 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    // Check access permissions
-    if (userDetails.role === 'project_manager' && project.project_manager_id !== user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    if (userDetails.role === 'viewer') {
-      const { data: access } = await supabase
-        .from('user_project_access')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('project_id', projectId)
-        .single()
-
-      if (!access) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      }
-    }
-
-    // Calculate date range
-    const startDate = startDateParam ? new Date(startDateParam) : new Date()
+    // Calculate date range (using week starting dates)
+    const startDate = startDateParam ? new Date(startDateParam + 'T00:00:00.000Z') : new Date()
     const weeks = []
+    console.log('[DEBUG] Generating weeks starting from:', startDate.toISOString())
+    
     for (let i = 0; i < weeksAhead; i++) {
       const weekDate = new Date(startDate)
       weekDate.setDate(startDate.getDate() + i * 7)
-      weeks.push(getWeekEndingDate(weekDate))
+      // Use Tuesday week starting to match database
+      const weekStarting = getTuesdayWeekStartingDate(weekDate)
+      weeks.push(weekStarting)
+      
+      if (i < 10) { // Log first 10 weeks
+        console.log(`[DEBUG] Week ${i}: ${weekStarting.toISOString().split('T')[0]} (${weekStarting.toLocaleDateString('en-US', { weekday: 'long' })})`)
+      }
     }
 
-    // Get all craft types
-    const { data: craftTypes } = await supabase
-      .from('craft_types')
-      .select('id, name, code, category')
-      .eq('is_active', true)
-      .order('labor_category')
-      .order('name')
+    // Get category rates using the new database function
+    console.log('Fetching category rates for headcount forecast...')
+    const { data: categoryRates, error: ratesError } = await supabase
+      .rpc('get_headcount_category_rates', {
+        p_project_id: projectId,
+        p_weeks_back: 8
+      })
+    
+    if (ratesError) {
+      console.error('Error fetching category rates:', ratesError)
+      throw ratesError
+    }
 
-    // Get existing headcount forecasts
-    const { data: headcounts } = await supabase
+    // Create rate map
+    const rateMap = new Map<string, number>()
+    categoryRates?.forEach(rate => {
+      rateMap.set(rate.category, Number(rate.avg_rate) || 0)
+    })
+
+    console.log('Category rates:', {
+      direct: rateMap.get('direct') || 0,
+      indirect: rateMap.get('indirect') || 0,
+      staff: rateMap.get('staff') || 0
+    })
+    
+    // Get all craft types to understand the data
+    const { data: allCraftTypes } = await supabase
+      .from('craft_types')
+      .select('id, name, category')
+      .order('category', { ascending: true })
+    
+    console.log('[DEBUG] Available craft types:')
+    allCraftTypes?.forEach(ct => {
+      console.log(`  - ${ct.id}: ${ct.name} (${ct.category})`)
+    })
+
+    // Debug the query parameters
+    console.log('[DEBUG] Querying headcount forecasts with:')
+    console.log('- project_id:', projectId)
+    console.log('- week_starting >=', weeks[0].toISOString().split('T')[0])
+    console.log('- week_starting <=', weeks[weeks.length - 1].toISOString().split('T')[0])
+    
+    // First check if ANY data exists for this project
+    const { data: allProjectData, error: allError } = await supabase
       .from('labor_headcount_forecasts')
       .select('*')
       .eq('project_id', projectId)
-      .gte('week_starting', weeks[0].toISOString())
-      .lte('week_starting', weeks[weeks.length - 1].toISOString())
-
-    // Get running averages for cost calculations
-    const { data: runningAverages } = await supabase
-      .from('labor_running_averages')
-      .select('craft_type_id, avg_rate')
+      .limit(10)
+    
+    if (allError) {
+      console.error('[ERROR] Failed to fetch any project data:', allError)
+    } else {
+      console.log('[DEBUG] Total records for project (no date filter):', allProjectData?.length || 0)
+      if (allProjectData && allProjectData.length > 0) {
+        console.log('[DEBUG] Sample dates from database:')
+        allProjectData.forEach(record => {
+          console.log(`  - ${record.week_starting} (headcount: ${record.headcount})`)
+        })
+      }
+    }
+    
+    // First, try to get headcount data without the join to see if data exists
+    const { data: simpleHeadcounts, error: simpleError } = await supabase
+      .from('labor_headcount_forecasts')
+      .select('*')
       .eq('project_id', projectId)
+      .gte('week_starting', weeks[0].toISOString().split('T')[0])
+      .lte('week_starting', weeks[weeks.length - 1].toISOString().split('T')[0])
+    
+    if (simpleError) {
+      console.error('[ERROR] Simple headcount query failed:', simpleError)
+    } else {
+      console.log('[DEBUG] Simple query found', simpleHeadcounts?.length || 0, 'records')
+      if (simpleHeadcounts && simpleHeadcounts.length > 0) {
+        console.log('[DEBUG] Sample record:', simpleHeadcounts[0])
+      }
+    }
+    
+    // Get existing headcount forecasts with craft type data
+    const { data: headcounts, error: headcountError } = await supabase
+      .from('labor_headcount_forecasts')
+      .select(`
+        week_starting,
+        headcount,
+        weekly_hours,
+        craft_type_id,
+        craft_types(
+          id,
+          name,
+          code,
+          category
+        )
+      `)
+      .eq('project_id', projectId)
+      .gte('week_starting', weeks[0].toISOString().split('T')[0])
+      .lte('week_starting', weeks[weeks.length - 1].toISOString().split('T')[0])
 
-    const avgMap = new Map(
-      runningAverages?.map(ra => [ra.craft_type_id, ra.avg_rate]) || []
-    )
+    if (headcountError) {
+      console.error('[ERROR] Headcount query with join failed:', headcountError)
+    }
+    
+    console.log('Found', headcounts?.length || 0, 'headcount forecast records with craft type data')
+    
+    // Debug: Log actual database dates
+    if (headcounts && headcounts.length > 0) {
+      console.log('[DEBUG] Sample database records:')
+      const uniqueDates = new Set(headcounts.map(h => h.week_starting))
+      Array.from(uniqueDates).slice(0, 10).forEach(date => {
+        const d = new Date(date)
+        console.log(`[DEBUG] DB week_starting: ${date.split('T')[0]} (${d.toLocaleDateString('en-US', { weekday: 'long' })})`)
+      })
+    }
 
-    // Create headcount map for easy lookup
-    const headcountMap = new Map<string, number>()
-    headcounts?.forEach(hc => {
-      const key = `${hc.week_starting}_${hc.craft_type_id}`
-      headcountMap.set(key, hc.headcount)
+    // If we didn't get data with the join, try to map craft types manually
+    let finalHeadcounts = headcounts
+    if (!headcounts || headcounts.length === 0) {
+      console.log('[DEBUG] No data from joined query, using simple query results')
+      if (simpleHeadcounts && simpleHeadcounts.length > 0) {
+        // Create a craft type map
+        const craftTypeMap = new Map<string, any>()
+        allCraftTypes?.forEach(ct => {
+          craftTypeMap.set(ct.id, ct)
+        })
+        
+        // Map the simple results
+        finalHeadcounts = simpleHeadcounts.map(hc => ({
+          ...hc,
+          craft_types: craftTypeMap.get(hc.craft_type_id) || { category: 'direct' }
+        }))
+        console.log('[DEBUG] Mapped', finalHeadcounts.length, 'records with craft type data')
+      }
+    }
+    
+    // Aggregate headcounts by week and category
+    const headcountByWeekCategory = new Map<string, { direct: number; indirect: number; staff: number; hours: number }>()
+    
+    finalHeadcounts?.forEach(hc => {
+      const weekDate = new Date(hc.week_starting).toISOString().split('T')[0]
+      const category = (hc.craft_types as { category: string })?.category || 'direct'
+      
+      if (!headcountByWeekCategory.has(weekDate)) {
+        headcountByWeekCategory.set(weekDate, { direct: 0, indirect: 0, staff: 0, hours: Number(hc.weekly_hours) || 50 })
+      }
+      
+      const weekData = headcountByWeekCategory.get(weekDate)!
+      if (category in weekData) {
+        weekData[category as 'direct' | 'indirect' | 'staff'] += hc.headcount
+      }
+    })
+    
+    console.log('[DEBUG] Aggregated headcount data:')
+    headcountByWeekCategory.forEach((data, week) => {
+      if (data.direct > 0 || data.indirect > 0 || data.staff > 0) {
+        console.log(`  - ${week}: Direct=${data.direct}, Indirect=${data.indirect}, Staff=${data.staff}`)
+      }
     })
 
     // Build response structure
-    const weeklyData = weeks.map(weekEndingDate => {
-      const weekString = weekEndingDate.toISOString()
+    const weeklyData = weeks.map(weekStartingDate => {
+      const weekDateOnly = weekStartingDate.toISOString().split('T')[0]
+      const weekData = headcountByWeekCategory.get(weekDateOnly) || { direct: 0, indirect: 0, staff: 0, hours: 50 }
       
-      const entries = craftTypes?.map(craft => {
-        const key = `${weekString}_${craft.id}`
-        const headcount = headcountMap.get(key) || 0
-        const avgRate = avgMap.get(craft.id) || 0
-        const hoursPerPerson = 50 // Standard work week
-        const totalHours = headcount * hoursPerPerson
-        const forecastedCost = totalHours * avgRate
-
-        return {
-          craftTypeId: craft.id,
-          craftName: craft.name,
-          craftCode: craft.code,
-          laborCategory: craft.category,
-          headcount,
-          hoursPerPerson,
-          totalHours,
-          avgRate,
-          forecastedCost
+      // Create entries for each category
+      const entries = [
+        {
+          laborCategory: 'direct',
+          categoryName: 'Direct',
+          headcount: weekData.direct,
+          hoursPerPerson: weekData.hours,
+          totalHours: weekData.direct * weekData.hours,
+          avgRate: rateMap.get('direct') || 0,
+          forecastedCost: weekData.direct * weekData.hours * (rateMap.get('direct') || 0)
+        },
+        {
+          laborCategory: 'indirect',
+          categoryName: 'Indirect',
+          headcount: weekData.indirect,
+          hoursPerPerson: weekData.hours,
+          totalHours: weekData.indirect * weekData.hours,
+          avgRate: rateMap.get('indirect') || 0,
+          forecastedCost: weekData.indirect * weekData.hours * (rateMap.get('indirect') || 0)
+        },
+        {
+          laborCategory: 'staff',
+          categoryName: 'Staff',
+          headcount: weekData.staff,
+          hoursPerPerson: weekData.hours,
+          totalHours: weekData.staff * weekData.hours,
+          avgRate: rateMap.get('staff') || 0,
+          forecastedCost: weekData.staff * weekData.hours * (rateMap.get('staff') || 0)
         }
-      }) || []
+      ]
 
       // Calculate week totals
       const weekTotals = entries.reduce((totals, entry) => ({
@@ -144,8 +258,13 @@ export async function GET(request: NextRequest) {
         forecastedCost: totals.forecastedCost + entry.forecastedCost
       }), { headcount: 0, totalHours: 0, forecastedCost: 0 })
 
+      // Convert back to week ending for the frontend
+      // Frontend expects Monday-based weeks (Sunday endings), but DB has Tuesday-based weeks
+      // So Tuesday July 29 → Sunday Aug 3
+      const weekEndingDate = getTuesdayWeekEndingDate(weekStartingDate)
+      
       return {
-        weekEnding: weekString,
+        weekEnding: weekEndingDate.toISOString(),
         entries,
         totals: weekTotals
       }
@@ -158,7 +277,7 @@ export async function GET(request: NextRequest) {
       forecastedCost: totals.forecastedCost + week.totals.forecastedCost
     }), { headcount: 0, totalHours: 0, forecastedCost: 0 })
 
-    return NextResponse.json({
+    const response = {
       project: {
         id: project.id,
         jobNumber: project.job_number,
@@ -166,14 +285,16 @@ export async function GET(request: NextRequest) {
       },
       weeks: weeklyData,
       grandTotals,
-      craftTypes: craftTypes?.map(ct => ({
-        id: ct.id,
-        name: ct.name,
-        code: ct.code,
-        laborCategory: ct.category,
-        avgRate: avgMap.get(ct.id) || 0
-      })) || []
-    })
+      categories: [
+        { id: 'direct', name: 'Direct', laborCategory: 'direct', avgRate: rateMap.get('direct') || 0 },
+        { id: 'indirect', name: 'Indirect', laborCategory: 'indirect', avgRate: rateMap.get('indirect') || 0 },
+        { id: 'staff', name: 'Staff', laborCategory: 'staff', avgRate: rateMap.get('staff') || 0 }
+      ]
+    }
+    
+    console.log('Returning response with', response.weeks.length, 'weeks and', response.categories.length, 'categories')
+    
+    return NextResponse.json(response)
   } catch (error) {
     console.error('Headcount forecast fetch error:', error)
     return NextResponse.json(
@@ -193,22 +314,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Get user details
-  const { data: userDetails } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!userDetails) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 })
-  }
-
-  // Check permissions
-  if (['viewer', 'executive', 'accounting'].includes(userDetails.role)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
-
   try {
     const body = await request.json()
     const validatedData = headcountBatchSchema.parse(body)
@@ -216,7 +321,7 @@ export async function POST(request: NextRequest) {
     // Check project access
     const { data: project } = await supabase
       .from('projects')
-      .select('id, project_manager_id')
+      .select('id')
       .eq('id', validatedData.project_id)
       .single()
 
@@ -224,29 +329,93 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    // Project managers can only update their own projects
-    if (userDetails.role === 'project_manager' && project.project_manager_id !== user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
+    // Get craft types for each category
+    const { data: craftTypes } = await supabase
+      .from('craft_types')
+      .select('id, category')
+      .in('category', ['direct', 'indirect', 'staff'])
+
+    // Create a map of category to craft type IDs
+    const categoryToCraftTypes = new Map<string, string[]>()
+    craftTypes?.forEach(ct => {
+      if (!categoryToCraftTypes.has(ct.category)) {
+        categoryToCraftTypes.set(ct.category, [])
+      }
+      categoryToCraftTypes.get(ct.category)!.push(ct.id)
+    })
 
     const results = []
     const errors = []
 
+    // Find or create category-level craft types
+    const categoryToCraftTypeId = new Map<string, string>()
+    
+    // First, look for craft types that match category names exactly
+    const { data: categoryLevelCraftTypes } = await supabase
+      .from('craft_types')
+      .select('id, name, category')
+      .in('name', ['Direct Labor', 'Indirect Labor', 'Staff'])
+    
+    categoryLevelCraftTypes?.forEach(ct => {
+      if (ct.name === 'Direct Labor' && ct.category === 'direct') {
+        categoryToCraftTypeId.set('direct', ct.id)
+      } else if (ct.name === 'Indirect Labor' && ct.category === 'indirect') {
+        categoryToCraftTypeId.set('indirect', ct.id)
+      } else if (ct.name === 'Staff' && ct.category === 'staff') {
+        categoryToCraftTypeId.set('staff', ct.id)
+      }
+    })
+    
+    // If we didn't find category-level craft types, use the first one in each category
+    if (categoryToCraftTypeId.size < 3) {
+      const missingCategories = ['direct', 'indirect', 'staff'].filter(
+        cat => !categoryToCraftTypeId.has(cat)
+      )
+      
+      for (const category of missingCategories) {
+        const craftTypesInCategory = categoryToCraftTypes.get(category) || []
+        if (craftTypesInCategory.length > 0) {
+          categoryToCraftTypeId.set(category, craftTypesInCategory[0])
+          console.log(`Using first craft type for ${category}: ${craftTypesInCategory[0]}`)
+        }
+      }
+    }
+    
+    console.log('Category to craft type mapping:', Object.fromEntries(categoryToCraftTypeId))
+
     // Process each week
     for (const week of validatedData.weeks) {
-      const weekEndingDate = getWeekEndingDate(new Date(week.week_ending))
-      const formattedWeekEnding = weekEndingDate.toISOString()
+      // Convert week_ending to week_starting for database storage
+      const weekEndingDate = new Date(week.week_ending)
+      // Frontend sends Sunday week endings, DB needs Tuesday starts
+      // So Sunday Aug 3 from frontend needs to become Tuesday July 29 for DB
+      // Direct conversion from Sunday to Tuesday
+      const weekStartingDate = getSundayWeekStartingDate(weekEndingDate)
+      
+      // Normalize to UTC midnight for consistent storage
+      weekStartingDate.setUTCHours(0, 0, 0, 0)
+      const formattedWeekStarting = weekStartingDate.toISOString()
+      const weekStartingDateOnly = formattedWeekStarting.split('T')[0]
 
       for (const entry of week.entries) {
         try {
+          // The entry.craft_type_id actually contains the category name
+          const category = entry.craft_type_id as string
+          const craftTypeId = categoryToCraftTypeId.get(category)
+          
+          if (!craftTypeId) {
+            console.warn(`No craft type found for category: ${category}`)
+            continue
+          }
+
           // Skip if headcount is 0 (delete existing if any)
           if (entry.headcount === 0) {
             const { error: deleteError } = await supabase
               .from('labor_headcount_forecasts')
               .delete()
               .eq('project_id', validatedData.project_id)
-              .eq('craft_type_id', entry.craft_type_id)
-              .eq('week_ending', formattedWeekEnding)
+              .eq('craft_type_id', craftTypeId)
+              .eq('week_starting', formattedWeekStarting)
 
             if (deleteError && deleteError.code !== 'PGRST116') {
               throw deleteError
@@ -254,19 +423,21 @@ export async function POST(request: NextRequest) {
 
             results.push({
               action: 'deleted',
-              week_ending: formattedWeekEnding,
-              craft_type_id: entry.craft_type_id
+              week_starting: weekStartingDateOnly,
+              category: category,
+              craft_type_id: craftTypeId
             })
             continue
           }
 
-          // Check if entry exists
+          // Check if entry exists using date-only comparison
           const { data: existing } = await supabase
             .from('labor_headcount_forecasts')
             .select('*')
             .eq('project_id', validatedData.project_id)
-            .eq('craft_type_id', entry.craft_type_id)
-            .eq('week_ending', formattedWeekEnding)
+            .eq('craft_type_id', craftTypeId)
+            .gte('week_starting', `${weekStartingDateOnly}T00:00:00`)
+            .lt('week_starting', `${weekStartingDateOnly}T23:59:59`)
             .single()
 
           if (existing) {
@@ -275,7 +446,7 @@ export async function POST(request: NextRequest) {
               .from('labor_headcount_forecasts')
               .update({
                 headcount: entry.headcount,
-                hours_per_person: entry.hours_per_person || 50,
+                weekly_hours: entry.hours_per_person || 50,
                 updated_at: new Date().toISOString()
               })
               .eq('id', existing.id)
@@ -285,8 +456,10 @@ export async function POST(request: NextRequest) {
             results.push({
               action: 'updated',
               id: existing.id,
-              week_ending: formattedWeekEnding,
-              craft_type_id: entry.craft_type_id
+              week_starting: weekStartingDateOnly,
+              category: category,
+              craft_type_id: craftTypeId,
+              headcount: entry.headcount
             })
           } else {
             // Create new entry
@@ -294,11 +467,10 @@ export async function POST(request: NextRequest) {
               .from('labor_headcount_forecasts')
               .insert({
                 project_id: validatedData.project_id,
-                craft_type_id: entry.craft_type_id,
-                week_ending: formattedWeekEnding,
+                craft_type_id: craftTypeId,
+                week_starting: formattedWeekStarting,
                 headcount: entry.headcount,
-                hours_per_person: entry.hours_per_person || 50,
-                created_by: user.id
+                weekly_hours: entry.hours_per_person || 50
               })
               .select()
               .single()
@@ -308,15 +480,17 @@ export async function POST(request: NextRequest) {
             results.push({
               action: 'created',
               id: created.id,
-              week_ending: formattedWeekEnding,
-              craft_type_id: entry.craft_type_id
+              week_starting: weekStartingDateOnly,
+              category: category,
+              craft_type_id: craftTypeId,
+              headcount: entry.headcount
             })
           }
         } catch (error) {
           console.error('Entry processing error:', error)
           errors.push({
-            week_ending: formattedWeekEnding,
-            craft_type_id: entry.craft_type_id,
+            week_starting: weekStartingDateOnly,
+            category: entry.craft_type_id,
             error: error instanceof Error ? error.message : 'Unknown error'
           })
         }

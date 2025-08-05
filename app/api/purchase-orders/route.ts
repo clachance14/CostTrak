@@ -38,15 +38,7 @@ export async function GET(request: NextRequest) {
         project:projects(
           id,
           job_number,
-          name,
-          division:divisions(id, name, code)
-        ),
-        cost_code:cost_codes(
-          id,
-          code,
-          description,
-          category,
-          discipline
+          name
         )
       `, { count: 'exact' })
 
@@ -84,57 +76,16 @@ export async function GET(request: NextRequest) {
       query = query.eq('project_id', project_id)
     }
     
-    // Apply category filter (maps budget categories to cost code categories and cost centers)
+    // Apply category filter - simplified version using budget_category field only
     if (category) {
-      // Map budget categories to cost centers and cost code categories
-      const categoryMapping: Record<string, { costCenters: string[], costCodeCategories: string[] }> = {
-        'materials': { costCenters: ['3000'], costCodeCategories: ['material'] },
-        'equipment': { costCenters: ['2000'], costCodeCategories: ['equipment'] },
-        'subcontracts': { costCenters: ['4000'], costCodeCategories: ['subcontract'] },
-        'small tools & consumables': { costCenters: ['5000'], costCodeCategories: ['material', 'other'] },
-        'add ons': { costCenters: [], costCodeCategories: ['other'] },
-        'other': { costCenters: [], costCodeCategories: ['other'] }
-      }
-      
-      const mapping = categoryMapping[category.toLowerCase()]
-      
-      if (mapping) {
-        // Build OR conditions for category filtering
-        const orConditions = []
-        
-        // Add cost center conditions
-        if (mapping.costCenters.length > 0) {
-          orConditions.push(`cost_center.in.(${mapping.costCenters.join(',')})`)
-        }
-        
-        // Add budget category condition
-        orConditions.push(`budget_category.ilike.%${category}%`)
-        
-        // If we have cost code categories, we need to filter by them too
-        if (mapping.costCodeCategories.length > 0) {
-          const { data: matchingCodes } = await supabase
-            .from('cost_codes')
-            .select('id')
-            .in('category', mapping.costCodeCategories)
-          
-          if (matchingCodes && matchingCodes.length > 0) {
-            const codeIds = matchingCodes.map(c => c.id)
-            orConditions.push(`cost_code_id.in.(${codeIds.join(',')})`)
-          }
-        }
-        
-        // Apply the OR filter
-        if (orConditions.length > 0) {
-          query = query.or(orConditions.join(','))
-        }
-      }
+      query = query.ilike('budget_category', `%${category}%`)
     }
     
     // Apply column filters
     for (const [column, values] of columnFilters.entries()) {
       if (values.length > 0) {
         // Special handling for related fields
-        if (column === 'project_name' || column === 'project_job_number' || column === 'division_name') {
+        if (column === 'project_name' || column === 'project_job_number') {
           // For related fields, we need to get matching project IDs first
           let projectQuery = supabase.from('projects').select('id')
           
@@ -167,17 +118,6 @@ export async function GET(request: NextRequest) {
               } else {
                 projectQuery = projectQuery.in('job_number', nonEmptyValues)
               }
-            }
-          } else if (column === 'division_name') {
-            // For division name, we need to join with divisions table
-            projectQuery = supabase
-              .from('projects')
-              .select('id, divisions!inner(name)')
-            
-            const nonEmptyValues = values.filter(v => v !== '')
-            
-            if (nonEmptyValues.length > 0) {
-              projectQuery = projectQuery.in('divisions.name', nonEmptyValues)
             }
           }
           
@@ -327,17 +267,7 @@ export async function GET(request: NextRequest) {
         
         orConditions.push(`budget_category.ilike.%${category}%`)
         
-        if (mapping.costCodeCategories.length > 0) {
-          const { data: matchingCodes } = await supabase
-            .from('cost_codes')
-            .select('id')
-            .in('category', mapping.costCodeCategories)
-          
-          if (matchingCodes && matchingCodes.length > 0) {
-            const codeIds = matchingCodes.map(c => c.id)
-            orConditions.push(`cost_code_id.in.(${codeIds.join(',')})`)
-          }
-        }
+        // Cost codes table removed in simplification
         
         if (orConditions.length > 0) {
           summaryQuery = summaryQuery.or(orConditions.join(','))
@@ -348,7 +278,7 @@ export async function GET(request: NextRequest) {
     // Apply column filters to summary query
     for (const [column, values] of columnFilters.entries()) {
       if (values.length > 0) {
-        if (column === 'project_name' || column === 'project_job_number' || column === 'division_name') {
+        if (column === 'project_name' || column === 'project_job_number') {
           // For related fields, we already have the project IDs from the main query
           // We need to recreate the same filtering logic
           let projectQuery = supabase.from('projects').select('id')
@@ -382,15 +312,6 @@ export async function GET(request: NextRequest) {
               } else {
                 projectQuery = projectQuery.in('job_number', nonEmptyValues)
               }
-            }
-          } else if (column === 'division_name') {
-            projectQuery = supabase
-              .from('projects')
-              .select('id, divisions!inner(name)')
-            
-            const nonEmptyValues = values.filter(v => v !== '')
-            if (nonEmptyValues.length > 0) {
-              projectQuery = projectQuery.in('divisions.name', nonEmptyValues)
             }
           }
           

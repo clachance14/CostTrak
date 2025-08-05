@@ -7,6 +7,14 @@ export const getWeekEndingDate = (date: Date): Date => {
   return endOfWeek(date, { weekStartsOn: 1 }) // Monday start = Sunday end
 }
 
+// Helper to get Monday week starting date
+export const getWeekStartingDate = (date: Date): Date => {
+  const weekEnd = endOfWeek(date, { weekStartsOn: 1 })
+  const weekStart = new Date(weekEnd)
+  weekStart.setDate(weekEnd.getDate() - 6) // 6 days before Sunday is Monday
+  return weekStart
+}
+
 // Helper to format week ending date
 export const formatWeekEnding = (date: Date): string => {
   return format(date, 'MMM dd, yyyy')
@@ -82,8 +90,8 @@ export const weeklyActualBatchSchema = z.object({
 export const headcountForecastSchema = z.object({
   project_id: z.string().uuid('Invalid project ID'),
   craft_type_id: z.string().uuid('Invalid craft type ID'),
-  week_ending: z.string().datetime({ message: 'Invalid date format' }),
-  headcount: z.number().int().min(0, 'Headcount must be non-negative'),
+  week_starting: z.string().datetime({ message: 'Invalid date format' }),
+  headcount: z.number().min(0, 'Headcount must be non-negative'),
   hours_per_person: z.number().min(0, 'Hours must be non-negative').default(50)
 })
 
@@ -91,7 +99,7 @@ export const headcountForecastSchema = z.object({
 export const headcountFormSchema = z.object({
   project_id: z.string().uuid('Please select a project'),
   weeks: z.array(z.object({
-    week_ending: z.string(),
+    week_starting: z.string(),
     entries: z.array(z.object({
       craft_type_id: z.string().uuid(),
       craft_name: z.string().optional(), // For display only
@@ -99,10 +107,10 @@ export const headcountFormSchema = z.object({
       headcount: z.string()
         .transform((val) => val || '0')
         .refine((val) => {
-          const num = parseInt(val, 10)
+          const num = parseFloat(val)
           return !isNaN(num) && num >= 0
-        }, 'Must be a non-negative integer')
-        .transform((val) => parseInt(val, 10)),
+        }, 'Must be a non-negative number')
+        .transform((val) => parseFloat(val)),
       hours_per_person: z.number().min(0).default(50).optional()
     }))
   }))
@@ -115,7 +123,7 @@ export const headcountBatchSchema = z.object({
     week_ending: z.string().datetime({ message: 'Invalid date format' }),
     entries: z.array(z.object({
       craft_type_id: z.string().uuid('Invalid craft type ID'),
-      headcount: z.number().int().min(0, 'Headcount must be non-negative'),
+      headcount: z.number().min(0, 'Headcount must be non-negative'),
       hours_per_person: z.number().min(0, 'Hours must be non-negative').default(50)
     }))
   }))

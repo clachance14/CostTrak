@@ -1,0 +1,54 @@
+# CostTrak Project Rules
+
+## Slash Commands
+
+### /create-spec
+Create a detailed spec for a new feature with technical specifications and task breakdown.
+
+When this command is invoked:
+1. Follow the instructions located in ~/.agent-os/instructions/create-spec.md
+2. Create a comprehensive specification document
+3. Include technical details and implementation tasks
+4. Break down the feature into manageable components
+
+### /plan-product
+Plan a new product and install Agent OS in its codebase.
+
+When this command is invoked:
+1. Follow the instructions located in ~/.agent-os/instructions/plan-product.md
+2. Analyze the product requirements
+3. Create a comprehensive product plan
+4. Set up Agent OS integration if needed
+
+### /execute-tasks
+Execute the next task from the task list.
+
+When this command is invoked:
+1. Follow the instructions located in ~/.agent-os/instructions/execute-tasks.md
+2. Review the current task queue
+3. Execute the next available task
+4. Update task status upon completion
+
+### /analyze-product
+Analyze your product's codebase and install Agent OS.
+
+When this command is invoked:
+1. Follow the instructions located in ~/.agent-os/instructions/analyze-product.md
+2. Perform comprehensive codebase analysis
+3. Identify areas for improvement
+4. Set up Agent OS integration
+
+## Project Context
+
+This is the CostTrak project - an internal financial tracking system for industrial construction projects built with:
+- Frontend: Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS
+- Backend: Supabase (PostgreSQL + Auth + Realtime)
+- Key Libraries: lucide-react (icons), xlsx (Excel import/export), date-fns, recharts (visualizations)
+
+## Development Guidelines
+
+1. Always follow the existing code patterns and conventions
+2. Use TypeScript for type safety
+3. Follow the database schema and RLS policies
+4. Respect the soft delete patterns (never hard delete)
+5. Ensure email domain validation (@ics.ac only)

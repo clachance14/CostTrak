@@ -7,11 +7,11 @@ import {
   ArrowLeft, 
   Save, 
   AlertTriangle, 
-  TrendingUp,
   Calendar,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { getWeekEndingDate, formatWeekEnding } from '@/lib/validations/labor-forecast-v2'
+import { CollapsibleEntryTable } from '@/components/labor/collapsible-entry-table'
 
 interface CraftType {
   id: string
@@ -329,99 +329,13 @@ export default function WeeklyLaborEntryPage() {
       )}
 
       <div className="space-y-8">
-        {/* Group entries by labor category */}
-        {Object.entries(laborCategoryLabels).map(([category, label]) => {
-          const categoryEntries = Array.from(laborEntries.values()).filter(
-            entry => entry.laborCategory === category
-          )
-          
-          if (categoryEntries.length === 0) return null
-
-          return (
-            <div key={category} className="bg-white shadow-sm rounded-lg overflow-hidden">
-              <div className="bg-background px-6 py-3 border-b">
-                <h2 className="text-lg font-semibold text-foreground">{label}</h2>
-              </div>
-              
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-background">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
-                      Craft Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
-                      Total Cost ($)
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
-                      Total Hours
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
-                      Rate/Hour
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
-                      Running Avg
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider">
-                      Variance
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {categoryEntries.map(entry => {
-                    const variance = entry.runningAvgRate > 0 && entry.ratePerHour > 0
-                      ? ((entry.ratePerHour - entry.runningAvgRate) / entry.runningAvgRate) * 100
-                      : 0
-
-                    return (
-                      <tr key={entry.craftTypeId}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-foreground">
-                            {entry.craftName}
-                          </div>
-                          <div className="text-sm text-foreground/80">{entry.craftCode}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={entry.totalCost || ''}
-                            onChange={(e) => updateEntry(entry.craftTypeId, 'totalCost', e.target.value)}
-                            className="w-32 px-3 py-1 border border-foreground/30 rounded-md focus:ring-2 focus:ring-blue-500"
-                            placeholder="0.00"
-                          />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <input
-                            type="number"
-                            step="0.5"
-                            value={entry.totalHours || ''}
-                            onChange={(e) => updateEntry(entry.craftTypeId, 'totalHours', e.target.value)}
-                            className="w-32 px-3 py-1 border border-foreground/30 rounded-md focus:ring-2 focus:ring-blue-500"
-                            placeholder="0.0"
-                          />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                          {entry.ratePerHour > 0 ? formatCurrency(entry.ratePerHour) : '-'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground/80">
-                          {entry.runningAvgRate > 0 ? formatCurrency(entry.runningAvgRate) : 'No data'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {variance !== 0 && (
-                            <div className={`flex items-center ${variance > 10 ? 'text-red-600' : variance < -10 ? 'text-green-600' : 'text-foreground'}`}>
-                              <TrendingUp className={`h-4 w-4 mr-1 ${variance < 0 ? 'rotate-180' : ''}`} />
-                              {Math.abs(variance).toFixed(1)}%
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )
-        })}
+        {/* Use the new collapsible table component */}
+        <CollapsibleEntryTable
+          laborEntries={laborEntries}
+          weekEnding={weekEnding}
+          updateEntry={updateEntry}
+          laborCategoryLabels={laborCategoryLabels}
+        />
 
         {/* Summary totals */}
         <div className="bg-white shadow-sm rounded-lg p-6">

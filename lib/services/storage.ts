@@ -18,7 +18,7 @@ const ALLOWED_MIME_TYPES = [
 
 export interface UploadOptions {
   file: File
-  entityType: 'project' | 'purchase_order' | 'change_order'
+  entityType: 'project' | 'purchase_order'
   entityId: string
   category: 'contract' | 'invoice' | 'drawing' | 'report' | 'other'
   description?: string

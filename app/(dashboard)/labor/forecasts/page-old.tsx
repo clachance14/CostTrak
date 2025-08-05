@@ -188,8 +188,8 @@ export default function LaborForecastsPage() {
     }
   }
 
-  const canCreateForecast = userDetails && !['viewer', 'executive', 'accounting'].includes(userDetails.role)
-  const canDelete = userDetails && ['controller', 'ops_manager'].includes(userDetails.role)
+  const canCreateForecast = userDetails && userDetails.role === 'project_manager'
+  const canDelete = userDetails && userDetails.role === 'project_manager'
 
   if (loading) {
     return (

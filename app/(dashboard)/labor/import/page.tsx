@@ -121,7 +121,7 @@ export default function LaborImportPage() {
   const [isFetchingRates, setIsFetchingRates] = useState(false)
 
   // Check permissions
-  const canImport = user && ['controller', 'ops_manager', 'project_manager'].includes(user.role)
+  const canImport = user && user.role === 'project_manager'
   
   // Debug logging
   console.log('User data:', user)

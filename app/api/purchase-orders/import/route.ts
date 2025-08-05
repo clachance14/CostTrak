@@ -272,8 +272,8 @@ export async function POST(request: NextRequest) {
         // Track this project
         projectsInImport.add(projectId)
 
-        // Calculate total estimated value for the PO (this is the committed amount)
-        const estimatedValue = parseNumericValue(firstRow['Est. PO Value'])
+        // Get the PO value from the CSV (this is the actual PO value, not an estimate)
+        const poValue = parseNumericValue(firstRow['Est. PO Value'])
         
         // Map cost center to budget category
         const costCenter = firstRow['Cost Center']
@@ -294,8 +294,9 @@ export async function POST(request: NextRequest) {
           po_number: cleanedPONumber,
           vendor_name: firstRow['Vendor'],
           description: firstRow[' PO Comments'],
-          committed_amount: estimatedValue,
-          total_amount: estimatedValue, // Keep for backward compatibility initially
+          po_value: poValue, // Original PO value from import
+          committed_amount: poValue, // Initially same as PO value, can be edited later
+          total_amount: 0, // Will be updated with invoiced amount
           status: mapStatus(firstRow['PO Status']),
           generation_date: parseICSDate(firstRow['Generation Date']),
           requestor: firstRow['Requestor'],
@@ -422,11 +423,12 @@ export async function POST(request: NextRequest) {
           } else {
             result.lineItemsCreated += lineItems.length
             
-            // Update the PO with the calculated invoiced amount
+            // Update the PO with the calculated invoiced amount and total_amount
             const { error: updateInvoicedError } = await adminSupabase
               .from('purchase_orders')
               .update({ 
                 invoiced_amount: totalInvoicedAmount,
+                total_amount: totalInvoicedAmount, // Total amount = invoiced amount
                 updated_at: new Date().toISOString()
               })
               .eq('id', poId)
