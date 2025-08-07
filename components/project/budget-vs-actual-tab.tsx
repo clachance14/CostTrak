@@ -21,6 +21,7 @@ interface BudgetCategory {
   budget: number
   committed: number
   actuals: number
+  leftToSpend?: number
   forecastedFinal: number
   variance: number
   subcategories?: BudgetCategory[] | null
@@ -94,8 +95,8 @@ export function BudgetVsActualTab({ projectId, contractValue }: BudgetVsActualTa
       return
     }
     
-    // Don't open modal for LABOR, ADD ONS, or RISK
-    if (category === 'LABOR' || category === 'ADD ONS' || category === 'RISK') {
+    // Don't open modal for LABOR or RISK
+    if (category === 'LABOR' || category === 'RISK') {
       return
     }
     setSelectedCategory(category)
@@ -129,9 +130,10 @@ export function BudgetVsActualTab({ projectId, contractValue }: BudgetVsActualTa
   const totals = budgetData?.totals || categories.reduce((acc, cat) => ({
     budget: acc.budget + cat.budget,
     actuals: acc.actuals + cat.actuals,
+    leftToSpend: acc.leftToSpend + (cat.leftToSpend ?? (cat.forecastedFinal - cat.actuals)),
     forecastedFinal: acc.forecastedFinal + cat.forecastedFinal,
     variance: acc.variance + cat.variance
-  }), { budget: 0, actuals: 0, forecastedFinal: 0, variance: 0 })
+  }), { budget: 0, actuals: 0, leftToSpend: 0, forecastedFinal: 0, variance: 0 })
 
   // Use contract value directly
   const displayContractValue = contractValue
@@ -204,7 +206,6 @@ export function BudgetVsActualTab({ projectId, contractValue }: BudgetVsActualTa
                 const hasSubcategories = category.subcategories && category.subcategories.length > 0
                 const isClickable = viewMode === 'category' && (hasSubcategories || (
                   category.category !== 'LABOR' && 
-                  category.category !== 'ADD ONS' && 
                   category.category !== 'RISK'
                 ))
                 const isExpanded = expandedCategories.has(category.category)
@@ -248,9 +249,9 @@ export function BudgetVsActualTab({ projectId, contractValue }: BudgetVsActualTa
                       </td>
                       <td className={cn(
                         "text-right py-3 px-4",
-                        category.forecastedFinal - category.actuals < 0 ? "text-red-600" : ""
+                        (category.leftToSpend ?? (category.forecastedFinal - category.actuals)) < 0 ? "text-red-600" : ""
                       )}>
-                        {formatCurrency(category.forecastedFinal - category.actuals)}
+                        {formatCurrency(category.leftToSpend ?? (category.forecastedFinal - category.actuals))}
                       </td>
                       <td className="text-right py-3 px-4">
                         {formatCurrency(category.forecastedFinal)}
@@ -285,9 +286,9 @@ export function BudgetVsActualTab({ projectId, contractValue }: BudgetVsActualTa
                         </td>
                         <td className={cn(
                           "text-right py-3 px-4 text-sm",
-                          subcat.forecastedFinal - subcat.actuals < 0 ? "text-red-600" : ""
+                          (subcat.leftToSpend ?? (subcat.forecastedFinal - subcat.actuals)) < 0 ? "text-red-600" : ""
                         )}>
-                          {formatCurrency(subcat.forecastedFinal - subcat.actuals)}
+                          {formatCurrency(subcat.leftToSpend ?? (subcat.forecastedFinal - subcat.actuals))}
                         </td>
                         <td className="text-right py-3 px-4 text-sm">
                           {formatCurrency(subcat.forecastedFinal)}
@@ -313,9 +314,9 @@ export function BudgetVsActualTab({ projectId, contractValue }: BudgetVsActualTa
                 <td className="text-right py-3 px-4">{formatCurrency(totals.actuals)}</td>
                 <td className={cn(
                   "text-right py-3 px-4",
-                  totals.forecastedFinal - totals.actuals < 0 ? "text-red-600" : ""
+                  (totals.leftToSpend ?? (totals.forecastedFinal - totals.actuals)) < 0 ? "text-red-600" : ""
                 )}>
-                  {formatCurrency(totals.forecastedFinal - totals.actuals)}
+                  {formatCurrency(totals.leftToSpend ?? (totals.forecastedFinal - totals.actuals))}
                 </td>
                 <td className="text-right py-3 px-4">{formatCurrency(totals.forecastedFinal)}</td>
                 <td className={cn(

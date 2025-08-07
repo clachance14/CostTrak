@@ -27,7 +27,19 @@ interface VendorBreakdown {
 interface CategoryBreakdown {
   name: string
   value: number
+  budget: number
+  percentage: number
+  remaining: number
+  status: 'normal' | 'warning' | 'over'
   label: string
+  budgetLabel: string
+}
+
+interface CategorySummary {
+  totalBudget: number
+  totalSpent: number
+  totalRemaining: number
+  percentageUsed: number
 }
 
 interface WeeklyTrend {
@@ -44,6 +56,7 @@ interface PurchaseOrdersTabProps {
   topVendor: { name: string; value: number }
   vendorBreakdown: VendorBreakdown[]
   categoryBreakdown: CategoryBreakdown[]
+  categorySummary?: CategorySummary
   weeklyTrend: WeeklyTrend[]
 }
 
@@ -56,6 +69,7 @@ export function PurchaseOrdersTab({
   topVendor,
   vendorBreakdown,
   categoryBreakdown,
+  categorySummary,
   weeklyTrend,
 }: PurchaseOrdersTabProps) {
   const [animatedValues, setAnimatedValues] = useState<Record<number, boolean>>({})
@@ -242,15 +256,24 @@ export function PurchaseOrdersTab({
         <Card>
           <CardHeader>
             <CardTitle className="text-lg font-semibold">PO Breakdown by Category</CardTitle>
-            <p className="text-sm text-gray-500 mt-1">An overview of purchase order spending across different categories.</p>
+            <p className="text-sm text-gray-500 mt-1">Track spending against budgeted amounts for each category</p>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="space-y-6">
               {categoryBreakdown.map((category, index) => {
-                const maxValue = Math.max(...categoryBreakdown.map(c => c.value))
-                const percentage = (category.value / maxValue) * 100
                 const isHovered = hoveredIndex === index
                 const isAnimated = animatedValues[index]
+                
+                // Determine bar color based on status
+                let barColorClass = 'bg-blue-500'
+                let barGradientClass = 'from-blue-500 to-blue-600'
+                if (category.status === 'warning') {
+                  barColorClass = 'bg-amber-500'
+                  barGradientClass = 'from-amber-500 to-amber-600'
+                } else if (category.status === 'over') {
+                  barColorClass = 'bg-red-500'
+                  barGradientClass = 'from-red-500 to-red-600'
+                }
                 
                 return (
                   <div 
@@ -259,13 +282,13 @@ export function PurchaseOrdersTab({
                     onMouseEnter={() => setHoveredIndex(index)}
                     onMouseLeave={() => setHoveredIndex(null)}
                   >
-                    {/* Header with category name and value */}
+                    {/* Header with category name and budget */}
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 min-w-[180px]">
+                      <span className="text-sm font-medium text-gray-700 min-w-[180px]">
                         {category.name}
                       </span>
-                      <span className="text-sm font-semibold text-gray-900 ml-4">
-                        {category.label}
+                      <span className="text-sm text-gray-500 ml-4">
+                        Budget: {category.budgetLabel}
                       </span>
                     </div>
                     
@@ -274,15 +297,15 @@ export function PurchaseOrdersTab({
                       <div className="w-full bg-gray-100 rounded-md h-8 overflow-hidden">
                         <div
                           className={`
-                            bg-blue-500 h-full rounded-md transition-all duration-700 ease-out relative
+                            ${barColorClass} h-full rounded-md transition-all duration-700 ease-out relative
                             ${isHovered ? 'shadow-lg' : ''}
                           `}
                           style={{ 
-                            width: isAnimated ? `${percentage}%` : '0%',
+                            width: isAnimated ? `${Math.min(category.percentage, 100)}%` : '0%',
                             transform: isHovered ? 'scaleY(1.05)' : 'scaleY(1)'
                           }}
                         >
-                          <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-blue-600 rounded-md" />
+                          <div className={`absolute inset-0 bg-gradient-to-r ${barGradientClass} rounded-md`} />
                           
                           {/* Subtle shine effect on hover */}
                           {isHovered && (
@@ -291,10 +314,31 @@ export function PurchaseOrdersTab({
                         </div>
                       </div>
                       
+                      {/* Percentage and amount label */}
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-sm font-semibold text-gray-900">
+                          {category.label} / {category.percentage.toFixed(1)}%
+                        </span>
+                        {category.status === 'warning' && (
+                          <span className="text-xs text-amber-600 flex items-center">
+                            ⚠️ Warning: {category.percentage.toFixed(0)}% used
+                          </span>
+                        )}
+                        {category.status === 'over' && (
+                          <span className="text-xs text-red-600 flex items-center">
+                            🚫 Over budget by {formatCurrency(Math.abs(category.remaining))}
+                          </span>
+                        )}
+                      </div>
+                      
                       {/* Hover tooltip */}
                       {isHovered && (
-                        <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-3 py-1 rounded shadow-lg whitespace-nowrap z-10">
-                          {category.name}: {category.label}
+                        <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-3 py-2 rounded shadow-lg whitespace-nowrap z-10">
+                          <div className="space-y-1">
+                            <div>{category.name}</div>
+                            <div>Spent: {category.label} of {category.budgetLabel}</div>
+                            <div>Remaining: {formatCurrency(Math.max(0, category.remaining))}</div>
+                          </div>
                           <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800" />
                         </div>
                       )}
@@ -303,6 +347,58 @@ export function PurchaseOrdersTab({
                 )
               })}
             </div>
+            
+            {/* Summary Section */}
+            {categorySummary && (
+              <>
+                <div className="border-t border-gray-200 mt-8 pt-6">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-gray-50 rounded-lg p-4 text-center">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Total Budget</p>
+                      <p className="text-lg font-bold text-gray-900 mt-1">
+                        {formatCurrency(categorySummary.totalBudget)}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-4 text-center">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Total Spent</p>
+                      <p className="text-lg font-bold text-gray-900 mt-1">
+                        {formatCurrency(categorySummary.totalSpent)}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-4 text-center">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Remaining</p>
+                      <p className="text-lg font-bold text-gray-900 mt-1">
+                        {formatCurrency(categorySummary.totalRemaining)}
+                        <span className="text-xs text-gray-500 ml-1">
+                          ({(100 - categorySummary.percentageUsed).toFixed(0)}%)
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Legend */}
+                <div className="border-t border-gray-200 mt-6 pt-4">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Legend</p>
+                  <div className="flex items-center space-x-6 text-xs text-gray-600">
+                    <span className="flex items-center">
+                      <span className="w-3 h-3 bg-blue-500 rounded mr-1"></span>
+                      Spent
+                    </span>
+                    <span className="flex items-center">
+                      <span className="w-3 h-3 bg-gray-200 rounded mr-1"></span>
+                      Remaining
+                    </span>
+                    <span className="flex items-center">
+                      ⚠️ &gt;80% Used
+                    </span>
+                    <span className="flex items-center">
+                      🚫 Over Budget
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

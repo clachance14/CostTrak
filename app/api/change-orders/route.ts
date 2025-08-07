@@ -113,30 +113,41 @@ export async function POST(request: NextRequest) {
       description: z.string().min(1),
       pricing_type: z.enum(['LS', 'T&M', 'Estimate', 'Credit']).default('LS'),
       amount: z.number(),
-      submitted_date: z.string().datetime().optional(),
+      submitted_date: z.string().optional(),
       status: z.enum(['pending', 'approved', 'rejected']).default('pending'),
       // Cost breakdown fields
-      manhours: z.number().optional().default(0),
-      labor_amount: z.number().optional().default(0),
-      equipment_amount: z.number().optional().default(0),
-      material_amount: z.number().optional().default(0),
-      subcontract_amount: z.number().optional().default(0),
-      markup_amount: z.number().optional().default(0),
-      tax_amount: z.number().optional().default(0),
-      impact_schedule_days: z.number().optional().default(0)
+      manhours: z.number().nullable().optional().default(0),
+      labor_amount: z.number().nullable().optional().default(0),
+      equipment_amount: z.number().nullable().optional().default(0),
+      material_amount: z.number().nullable().optional().default(0),
+      subcontract_amount: z.number().nullable().optional().default(0),
+      markup_amount: z.number().nullable().optional().default(0),
+      tax_amount: z.number().nullable().optional().default(0),
+      impact_schedule_days: z.number().nullable().optional().default(0)
     })
 
     const body = await request.json()
     const validatedData = changeOrderSchema.parse(body)
 
+    // Transform null values to 0 for numeric fields
+    const dataToInsert = {
+      ...validatedData,
+      manhours: validatedData.manhours ?? 0,
+      labor_amount: validatedData.labor_amount ?? 0,
+      equipment_amount: validatedData.equipment_amount ?? 0,
+      material_amount: validatedData.material_amount ?? 0,
+      subcontract_amount: validatedData.subcontract_amount ?? 0,
+      markup_amount: validatedData.markup_amount ?? 0,
+      tax_amount: validatedData.tax_amount ?? 0,
+      impact_schedule_days: validatedData.impact_schedule_days ?? 0,
+      created_by: user.id,
+      division_id: null  // Explicitly set to null since divisions have been removed
+    }
+
     // Create change order
     const { data: changeOrder, error } = await supabase
       .from('change_orders')
-      .insert({
-        ...validatedData,
-        created_by: user.id,
-        division_id: null  // Explicitly set to null since divisions have been removed
-      })
+      .insert(dataToInsert)
       .select(`
         *,
         project:projects(

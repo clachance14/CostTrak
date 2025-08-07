@@ -10,6 +10,8 @@ interface FinancialData {
   originalContract: number
   changeOrdersTotal: number
   changeOrdersCount: number
+  pendingChangeOrdersTotal?: number
+  pendingChangeOrdersCount?: number
   revisedContract: number
   totalCommitted: number
   commitmentPercentage: number
@@ -103,6 +105,8 @@ export function FinancialSummaryCards({ data }: FinancialSummaryCardsProps) {
         originalContract={data.originalContract}
         changeOrdersTotal={data.changeOrdersTotal}
         changeOrdersCount={data.changeOrdersCount}
+        pendingChangeOrdersTotal={data.pendingChangeOrdersTotal}
+        pendingChangeOrdersCount={data.pendingChangeOrdersCount}
         revisedContract={data.revisedContract}
       />
       {financialCards.map((item, index) => {

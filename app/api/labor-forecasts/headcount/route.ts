@@ -474,12 +474,30 @@ export async function POST(request: NextRequest) {
 
     // Process each week
     for (const week of validatedData.weeks) {
-      // Use week_ending directly - no conversion needed
-      const weekEndingDate = new Date(week.week_ending)
+      // Parse the incoming date properly to avoid timezone issues
+      // Extract date components from ISO string
+      const dateStr = week.week_ending.split('T')[0]
+      const [year, month, day] = dateStr.split('-').map(Number)
+      
+      // Create date in local timezone (not UTC) to avoid day shift
+      const weekEndingDate = new Date(year, month - 1, day)
+      
+      // Normalize to Sunday (week ending)
+      // Week ending means: if you're in the middle of a week, go to the END of that week (Sunday)
+      const dayOfWeek = weekEndingDate.getDay()
+      const sundayDate = new Date(weekEndingDate)
+      
+      if (dayOfWeek !== 0) {
+        // If Monday (1), add 6 days to get to Sunday
+        // If Tuesday (2), add 5 days to get to Sunday
+        // If Saturday (6), add 1 day to get to Sunday
+        const daysToAdd = 7 - dayOfWeek
+        sundayDate.setDate(weekEndingDate.getDate() + daysToAdd)
+      }
       
       // Normalize to UTC midnight for consistent storage
-      weekEndingDate.setUTCHours(0, 0, 0, 0)
-      const formattedWeekEnding = weekEndingDate.toISOString()
+      sundayDate.setUTCHours(0, 0, 0, 0)
+      const formattedWeekEnding = sundayDate.toISOString()
       const weekEndingDateOnly = formattedWeekEnding.split('T')[0]
 
       for (const entry of week.entries) {
@@ -518,14 +536,13 @@ export async function POST(request: NextRequest) {
             continue
           }
 
-          // Check if entry exists using date-only comparison
+          // Check if entry exists - use exact normalized date match
           const { data: existing } = await supabase
             .from('labor_headcount_forecasts')
             .select('*')
             .eq('project_id', validatedData.project_id)
             .eq('craft_type_id', craftTypeId)
-            .gte('week_ending', `${weekEndingDateOnly}T00:00:00`)
-            .lt('week_ending', `${weekEndingDateOnly}T23:59:59`)
+            .eq('week_ending', formattedWeekEnding)
             .single()
 
           if (existing) {

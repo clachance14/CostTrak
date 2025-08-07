@@ -1,6 +1,7 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useState, useMemo } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { LoadingPage } from '@/components/ui/loading'
 import { useUser } from '@/hooks/use-auth'
@@ -9,6 +10,22 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Input } from '@/components/ui/input'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Calendar,
   DollarSign,
@@ -18,8 +35,13 @@ import {
   Upload,
   Clock,
   Building2,
+  MoreVertical,
+  Edit,
+  Eye,
+  Search,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 interface DashboardData {
   metrics: {
@@ -36,6 +58,7 @@ interface DashboardData {
     currentCosts: number
     committedCosts: number
     remainingToSpend: number
+    margin: number
     status: string
   }>
 }
@@ -43,6 +66,12 @@ interface DashboardData {
 export default function DashboardPage() {
   const supabase = createClient()
   const { data: user } = useUser()
+  const router = useRouter()
+  const queryClient = useQueryClient()
+  
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
 
   const { data: dashboardData, isLoading } = useQuery({
     queryKey: ['dashboard-comprehensive'],
@@ -65,6 +94,75 @@ export default function DashboardPage() {
     },
     refetchInterval: 60000 // Refresh every minute
   })
+  
+  // Quick status update mutation
+  const updateProjectStatus = useMutation({
+    mutationFn: async ({ projectId, status }: { projectId: string; status: string }) => {
+      const response = await fetch(`/api/projects/${projectId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to update status')
+      }
+      
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard-comprehensive'] })
+    }
+  })
+  
+  // Filter projects based on search and status
+  const filteredProjects = useMemo(() => {
+    if (!dashboardData?.projects) return []
+    
+    let filtered = dashboardData.projects
+    
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(p => 
+        p.name.toLowerCase().includes(query) || 
+        p.jobNumber.toLowerCase().includes(query)
+      )
+    }
+    
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(p => p.status === statusFilter)
+    }
+    
+    return filtered
+  }, [dashboardData?.projects, searchQuery, statusFilter])
+  
+  // Calculate filtered metrics
+  const filteredMetrics = useMemo(() => {
+    if (!filteredProjects || filteredProjects.length === 0) {
+      return {
+        activeProjects: 0,
+        totalContractValue: 0,
+        totalCommitted: 0,
+        companyMargin: 0
+      }
+    }
+    
+    const activeProjects = filteredProjects.filter(p => p.status === 'active').length
+    const totalContractValue = filteredProjects.reduce((sum, p) => sum + p.contractValue, 0)
+    const totalCommitted = filteredProjects.reduce((sum, p) => sum + p.committedCosts, 0)
+    const companyMargin = totalContractValue > 0 
+      ? ((totalContractValue - totalCommitted) / totalContractValue) * 100 
+      : 0
+    
+    return {
+      activeProjects,
+      totalContractValue,
+      totalCommitted,
+      companyMargin
+    }
+  }, [filteredProjects])
 
   async function fetchMetrics() {
     try {
@@ -79,10 +177,10 @@ export default function DashboardPage() {
         console.error('Error fetching project count:', JSON.stringify(countError, null, 2))
       }
 
-      // Total contract value
+      // Total contract value and change orders
       const { data: contractData, error: contractError } = await supabase
         .from('projects')
-        .select('original_contract')
+        .select('id, original_contract')
         .eq('status', 'active')
         .is('deleted_at', null)
 
@@ -90,20 +188,29 @@ export default function DashboardPage() {
         console.error('Error fetching contract data:', JSON.stringify(contractError, null, 2))
       }
 
-      const totalContractValue = contractData?.reduce((sum, p) => sum + (p.original_contract || 0), 0) || 0
-
-      // Total committed (vendor POs)
-      const { data: poData, error: poError } = await supabase
-        .from('purchase_orders')
-        .select('total_amount')
-
-      if (poError) {
-        console.error('Error fetching purchase orders:', JSON.stringify(poError, null, 2))
+      const totalOriginalContract = contractData?.reduce((sum, p) => sum + (p.original_contract || 0), 0) || 0
+      
+      // Get approved change orders for total contract value
+      let totalChangeOrders = 0
+      if (contractData && contractData.length > 0) {
+        const projectIds = contractData.map(p => p.id)
+        const { data: changeOrders } = await supabase
+          .from('change_orders')
+          .select('amount')
+          .eq('status', 'approved')
+          .in('project_id', projectIds)
+        
+        totalChangeOrders = changeOrders?.reduce((sum, co) => sum + (co.amount || 0), 0) || 0
       }
+      
+      const totalContractValue = totalOriginalContract + totalChangeOrders
 
-      const totalCommitted = poData?.reduce((sum, p) => sum + (p.total_amount || 0), 0) || 0
+      // Calculate total forecasted final cost
+      // This will be calculated from the projects data to ensure consistency
+      const projects = await fetchProjects()
+      const totalCommitted = projects.reduce((sum, p) => sum + p.committedCosts, 0)
 
-      // Company margin
+      // Company margin based on forecasted final cost
       const companyMargin = totalContractValue > 0 
         ? ((totalContractValue - totalCommitted) / totalContractValue) * 100 
         : 0
@@ -155,22 +262,36 @@ export default function DashboardPage() {
       // Fetch related data separately
       const projectIds = projects.map(p => p.id)
       
-      // Fetch purchase orders
+      // Fetch purchase orders with committed amounts
       const { data: purchaseOrders } = await supabase
         .from('purchase_orders')
-        .select('project_id, total_amount, invoiced_amount')
+        .select('project_id, total_amount, invoiced_amount, committed_amount')
         .in('project_id', projectIds)
+        .eq('status', 'approved')
 
-      // Fetch labor actuals
+      // Fetch labor actuals with burden
       const { data: laborActuals } = await supabase
         .from('labor_employee_actuals')
-        .select('project_id, actual_cost')
+        .select('project_id, st_wages, ot_wages, total_cost_with_burden')
         .in('project_id', projectIds)
 
-      // Fetch labor forecasts
+      // Fetch labor forecasts with proper fields
       const { data: laborForecasts } = await supabase
         .from('labor_headcount_forecasts')
-        .select('project_id, forecasted_cost')
+        .select('project_id, week_ending, headcount, avg_weekly_hours, craft_type_id')
+        .in('project_id', projectIds)
+
+      // Get weeks that have actuals to exclude from forecast
+      const { data: actualWeeks } = await supabase
+        .from('labor_employee_actuals')
+        .select('project_id, week_ending')
+        .in('project_id', projectIds)
+
+      // Fetch approved change orders
+      const { data: changeOrders } = await supabase
+        .from('change_orders')
+        .select('project_id, amount')
+        .eq('status', 'approved')
         .in('project_id', projectIds)
 
       // Map the data
@@ -179,44 +300,83 @@ export default function DashboardPage() {
         const projectPOs = purchaseOrders?.filter(po => po.project_id === project.id) || []
         const projectLabor = laborActuals?.filter(la => la.project_id === project.id) || []
         const projectForecasts = laborForecasts?.filter(lf => lf.project_id === project.id) || []
+        const projectChangeOrders = changeOrders?.filter(co => co.project_id === project.id) || []
 
-        // Calculate current costs (actual labor + invoiced POs)
+        // Calculate labor actual costs with burden
         const laborActualCosts = projectLabor.reduce(
-          (sum, la) => sum + (la.actual_cost || 0), 
+          (sum, la) => sum + (la.total_cost_with_burden || 
+            ((la.st_wages || 0) + (la.ot_wages || 0)) * 1.28), 
           0
         )
 
-        const vendorInvoicedCosts = projectPOs.reduce(
-          (sum, po) => sum + (po.invoiced_amount || 0), 
-          0
-        )
-
-        const currentCosts = laborActualCosts + vendorInvoicedCosts
-
-        // Calculate committed costs (total PO values + forecasted labor)
-        const totalPOValues = projectPOs.reduce(
+        // Calculate PO actuals (using total_amount to match PO Breakdown)
+        const poActualCosts = projectPOs.reduce(
           (sum, po) => sum + (po.total_amount || 0), 
           0
         )
 
-        const forecastedLaborCosts = projectForecasts.reduce(
-          (sum, lf) => sum + (lf.forecasted_cost || 0), 
+        // Current costs = labor actuals + PO actuals
+        const currentCosts = laborActualCosts + poActualCosts
+
+        // Calculate committed PO costs
+        const committedPOCosts = projectPOs.reduce(
+          (sum, po) => sum + (po.committed_amount || 0), 
           0
         )
 
-        const committedCosts = totalPOValues + forecastedLaborCosts
+        // Create a set of weeks that have actual data for this project
+        const projectActualWeeks = new Set(
+          actualWeeks
+            ?.filter(w => w.project_id === project.id)
+            .map(w => new Date(w.week_ending).toISOString().split('T')[0]) || []
+        )
 
-        // Calculate remaining to spend
-        const remainingToSpend = project.original_contract ? project.original_contract - currentCosts : 0
+        // Filter forecasts to only include weeks without actuals
+        const futureForecasts = projectForecasts.filter(f => {
+          const weekEndingDate = new Date(f.week_ending).toISOString().split('T')[0]
+          return !projectActualWeeks.has(weekEndingDate)
+        })
+
+        // Calculate remaining forecast using a reasonable hourly rate
+        // Using $50/hr as default (this matches the overview page logic)
+        const defaultRate = 50
+        const forecastedLaborCosts = futureForecasts.reduce(
+          (sum, f) => sum + (f.headcount * (f.avg_weekly_hours || 50) * defaultRate), 
+          0
+        )
+
+        // Total forecasted labor = actuals + remaining forecast
+        const totalForecastedLabor = laborActualCosts + forecastedLaborCosts
+
+        // Committed costs = total forecasted labor + committed PO costs
+        const committedCosts = totalForecastedLabor + committedPOCosts
+
+        // Calculate approved change orders total
+        const approvedChangeOrdersTotal = projectChangeOrders.reduce(
+          (sum, co) => sum + (co.amount || 0),
+          0
+        )
+
+        // Calculate revised contract (original + approved change orders)
+        const revisedContract = (project.original_contract || 0) + approvedChangeOrdersTotal
+
+        // Calculate remaining (uncommitted value) = Contract - Committed
+        const remainingToSpend = revisedContract - committedCosts
+        
+        // Calculate project margin percentage
+        const margin = revisedContract > 0 
+          ? ((revisedContract - committedCosts) / revisedContract) * 100
+          : 0
 
         return {
           id: project.id,
           name: project.name,
           jobNumber: project.job_number,
-          contractValue: project.original_contract || 0,
+          contractValue: revisedContract,
           currentCosts,
           committedCosts,
           remainingToSpend,
+          margin,
           status: project.status
         }
       })
@@ -290,96 +450,146 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Key Metrics Row */}
+      {/* Key Metrics Row - Now using filtered metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Active Projects</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Active Projects {filteredProjects.length !== dashboardData?.projects?.length && '(Filtered)'}
+            </CardTitle>
             <Building2 className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-gray-900">
-              {dashboardData?.metrics.activeProjects || 0}
+              {filteredMetrics.activeProjects}
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Contract Value</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Total Contract Value {filteredProjects.length !== dashboardData?.projects?.length && '(Filtered)'}
+            </CardTitle>
             <DollarSign className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-gray-900">
-              {formatCurrency(dashboardData?.metrics.totalContractValue || 0)}
+              {formatCurrency(filteredMetrics.totalContractValue)}
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Committed</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Forecasted Final Cost {filteredProjects.length !== dashboardData?.projects?.length && '(Filtered)'}
+            </CardTitle>
             <FileText className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-gray-900">
-              {formatCurrency(dashboardData?.metrics.totalCommitted || 0)}
+              {formatCurrency(filteredMetrics.totalCommitted)}
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Company Margin</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Company Margin {filteredProjects.length !== dashboardData?.projects?.length && '(Filtered)'}
+            </CardTitle>
             <TrendingUp className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
             <div className={cn(
               'text-3xl font-bold',
-              getMarginColor(dashboardData?.metrics.companyMargin || 0)
+              getMarginColor(filteredMetrics.companyMargin)
             )}>
-              {(dashboardData?.metrics.companyMargin || 0).toFixed(1)}%
+              {filteredMetrics.companyMargin.toFixed(1)}%
             </div>
           </CardContent>
         </Card>
       </div>
 
 
-      {/* Projects Table */}
+      {/* Projects Table with Filters */}
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h2 className="text-lg font-semibold text-gray-900">Projects</h2>
-          <Link href="/projects">
-            <Button variant="outline" size="sm">View All</Button>
-          </Link>
+          
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search projects..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 w-full sm:w-[200px]"
+              />
+            </div>
+            
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[140px]">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="on_hold">On Hold</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Link href="/projects">
+              <Button variant="outline" size="sm">View All</Button>
+            </Link>
+          </div>
         </div>
+        
         <Card>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Project Name</TableHead>
                   <TableHead>Job #</TableHead>
+                  <TableHead>Project Name</TableHead>
                   <TableHead className="text-right">Contract</TableHead>
                   <TableHead className="text-right">Current Costs</TableHead>
-                  <TableHead className="text-right">Committed</TableHead>
+                  <TableHead className="text-right">Forecasted Final</TableHead>
+                  <TableHead className="text-right">Margin %</TableHead>
                   <TableHead className="text-right">Remaining</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dashboardData?.projects && dashboardData.projects.length > 0 ? (
-                  dashboardData.projects.map((project) => (
+                {filteredProjects.length > 0 ? (
+                  filteredProjects.map((project) => (
                     <TableRow 
                       key={project.id} 
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => window.location.href = `/projects/${project.id}`}
+                      className="hover:bg-muted/50"
                     >
-                      <TableCell className="font-medium">{project.name}</TableCell>
-                      <TableCell className="text-gray-600">{project.jobNumber}</TableCell>
+                      <TableCell className="font-medium text-gray-900">{project.jobNumber}</TableCell>
+                      <TableCell 
+                        className="font-medium cursor-pointer hover:text-blue-600"
+                        onClick={() => router.push(`/projects/${project.id}`)}
+                      >
+                        {project.name}
+                      </TableCell>
                       <TableCell className="text-right">{formatCurrency(project.contractValue)}</TableCell>
                       <TableCell className="text-right">{formatCurrency(project.currentCosts)}</TableCell>
                       <TableCell className="text-right">{formatCurrency(project.committedCosts)}</TableCell>
+                      <TableCell className="text-right">
+                        <span className={cn(
+                          'font-medium',
+                          getMarginColor(project.margin)
+                        )}>
+                          {project.margin.toFixed(1)}%
+                        </span>
+                      </TableCell>
                       <TableCell className="text-right">
                         <span className={cn(
                           'font-medium',
@@ -389,12 +599,64 @@ export default function DashboardPage() {
                         </span>
                       </TableCell>
                       <TableCell>{getStatusBadge(project.status)}</TableCell>
+                      <TableCell className="text-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => router.push(`/projects/${project.id}`)}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Project
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push(`/projects/${project.id}/edit`)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit Details
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuLabel className="text-xs">Quick Status Update</DropdownMenuLabel>
+                            <DropdownMenuItem 
+                              onClick={() => updateProjectStatus.mutate({ 
+                                projectId: project.id, 
+                                status: 'active' 
+                              })}
+                              disabled={project.status === 'active'}
+                            >
+                              <span className="ml-6">Active</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => updateProjectStatus.mutate({ 
+                                projectId: project.id, 
+                                status: 'on_hold' 
+                              })}
+                              disabled={project.status === 'on_hold'}
+                            >
+                              <span className="ml-6">On Hold</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => updateProjectStatus.mutate({ 
+                                projectId: project.id, 
+                                status: 'completed' 
+                              })}
+                              disabled={project.status === 'completed'}
+                            >
+                              <span className="ml-6">Completed</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-gray-500 py-8">
-                      No projects found. Create a new project to get started.
+                    <TableCell colSpan={9} className="text-center text-gray-500 py-8">
+                      {searchQuery || statusFilter !== 'all' 
+                        ? 'No projects match your filters.'
+                        : 'No projects found. Create a new project to get started.'}
                     </TableCell>
                   </TableRow>
                 )}

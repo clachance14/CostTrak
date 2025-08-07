@@ -87,6 +87,13 @@ export async function GET(
     const laborBudget = (project.labor_direct_budget || 0) + 
                        (project.labor_indirect_budget || 0) + 
                        (project.labor_staff_budget || 0)
+    
+    console.log('Labor budget breakdown:', {
+      direct: project.labor_direct_budget || 0,
+      indirect: project.labor_indirect_budget || 0,
+      staff: project.labor_staff_budget || 0,
+      total: laborBudget
+    })
 
     // Get non-labor budget from project table (materials + equipment + subcontracts + small tools)
     const nonLaborBudget = (project.materials_budget || 0) + 
@@ -135,17 +142,19 @@ export async function GET(
 
     const burnRate = recentTotalCost / 4 // Weekly average
     
-    // Get labor forecasts (headcount-based) - fetch all to check against actuals
+    // Get labor forecasts (headcount-based) - using week_ending field
+    const currentDate = new Date()
     const { data: laborForecasts } = await supabase
       .from('labor_headcount_forecasts')
       .select(`
-        week_starting,
+        week_ending,
         headcount,
         avg_weekly_hours,
         craft_type_id,
         craft_types (category)
       `)
       .eq('project_id', projectId)
+      .gte('week_ending', currentDate.toISOString().split('T')[0]) // Only future weeks
     
     // Get unique week endings from labor actuals to determine which weeks have data
     const { data: actualWeeks } = await supabase
@@ -155,25 +164,71 @@ export async function GET(
     
     // Create a set of weeks that have actual data
     const weeksWithActuals = new Set(actualWeeks?.map(w => {
-      // Convert week_ending (Saturday) to week_starting (Sunday) for comparison
       const weekEnding = new Date(w.week_ending)
-      const weekStarting = new Date(weekEnding)
-      weekStarting.setDate(weekStarting.getDate() - 6) // Go back 6 days to get Sunday
-      return weekStarting.toISOString().split('T')[0]
+      return weekEnding.toISOString().split('T')[0]
     }) || [])
     
-    // Calculate remaining forecasted labor cost - only for weeks without actuals
+    // Calculate remaining forecasted labor cost - only for future weeks without actuals
     let remainingForecastedLabor = 0
-    laborForecasts?.forEach(forecast => {
-      const weekStartingDate = forecast.week_starting.split('T')[0]
+    
+    // If we have no forecast data, try to get the composite rate and calculate from headcount
+    if (!laborForecasts || laborForecasts.length === 0) {
+      // Try to get the latest forecast data to see if there's any saved data
+      const { data: allForecasts } = await supabase
+        .from('labor_headcount_forecasts')
+        .select(`
+          week_ending,
+          headcount,
+          avg_weekly_hours,
+          craft_type_id,
+          craft_types (category)
+        `)
+        .eq('project_id', projectId)
+        .order('week_ending', { ascending: false })
+        .limit(10)
       
-      // Only include forecast if no actuals exist for this week
-      if (!weeksWithActuals.has(weekStartingDate)) {
-        const hours = forecast.headcount * forecast.avg_weekly_hours
-        const category = forecast.craft_types?.category || 'direct'
-        const burdenedRate = categoryBurdenedRates[category] || averageActualRate || 50 // fallback rate
-        remainingForecastedLabor += hours * burdenedRate
+      console.log('No future forecasts found. Latest forecasts:', allForecasts?.length || 0)
+    }
+    
+    // Group forecasts by week to calculate totals
+    const forecastsByWeek = new Map<string, { hours: number; categories: Record<string, number> }>()
+    
+    laborForecasts?.forEach(forecast => {
+      const weekEndingDate = forecast.week_ending.split('T')[0]
+      
+      // Skip if we have actuals for this week
+      if (weeksWithActuals.has(weekEndingDate)) {
+        return
       }
+      
+      if (!forecastsByWeek.has(weekEndingDate)) {
+        forecastsByWeek.set(weekEndingDate, { hours: 0, categories: { direct: 0, indirect: 0, staff: 0 } })
+      }
+      
+      const weekData = forecastsByWeek.get(weekEndingDate)!
+      const hours = forecast.headcount * (forecast.avg_weekly_hours || 50)
+      const category = forecast.craft_types?.category || 'direct'
+      
+      weekData.hours += hours
+      if (category in weekData.categories) {
+        weekData.categories[category as 'direct' | 'indirect' | 'staff'] += hours
+      }
+    })
+    
+    // Calculate cost for each week using category rates
+    forecastsByWeek.forEach((weekData, weekEnding) => {
+      // Calculate cost by category
+      Object.entries(weekData.categories).forEach(([category, hours]) => {
+        const rate = categoryBurdenedRates[category] || averageActualRate || 50
+        remainingForecastedLabor += hours * rate
+      })
+    })
+    
+    console.log('Labor forecast calculation:', {
+      forecastRecords: laborForecasts?.length || 0,
+      weeksWithForecasts: forecastsByWeek.size,
+      remainingForecastedLabor,
+      categoryRates: categoryBurdenedRates
     })
     
     // Total forecasted labor = actual + remaining forecast
@@ -250,13 +305,24 @@ export async function GET(
       ...(othersTotal > 0 ? [{ name: 'Others', value: othersTotal, color: colors[5] }] : [])
     ]
 
-    // Category breakdown
+    // Category breakdown with budget mapping
+    const categoryBudgetMap: Record<string, number> = {
+      'Materials': project.materials_budget || 0,
+      'Equipment': project.equipment_budget || 0,
+      'Subcontracts': project.subcontracts_budget || 0,
+      'Small Tools & Consumables': project.small_tools_budget || 0
+    }
+
     const categoryBreakdown = purchaseOrders?.reduce((acc, po) => {
       const category = po.cost_code?.category || po.budget_category || 'Uncategorized'
       if (!acc[category]) acc[category] = 0
       acc[category] += po.total_amount || 0
       return acc
     }, {} as Record<string, number>) || {}
+
+    // Calculate totals for summary
+    let totalCategoryBudget = 0
+    let totalCategorySpent = 0
 
     const categoryChartData = Object.entries(categoryBreakdown)
       .map(([name, value]) => {
@@ -286,6 +352,25 @@ export async function GET(
           displayName = 'Small Tools & Consumables'
         }
         
+        // Get budget for this category
+        const budget = categoryBudgetMap[displayName] || 0
+        const percentage = budget > 0 ? (value / budget) * 100 : 0
+        const remaining = budget - value
+        
+        // Add to totals
+        totalCategoryBudget += budget
+        totalCategorySpent += value
+        
+        // Determine status
+        let status: 'normal' | 'warning' | 'over'
+        if (percentage > 100) {
+          status = 'over'
+        } else if (percentage >= 80) {
+          status = 'warning'
+        } else {
+          status = 'normal'
+        }
+        
         // Add formatted label for display
         let label = '$0'
         if (value >= 1000000) {
@@ -296,7 +381,26 @@ export async function GET(
           label = `$${value}`
         }
         
-        return { name: displayName, value, label }
+        // Add formatted budget label
+        let budgetLabel = '$0'
+        if (budget >= 1000000) {
+          budgetLabel = `$${Math.round(budget / 1000000)}M`
+        } else if (budget >= 1000) {
+          budgetLabel = `$${Math.round(budget / 1000)}K`
+        } else {
+          budgetLabel = `$${budget}`
+        }
+        
+        return { 
+          name: displayName, 
+          value, 
+          budget,
+          percentage,
+          remaining,
+          status,
+          label,
+          budgetLabel
+        }
       })
       .sort((a, b) => b.value - a.value)
 
@@ -378,6 +482,12 @@ export async function GET(
         },
         vendorBreakdown: vendorChartData,
         categoryBreakdown: categoryChartData,
+        categorySummary: {
+          totalBudget: totalCategoryBudget,
+          totalSpent: totalCategorySpent,
+          totalRemaining: totalCategoryBudget - totalCategorySpent,
+          percentageUsed: totalCategoryBudget > 0 ? (totalCategorySpent / totalCategoryBudget) * 100 : 0
+        },
         weeklyTrend
       }
     })

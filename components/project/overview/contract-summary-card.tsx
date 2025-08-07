@@ -8,6 +8,8 @@ interface ContractSummaryCardProps {
   originalContract: number
   changeOrdersTotal: number
   changeOrdersCount: number
+  pendingChangeOrdersTotal?: number
+  pendingChangeOrdersCount?: number
   revisedContract: number
 }
 
@@ -15,6 +17,8 @@ export function ContractSummaryCard({
   originalContract,
   changeOrdersTotal,
   changeOrdersCount,
+  pendingChangeOrdersTotal = 0,
+  pendingChangeOrdersCount = 0,
   revisedContract
 }: ContractSummaryCardProps) {
   return (
@@ -38,7 +42,7 @@ export function ContractSummaryCard({
               <span className="font-medium">{formatCurrency(originalContract)}</span>
             </div>
             <div className="flex justify-between text-sm items-center">
-              <span className="text-gray-600">Changes</span>
+              <span className="text-gray-600">Approved Changes</span>
               <div className="flex items-center gap-2">
                 <span className="font-medium text-green-600">
                   +{formatCurrency(changeOrdersTotal)}
@@ -46,6 +50,17 @@ export function ContractSummaryCard({
                 <span className="text-green-600">●</span>
               </div>
             </div>
+            {pendingChangeOrdersTotal > 0 && (
+              <div className="flex justify-between text-sm items-center">
+                <span className="text-gray-600">Pending Changes</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-amber-600">
+                    +{formatCurrency(pendingChangeOrdersTotal)}
+                  </span>
+                  <span className="text-amber-600">●</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

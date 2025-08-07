@@ -148,6 +148,7 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
                   topVendor={purchaseOrdersData.topVendor}
                   vendorBreakdown={purchaseOrdersData.vendorBreakdown}
                   categoryBreakdown={purchaseOrdersData.categoryBreakdown}
+                  categorySummary={purchaseOrdersData.categorySummary}
                   weeklyTrend={purchaseOrdersData.weeklyTrend}
                 />
               </TabsContent>

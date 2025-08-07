@@ -439,12 +439,13 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
       }))
       
       allWeeks.forEach((weekDate, weekIndex) => {
-        const weekString = weekDate.toISOString()
-        // For date comparison, normalize to local date string to avoid timezone issues
+        // Send date as YYYY-MM-DD string to avoid timezone issues
         const localYear = weekDate.getFullYear()
         const localMonth = String(weekDate.getMonth() + 1).padStart(2, '0')
         const localDay = String(weekDate.getDate()).padStart(2, '0')
         const weekDateOnly = `${localYear}-${localMonth}-${localDay}`
+        // Use date-only string for consistency
+        const weekString = `${weekDateOnly}T00:00:00.000Z`
         const isActual = actualsMap.has(weekDateOnly) // Only mark as actual if we have data
         
         // Initialize categories
@@ -959,8 +960,15 @@ export function LaborForecastTab({ projectId }: LaborForecastTabProps) {
             }
           })
           
+          // Send clean date string without timezone confusion
+          const weekDate = new Date(week.weekEnding)
+          const year = weekDate.getFullYear()
+          const month = String(weekDate.getMonth() + 1).padStart(2, '0')
+          const day = String(weekDate.getDate()).padStart(2, '0')
+          const cleanDateStr = `${year}-${month}-${day}T00:00:00.000Z`
+          
           return {
-            week_ending: week.weekEnding,
+            week_ending: cleanDateStr,
             entries
           }
         })

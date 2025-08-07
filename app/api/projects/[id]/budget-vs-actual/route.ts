@@ -31,92 +31,61 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get budget data - either division-specific or project-wide
-    let budgetData: any = null
-    
-    if (divisionId) {
-      // Get division-specific budget
-      const { data: divisionBudget, error: divBudgetError } = await supabase
-        .from('division_budgets')
-        .select('*')
-        .eq('project_id', projectId)
-        .eq('division_id', divisionId)
-        .single()
-      
-      if (!divBudgetError) {
-        // Map division budget to project budget format
-        budgetData = {
-          labor_budget: divisionBudget.labor_budget,
-          materials_budget: divisionBudget.materials_budget,
-          equipment_budget: divisionBudget.equipment_budget,
-          subcontracts_budget: divisionBudget.subcontracts_budget,
-          other_budget: divisionBudget.other_budget,
-          small_tools_consumables_budget: 0 // Division budgets might not have this separated
-        }
-      }
-    } else {
-      // Get project-wide budget
-      const { data: projectBudget, error: budgetError } = await supabase
-        .from('project_budgets')
-        .select('*')
-        .eq('project_id', projectId)
-        .single()
+    // Get budget data from projects table with correct column names
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .select(`
+        total_labor_budget,
+        labor_direct_budget,
+        labor_indirect_budget,
+        labor_staff_budget,
+        materials_budget,
+        equipment_budget,
+        subcontracts_budget,
+        small_tools_budget
+      `)
+      .eq('id', projectId)
+      .single()
 
-      if (budgetError && budgetError.code !== 'PGRST116') {
-        throw budgetError
-      }
-      budgetData = projectBudget
+    if (projectError) {
+      console.error('Error fetching project budget:', projectError)
+      throw projectError
     }
     
-    const projectBudget = budgetData
+    const projectBudget = project
 
     // Get POs for the project, filtered by division if specified
     let poQuery = supabase
       .from('purchase_orders')
-      .select(`
-        *,
-        cost_code:cost_codes(
-          id,
-          code,
-          description,
-          category,
-          discipline
-        )
-      `)
+      .select('*')
       .eq('project_id', projectId)
-      .eq('status', 'approved')
     
     if (divisionId) {
       poQuery = poQuery.eq('division_id', divisionId)
     }
     
     const { data: allPOs } = await poQuery
+    
 
-    // Define budget categories with their mappings
+    // Define budget categories with their mappings (removed ADD ONS)
     const budgetCategories = [
       {
         category: 'LABOR',
-        budget: projectBudget?.labor_budget || 0,
+        budget: projectBudget?.total_labor_budget || 0,
         costCodeCategories: ['labor'],
         costCenterCodes: [], // Labor doesn't use cost centers
         hasSubcategories: true
       },
       {
-        category: 'ADD ONS',
-        budget: projectBudget?.other_budget || 0,
-        costCodeCategories: [],
-        costCenterCodes: []
-      },
-      {
         category: 'SMALL TOOLS & CONSUMABLES',
-        budget: projectBudget?.small_tools_consumables_budget || 0,
-        costCodeCategories: ['material', 'other'],
+        budget: projectBudget?.small_tools_budget || 0,
+        costCodeCategories: ['small_tools', 'consumables'],
         costCenterCodes: ['5000'] // Small tools cost center
       },
       {
         category: 'MATERIALS',
         budget: projectBudget?.materials_budget || 0,
-        costCodeCategories: ['material'],
+        costCodeCategories: ['material', 'materials'],
         costCenterCodes: ['3000'] // Materials cost center
       },
       {
@@ -145,16 +114,18 @@ export async function GET(
         let committed = 0
         let actuals = 0
         let forecastedFinal = cat.budget // Default to budget
+        let leftToSpend = 0 // Will be calculated differently for labor vs non-labor
 
         if (cat.category === 'LABOR') {
-          // Get labor actuals with craft type details
+          // Get labor actuals with employee category details
           let laborQuery = supabase
-            .from('labor_actuals')
+            .from('labor_employee_actuals')
             .select(`
-              actual_cost,
-              actual_cost_with_burden,
-              burden_amount,
-              craft_type:craft_types(
+              st_wages,
+              ot_wages,
+              total_cost_with_burden,
+              total_burden_amount,
+              employees!inner(
                 category
               )
             `)
@@ -166,32 +137,67 @@ export async function GET(
           
           const { data: laborActuals } = await laborQuery
 
-          // Use centralized service for labor calculations
-          const laborTotals = ForecastCalculationService.calculateTotalLaborActuals(laborActuals || [])
-          const directActuals = laborTotals.byCategory.direct || 0
-          const indirectActuals = laborTotals.byCategory.indirect || 0
-          const staffActuals = laborTotals.byCategory.staff || 0
+          // Calculate labor actuals manually since we're using labor_employee_actuals
+          let directActuals = 0
+          let indirectActuals = 0
+          let staffActuals = 0
           
-          actuals = laborTotals.total
+          laborActuals?.forEach(labor => {
+            // Use total_cost_with_burden if available, otherwise calculate from wages
+            const cost = labor.total_cost_with_burden || 
+                        ((labor.st_wages || 0) + (labor.ot_wages || 0)) * 1.28
+            const category = labor.employees?.category?.toLowerCase() || 'direct'
+            
+            if (category === 'indirect') {
+              indirectActuals += cost
+            } else if (category === 'staff') {
+              staffActuals += cost
+            } else {
+              directActuals += cost
+            }
+          })
+          
+          actuals = directActuals + indirectActuals + staffActuals
           committed = actuals // For labor, committed = actuals
 
-          // Get labor forecast from headcount with categories
+          // Get ALL labor forecasts - we'll filter by actuals later
           let laborForecastQuery = supabase
             .from('labor_headcount_forecasts')
             .select(`
               headcount,
-              weekly_hours,
-              craft_type,
-              week_starting
+              avg_weekly_hours,
+              craft_type_id,
+              week_ending
             `)
             .eq('project_id', projectId)
-            .gte('week_starting', new Date().toISOString())
           
           if (divisionId) {
             laborForecastQuery = laborForecastQuery.eq('division_id', divisionId)
           }
           
-          const { data: laborForecast } = await laborForecastQuery
+          const { data: laborForecast, error: forecastError } = await laborForecastQuery
+          
+          if (forecastError) {
+            console.error('Error fetching labor forecast:', forecastError)
+          }
+          
+          // Get weeks that have actuals to exclude them from forecast
+          const { data: actualWeeks } = await supabase
+            .from('labor_employee_actuals')
+            .select('week_ending')
+            .eq('project_id', projectId)
+          
+          // Create a set of weeks that have actual data
+          const weeksWithActuals = new Set(actualWeeks?.map(w => {
+            const weekEnding = new Date(w.week_ending)
+            return weekEnding.toISOString().split('T')[0]
+          }) || [])
+          
+          // Filter forecast to only include weeks without actuals
+          const futureForecasts = laborForecast?.filter(f => {
+            const weekEndingDate = new Date(f.week_ending).toISOString().split('T')[0]
+            return !weeksWithActuals.has(weekEndingDate)
+          }) || []
 
           // Get craft types for mapping
           const { data: craftTypes } = await supabase
@@ -200,14 +206,15 @@ export async function GET(
 
           // Calculate future labor using centralized service
           const runningAverageRates = ForecastCalculationService.calculateLaborRatesByCraft(laborActuals || [])
+          
           const futureLaborCosts = await ForecastCalculationService.calculateFutureLaborCost(
             projectId,
-            laborForecast?.map(f => ({
+            futureForecasts.map(f => ({
               forecasted_headcount: f.headcount,
-              weekly_hours: f.weekly_hours,
-              craft_type: f.craft_type,
-              week_starting: f.week_starting
-            })) || [],
+              weekly_hours: f.avg_weekly_hours,
+              craft_type: f.craft_type_id,
+              week_starting: f.week_ending  // The service expects week_starting but we have week_ending
+            })),
             runningAverageRates,
             craftTypes || []
           )
@@ -216,6 +223,10 @@ export async function GET(
           const indirectForecast = futureLaborCosts.byCategory.indirect || 0
           const staffForecast = futureLaborCosts.byCategory.staff || 0
 
+          // Calculate the remaining labor forecast (this is "Left to Spend" for labor)
+          const remainingLaborForecast = futureLaborCosts.total || 0
+          leftToSpend = remainingLaborForecast
+          
           if (futureLaborCosts.total > 0) {
             forecastedFinal = actuals + futureLaborCosts.total
           } else {
@@ -226,22 +237,15 @@ export async function GET(
           // Tax & insurance is now included in the burdened labor costs
           // No need to calculate separately
 
-          // Calculate labor subcategory budgets
+          // Use the labor subcategory budgets directly from projects table
           const laborBudgets = {
-            'DIRECT LABOR': 0,
-            'INDIRECT LABOR': 0,
-            'STAFF LABOR': 0
+            'DIRECT LABOR': projectBudget?.labor_direct_budget || 0,
+            'INDIRECT LABOR': projectBudget?.labor_indirect_budget || 0,
+            'STAFF LABOR': projectBudget?.labor_staff_budget || 0
           }
 
-          if (divisionId) {
-            // For division-specific view, use proportional breakdown of labor budget
-            // This is a simplified approach - could be enhanced with division-specific breakdowns
-            const totalLaborBudget = cat.budget || 0
-            laborBudgets['DIRECT LABOR'] = totalLaborBudget * 0.7  // 70% direct
-            laborBudgets['INDIRECT LABOR'] = totalLaborBudget * 0.2 // 20% indirect
-            laborBudgets['STAFF LABOR'] = totalLaborBudget * 0.1    // 10% staff
-          } else {
-            // Get labor budget breakdown from project_budget_breakdowns for project-wide view
+          // If we don't have individual labor budgets, try to get from project_budget_breakdowns
+          if (laborBudgets['DIRECT LABOR'] === 0 && laborBudgets['INDIRECT LABOR'] === 0 && laborBudgets['STAFF LABOR'] === 0) {
             const { data: laborBudgetBreakdowns } = await supabase
               .from('project_budget_breakdowns')
               .select('cost_type, value')
@@ -249,14 +253,14 @@ export async function GET(
               .in('cost_type', ['DIRECT LABOR', 'INDIRECT LABOR', 'PERDIEM', 'PER DIEM'])
 
             laborBudgetBreakdowns?.forEach(breakdown => {
-            if (breakdown.cost_type === 'DIRECT LABOR') {
-              laborBudgets['DIRECT LABOR'] += breakdown.value || 0
-            } else if (breakdown.cost_type === 'INDIRECT LABOR') {
-              laborBudgets['INDIRECT LABOR'] += breakdown.value || 0
-            } else if (breakdown.cost_type === 'PERDIEM' || breakdown.cost_type === 'PER DIEM') {
-              laborBudgets['STAFF LABOR'] += breakdown.value || 0
-            }
-          })
+              if (breakdown.cost_type === 'DIRECT LABOR') {
+                laborBudgets['DIRECT LABOR'] += breakdown.value || 0
+              } else if (breakdown.cost_type === 'INDIRECT LABOR') {
+                laborBudgets['INDIRECT LABOR'] += breakdown.value || 0
+              } else if (breakdown.cost_type === 'PERDIEM' || breakdown.cost_type === 'PER DIEM') {
+                laborBudgets['STAFF LABOR'] += breakdown.value || 0
+              }
+            })
           }
 
           // Store subcategories for later
@@ -266,6 +270,7 @@ export async function GET(
               budget: laborBudgets['DIRECT LABOR'],
               committed: directActuals,
               actuals: directActuals,
+              leftToSpend: directForecast,
               forecastedFinal: Math.max(directActuals, directActuals + directForecast),
               variance: laborBudgets['DIRECT LABOR'] - Math.max(directActuals, directActuals + directForecast)
             },
@@ -274,6 +279,7 @@ export async function GET(
               budget: laborBudgets['INDIRECT LABOR'],
               committed: indirectActuals,
               actuals: indirectActuals,
+              leftToSpend: indirectForecast,
               forecastedFinal: Math.max(indirectActuals, indirectActuals + indirectForecast),
               variance: laborBudgets['INDIRECT LABOR'] - Math.max(indirectActuals, indirectActuals + indirectForecast)
             },
@@ -282,6 +288,7 @@ export async function GET(
               budget: laborBudgets['STAFF LABOR'],
               committed: staffActuals,
               actuals: staffActuals,
+              leftToSpend: staffForecast,
               forecastedFinal: Math.max(staffActuals, staffActuals + staffForecast),
               variance: laborBudgets['STAFF LABOR'] - Math.max(staffActuals, staffActuals + staffForecast)
             }
@@ -289,39 +296,56 @@ export async function GET(
 
           // Tax & insurance is now included in the burdened labor costs
           
-          // Set main LABOR budget to sum of all subcategory budgets
-          const breakdownTotal = laborBudgets['DIRECT LABOR'] + laborBudgets['INDIRECT LABOR'] + 
-                                laborBudgets['STAFF LABOR']
-          
-          // For division view or if we have breakdown data, use the calculated total
-          if (divisionId || breakdownTotal > 0) {
-            cat.budget = breakdownTotal
-          }
-          // Otherwise cat.budget keeps the original value from projectBudget?.labor_budget
+          // The main LABOR budget is already set from total_labor_budget
+          // No need to recalculate from subcategories
         } else if (cat.costCodeCategories.length > 0 || cat.costCenterCodes.length > 0) {
           // Filter POs for this category
           const categoryPOs = allPOs?.filter(po => {
-            // Check by cost code category
-            if (po.cost_code?.category && cat.costCodeCategories.includes(po.cost_code.category)) {
+            // Map budget_category values to our category names
+            const poCategory = po.budget_category?.toLowerCase() || ''
+            
+            // Direct category name match
+            if (poCategory === cat.category.toLowerCase()) {
               return true
             }
-            // Check by cost center code
+            
+            // Map common variations
+            if (cat.category === 'MATERIALS' && (poCategory === 'material' || poCategory === 'materials')) {
+              return true
+            }
+            if (cat.category === 'EQUIPMENT' && poCategory === 'equipment') {
+              return true
+            }
+            if (cat.category === 'SUBCONTRACTS' && (poCategory === 'subcontract' || poCategory === 'subcontracts')) {
+              return true
+            }
+            if (cat.category === 'SMALL TOOLS & CONSUMABLES' && 
+                (poCategory === 'small tools' || poCategory === 'small_tools' || 
+                 poCategory === 'consumables' || poCategory === 'small tools & consumables')) {
+              return true
+            }
+            
+            // Check by cost center code as fallback
             if (po.cost_center && cat.costCenterCodes.includes(po.cost_center)) {
               return true
             }
-            // For backwards compatibility, check budget_category field
-            if (po.budget_category && po.budget_category.toLowerCase() === cat.category.toLowerCase()) {
-              return true
-            }
+            
             return false
           }) || []
 
           if (categoryPOs.length > 0) {
-            // Use centralized service for PO calculations
+            // Calculate PO totals using total_amount for actuals (to match PO Breakdown chart)
+            committed = categoryPOs.reduce((sum, po) => sum + (po.committed_amount || 0), 0)
+            actuals = categoryPOs.reduce((sum, po) => sum + (po.total_amount || 0), 0)
+            
+            console.log(`${cat.category}: ${categoryPOs.length} POs, actuals: $${actuals}`)
+            
+            // Use service for forecast calculation
             const poTotals = ForecastCalculationService.calculateTotalPOForecast(categoryPOs)
-            committed = poTotals.committed
-            actuals = poTotals.invoiced
             forecastedFinal = poTotals.forecasted
+            
+            // For POs, "Left to Spend" is remaining commitments
+            leftToSpend = Math.max(0, committed - actuals)
           }
           
           // If no POs found but we have a budget, forecast should at least be the budget amount
@@ -335,12 +359,13 @@ export async function GET(
         forecastedFinal = Math.max(forecastedFinal, actuals)
         
         const variance = cat.budget - forecastedFinal
-
+        
         return {
           category: cat.category,
           budget: cat.budget,
           committed,
           actuals,
+          leftToSpend,  // Add this field for the component
           forecastedFinal,
           variance,
           subcategories: cat.subcategories || null

@@ -442,6 +442,22 @@ export function POLogTable({ purchaseOrders: purchaseOrdersProp, className, proj
 
     return filtered
   }, [purchaseOrders, columnFilters, sortConfig])
+
+  // Calculate subtotals for the visible/filtered orders
+  const subtotals = useMemo(() => {
+    return processedOrders.reduce((acc, po) => {
+      const poValue = po.po_value || po.committed_amount || 0
+      return {
+        fusionPOValue: acc.fusionPOValue + poValue,
+        revisedPOValue: acc.revisedPOValue + (po.committed_amount || 0),
+        invoiced: acc.invoiced + (po.invoiced_amount || 0)
+      }
+    }, {
+      fusionPOValue: 0,
+      revisedPOValue: 0,
+      invoiced: 0
+    })
+  }, [processedOrders])
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -587,6 +603,24 @@ export function POLogTable({ purchaseOrders: purchaseOrdersProp, className, proj
             </tr>
           </thead>
           <tbody>
+            {/* Subtotal Row at the top */}
+            {processedOrders.length > 0 && (
+              <tr className="border-b-2 border-gray-300 bg-gray-100 font-semibold">
+                <td className="py-4 px-2"></td>
+                <td colSpan={3} className="py-4 px-2 text-gray-900">
+                  Subtotal ({processedOrders.length} {processedOrders.length === 1 ? 'item' : 'items'})
+                </td>
+                <td className="text-right py-4 px-2 text-gray-900 font-bold">
+                  {formatCurrency(subtotals.fusionPOValue)}
+                </td>
+                <td className="text-right py-4 px-2 text-gray-900 font-bold">
+                  {formatCurrency(subtotals.revisedPOValue)}
+                </td>
+                <td className="text-right py-4 px-2 text-gray-900 font-bold">
+                  {formatCurrency(subtotals.invoiced)}
+                </td>
+              </tr>
+            )}
             {processedOrders.map((po, index) => {
               const poValue = po.po_value || po.committed_amount || 0
               const isOverInvoiced = (po.invoiced_amount || 0) > poValue
@@ -686,6 +720,29 @@ export function POLogTable({ purchaseOrders: purchaseOrdersProp, className, proj
 
       {/* Mobile View */}
       <div className="md:hidden space-y-3">
+        {/* Mobile Subtotal Card at the top */}
+        {processedOrders.length > 0 && (
+          <div className="bg-gray-100 rounded-lg border-2 border-gray-300 p-4 space-y-2">
+            <div className="text-sm font-semibold text-gray-900">
+              Subtotal ({processedOrders.length} {processedOrders.length === 1 ? 'item' : 'items'})
+            </div>
+            <div className="space-y-1">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Fusion PO Value:</span>
+                <span className="text-sm font-bold text-gray-900">{formatCurrency(subtotals.fusionPOValue)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Revised PO Value:</span>
+                <span className="text-sm font-bold text-gray-900">{formatCurrency(subtotals.revisedPOValue)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Invoiced:</span>
+                <span className="text-sm font-bold text-gray-900">{formatCurrency(subtotals.invoiced)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {processedOrders.map((po) => {
           const poValue = po.po_value || po.committed_amount || 0
           const isOverInvoiced = (po.invoiced_amount || 0) > poValue
