@@ -60,3 +60,14 @@ CLAUDE.md
 /supabase/.temp
 /supabase/config.toml
 .vercel
+
+# Test and debug scripts
+scripts/test-*.ts
+
+# Backup files
+*.backup.ts
+*-backup.ts
+*-optimized.ts
+
+# Documentation drafts
+docs/*.md

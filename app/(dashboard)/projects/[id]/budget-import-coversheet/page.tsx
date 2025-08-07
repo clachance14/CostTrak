@@ -107,9 +107,13 @@ export default function BudgetImportCoversheetPage({
       formData.append('mode', 'preview')
 
       console.log('[DEBUG] Sending preview request to API...')
+      console.log('[DEBUG] API URL:', '/api/project-budgets/import-coversheet')
       const response = await fetch('/api/project-budgets/import-coversheet', {
         method: 'POST',
         body: formData
+      }).catch(err => {
+        console.error('[DEBUG] Fetch error:', err)
+        throw err
       })
 
       console.log('[DEBUG] API Response status:', response.status)
@@ -328,15 +332,15 @@ export default function BudgetImportCoversheetPage({
               <div className="flex justify-between">
                 <span className="font-medium">Preview Data:</span>
                 <span className={previewData ? 'text-green-600' : 'text-gray-400'}>
-                  {previewData ? '✓ Ready' : '✗ Not loaded'}
+                  {previewData ? '✓ Ready (Optional)' : '✗ Not loaded (Optional)'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="font-medium">Button Should Be Active:</span>
-                <span className={!loading && previewData ? 'text-green-600 font-bold' : 'text-red-600'}>
-                  {!loading && previewData ? 'YES' : 'NO'} 
+                <span className={!loading && file ? 'text-green-600 font-bold' : 'text-red-600'}>
+                  {!loading && file ? 'YES' : 'NO'} 
                   {loading && ' (Loading...)'}
-                  {!loading && !previewData && ' (No preview data)'}
+                  {!loading && !file && ' (No file selected)'}
                 </span>
               </div>
             </div>
@@ -641,27 +645,20 @@ export default function BudgetImportCoversheetPage({
               </Button>
               <Button
                 onClick={() => {
-                  console.log('Button clicked - loading:', loading, 'previewData:', !!previewData)
-                  console.log('Full previewData:', previewData)
-                  if (!previewData) {
-                    console.error('Cannot import: No preview data available')
-                    setError('Please wait for file preview to complete')
+                  console.log('Button clicked - loading:', loading, 'file:', !!file)
+                  if (!file) {
+                    setError('Please select a file first')
                     return
                   }
                   handleImport()
                 }}
-                disabled={loading || !previewData}
-                title={loading ? 'Loading preview...' : !previewData ? 'Upload a file first' : 'Click to import budget'}
+                disabled={loading || !file}
+                title={loading ? 'Processing...' : !file ? 'Select a file first' : 'Click to import budget'}
               >
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing File...
-                  </>
-                ) : !previewData ? (
-                  <>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Waiting for Preview...
+                    Processing...
                   </>
                 ) : (
                   <>
