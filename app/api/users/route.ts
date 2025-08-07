@@ -13,18 +13,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get current user's role
-    const { data: currentUser } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    // Only controllers and executives can list all users
-    const canListUsers = ['controller', 'executive', 'ops_manager'].includes(currentUser?.role || '')
-    if (!canListUsers) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
-    }
+    // MVP: All authenticated users can list project managers
+    // Future: Add role-based permissions
 
     // Get query parameters
     const searchParams = request.nextUrl.searchParams

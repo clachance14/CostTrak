@@ -68,24 +68,37 @@ export default function BudgetImportCoversheetPage({
   const [error, setError] = useState<string | null>(null)
   const [selectedSheet, setSelectedSheet] = useState<string>('summary')
   const [expandedWBS, setExpandedWBS] = useState<Set<string>>(new Set())
+  const [debugInfo, setDebugInfo] = useState<string>('')
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
-    if (!selectedFile) return
+    console.log('[DEBUG] File selected:', selectedFile?.name, 'Size:', selectedFile?.size)
+    setDebugInfo(`File selected: ${selectedFile?.name || 'none'}`)
+    
+    if (!selectedFile) {
+      console.log('[DEBUG] No file selected')
+      return
+    }
 
     setFile(selectedFile)
     setError(null)
     setPreviewData(null)
+    console.log('[DEBUG] State reset, starting preview...')
 
     // Preview the file
     await handlePreview(selectedFile)
   }
 
   const handlePreview = async (fileToPreview: File = file!) => {
-    if (!fileToPreview) return
+    if (!fileToPreview) {
+      console.log('[DEBUG] No file to preview')
+      return
+    }
 
+    console.log('[DEBUG] Starting preview for file:', fileToPreview.name)
     setLoading(true)
     setError(null)
+    setDebugInfo('Loading preview...')
 
     try {
       const formData = new FormData()
@@ -93,38 +106,67 @@ export default function BudgetImportCoversheetPage({
       formData.append('projectId', projectId)
       formData.append('mode', 'preview')
 
+      console.log('[DEBUG] Sending preview request to API...')
       const response = await fetch('/api/project-budgets/import-coversheet', {
         method: 'POST',
         body: formData
       })
 
+      console.log('[DEBUG] API Response status:', response.status)
       const result = await response.json()
+      console.log('[DEBUG] API Response data:', result)
 
       if (!response.ok) {
+        console.error('[DEBUG] API Error:', result.error)
         throw new Error(result.error || 'Failed to preview file')
       }
+
+      // Check if result.data exists
+      if (!result.data) {
+        console.error('[DEBUG] No data in API response')
+        throw new Error('No data returned from API')
+      }
+
+      // Check if totals exist
+      if (!result.data.totals) {
+        console.error('[DEBUG] No totals in API response')
+        throw new Error('Invalid data structure: missing totals')
+      }
+
+      console.log('[DEBUG] Raw totals from API:', result.data.totals)
 
       // Map the new data structure to the expected format
       const mappedData = {
         ...result.data,
         totals: {
-          labor: result.data.totals.totalLabor || 0,
+          labor: result.data.totals.totalLabor || result.data.totals.labor || 0,
           laborDirect: result.data.totals.laborDirect || 0,
           laborIndirect: result.data.totals.laborIndirect || 0,
           laborStaff: result.data.totals.laborStaff || 0,
-          material: result.data.totals.materials || 0,
+          material: result.data.totals.materials || result.data.totals.material || 0,
           equipment: result.data.totals.equipment || 0,
-          subcontract: result.data.totals.subcontracts || 0,
+          subcontract: result.data.totals.subcontracts || result.data.totals.subcontract || 0,
           smallTools: result.data.totals.smallTools || 0,
-          grand_total: result.data.totals.grandTotal || 0
-        }
+          grand_total: result.data.totals.grandTotal || result.data.totals.grand_total || 0
+        },
+        // Ensure other required fields exist
+        details: result.data.details || {},
+        wbsStructure: result.data.wbsStructure || [],
+        validation: result.data.validation || { warnings: [], errors: [] }
       }
       
+      console.log('[DEBUG] Mapped data:', mappedData)
       setPreviewData(mappedData)
+      setDebugInfo('Preview loaded successfully')
+      console.log('[DEBUG] Preview data set successfully')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to preview file')
+      console.error('[DEBUG] Preview error:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to preview file'
+      setError(errorMessage)
+      setDebugInfo(`Error: ${errorMessage}`)
     } finally {
       setLoading(false)
+      console.log('[DEBUG] Loading state set to false')
     }
   }
 
@@ -257,6 +299,46 @@ export default function BudgetImportCoversheetPage({
               {file && (
                 <span className="text-sm text-muted-foreground">{file.name}</span>
               )}
+            </div>
+
+            {/* Debug Info */}
+            {debugInfo && (
+              <Alert className="bg-blue-50 border-blue-200">
+                <AlertCircle className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800">
+                  <strong>Debug Info:</strong> {debugInfo}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* File State Display */}
+            <div className="p-4 bg-gray-50 rounded-lg space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="font-medium">File Selected:</span>
+                <span className={file ? 'text-green-600' : 'text-gray-400'}>
+                  {file ? `✓ ${file.name}` : '✗ No file'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium">Loading:</span>
+                <span className={loading ? 'text-yellow-600' : 'text-gray-400'}>
+                  {loading ? '⟳ Processing...' : '• Idle'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium">Preview Data:</span>
+                <span className={previewData ? 'text-green-600' : 'text-gray-400'}>
+                  {previewData ? '✓ Ready' : '✗ Not loaded'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium">Button Should Be Active:</span>
+                <span className={!loading && previewData ? 'text-green-600 font-bold' : 'text-red-600'}>
+                  {!loading && previewData ? 'YES' : 'NO'} 
+                  {loading && ' (Loading...)'}
+                  {!loading && !previewData && ' (No preview data)'}
+                </span>
+              </div>
             </div>
 
             {error && (
@@ -560,14 +642,26 @@ export default function BudgetImportCoversheetPage({
               <Button
                 onClick={() => {
                   console.log('Button clicked - loading:', loading, 'previewData:', !!previewData)
+                  console.log('Full previewData:', previewData)
+                  if (!previewData) {
+                    console.error('Cannot import: No preview data available')
+                    setError('Please wait for file preview to complete')
+                    return
+                  }
                   handleImport()
                 }}
                 disabled={loading || !previewData}
+                title={loading ? 'Loading preview...' : !previewData ? 'Upload a file first' : 'Click to import budget'}
               >
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Importing...
+                    Processing File...
+                  </>
+                ) : !previewData ? (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Waiting for Preview...
                   </>
                 ) : (
                   <>

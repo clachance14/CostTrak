@@ -12,9 +12,12 @@ import { AutocompleteInput } from "@/components/ui/autocomplete-input"
 import { Separator } from "@/components/ui/separator"
 import { StepIndicator } from "@/components/ui/step-indicator"
 import { POLineItemInput, type POLineItem } from "@/components/ui/po-line-item-input"
-import { Upload, FileSpreadsheet, ChevronLeft, ChevronRight } from 'lucide-react'
-import type { Division, Client, User } from '@/types/api'
-import * as XLSX from 'xlsx'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Upload, FileSpreadsheet, ChevronLeft, ChevronRight, AlertCircle, ChevronDown, Loader2 } from 'lucide-react'
+import type { User } from '@/types/api'
+import { cn } from '@/lib/utils'
 
 interface FormData {
   // Project Information
@@ -22,10 +25,7 @@ interface FormData {
   projectTitle: string
   projectManagerName: string
   projectManagerId: string
-  division: string
-  divisionId: string
   clientName: string
-  clientId: string
   clientRepresentative: string
 
   // Contract Information
@@ -40,35 +40,50 @@ interface FormData {
   equipment: number
   subcontracts: number
   otherBudget: number
-  budgetBreakdowns: Array<{
-    discipline: string
-    cost_type: string
-    manhours: number | null
-    value: number
-  }>
 }
 
-interface BudgetPreview {
-  disciplines: Array<{
-    name: string
-    items: Array<{
-      cost_type: string
-      manhours: number | null
-      value: number
-      category: 'labor' | 'materials' | 'equipment' | 'subcontracts' | 'small_tools_consumables' | 'other'
-    }>
-    total: number
-  }>
-  totalBudget: number
-  isValid: boolean
-  errors: string[]
-  categoryBreakdown: {
-    labor: { items: string[]; total: number }
-    materials: { items: string[]; total: number }
-    equipment: { items: string[]; total: number }
-    subcontracts: { items: string[]; total: number }
-    small_tools_consumables: { items: string[]; total: number }
-    other: { items: string[]; total: number }
+interface BudgetLineItem {
+  wbs_code?: string
+  description: string
+  quantity?: number
+  unit_of_measure?: string
+  unit_rate?: number
+  manhours?: number
+  crew_size?: number
+  duration_days?: number
+  total_cost: number
+  contractor_name?: string
+  supplier_name?: string
+  owned_or_rented?: 'OWNED' | 'RENTED'
+}
+
+interface WBSNode {
+  code: string
+  parent_code?: string
+  level: number
+  description?: string
+  children: WBSNode[]
+  budget_total: number
+}
+
+interface BudgetImportData {
+  summary: Record<string, unknown>
+  details: Record<string, BudgetLineItem[]>
+  wbsStructure: WBSNode[]
+  totals: {
+    labor: number
+    laborDirect: number
+    laborIndirect: number
+    laborStaff: number
+    material: number
+    equipment: number
+    subcontract: number
+    smallTools: number
+    grand_total: number
+  }
+  validation: {
+    warnings: string[]
+    errors: string[]
   }
 }
 
@@ -84,16 +99,17 @@ export default function ProjectSetupForm() {
   const [currentStep, setCurrentStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [budgetFile, setBudgetFile] = useState<File | null>(null)
-  const [budgetPreview, setBudgetPreview] = useState<BudgetPreview | null>(null)
+  const [budgetPreview, setBudgetPreview] = useState<BudgetImportData | null>(null)
+  const [loadingPreview, setLoadingPreview] = useState(false)
+  const [budgetError, setBudgetError] = useState<string | null>(null)
+  const [selectedBudgetTab, setSelectedBudgetTab] = useState<string>('summary')
+  const [expandedWBS, setExpandedWBS] = useState<Set<string>>(new Set())
   const [formData, setFormData] = useState<FormData>({
     icsProjectNumber: "",
     projectTitle: "",
     projectManagerName: "",
     projectManagerId: "",
-    division: "",
-    divisionId: "",
     clientName: "",
-    clientId: "",
     clientRepresentative: "",
     clientPONumber: "",
     poLineItems: [{ id: `line-${Date.now()}`, description: '', amount: 0 }],
@@ -104,29 +120,6 @@ export default function ProjectSetupForm() {
     equipment: 0,
     subcontracts: 0,
     otherBudget: 0,
-    budgetBreakdowns: [],
-  })
-
-  // Fetch divisions
-  const { data: divisions } = useQuery({
-    queryKey: ['divisions'],
-    queryFn: async () => {
-      const response = await fetch('/api/divisions')
-      if (!response.ok) return []
-      const data = await response.json()
-      return data.divisions || []
-    }
-  })
-
-  // Fetch clients
-  const { data: clients } = useQuery({
-    queryKey: ['clients'],
-    queryFn: async () => {
-      const response = await fetch('/api/clients')
-      if (!response.ok) return []
-      const data = await response.json()
-      return data.clients || []
-    }
   })
 
   // Fetch project managers
@@ -172,44 +165,7 @@ export default function ProjectSetupForm() {
     }))
   }
 
-  // Auto-create functions
-  const createNewProjectManager = async (name: string) => {
-    const response = await fetch('/api/users', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: name,
-        role: 'project_manager',
-        email: `${name.toLowerCase().replace(/\s+/g, '.')}@temp.ics.ac`
-      })
-    })
-    if (!response.ok) throw new Error('Failed to create project manager')
-    const data = await response.json()
-    return { id: data.user.id, label: name, value: data.user.id }
-  }
-
-  const createNewDivision = async (name: string) => {
-    const code = name.slice(0, 3).toUpperCase()
-    const response = await fetch('/api/divisions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, code })
-    })
-    if (!response.ok) throw new Error('Failed to create division')
-    const data = await response.json()
-    return { id: data.division.id, label: `${name} (${code})`, value: data.division.id }
-  }
-
-  const createNewClient = async (name: string) => {
-    const response = await fetch('/api/clients', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name })
-    })
-    if (!response.ok) throw new Error('Failed to create client')
-    const data = await response.json()
-    return { id: data.client.id, label: name, value: data.client.id }
-  }
+  // Auto-create functions removed for MVP
 
   // Format data for autocomplete
   const projectManagerOptions = projectManagers?.map((user: User) => ({
@@ -218,17 +174,6 @@ export default function ProjectSetupForm() {
     value: user.id
   })) || []
 
-  const divisionOptions = divisions?.map((division: Division) => ({
-    id: division.id,
-    label: `${division.name} (${division.code})`,
-    value: division.id
-  })) || []
-
-  const clientOptions = clients?.map((client: Client) => ({
-    id: client.id,
-    label: client.name,
-    value: client.id
-  })) || []
 
   const handleCurrencyChange = (field: keyof FormData, value: string) => {
     const numericValue = Number.parseFloat(value.replace(/[^0-9.-]/g, "")) || 0
@@ -239,31 +184,23 @@ export default function ProjectSetupForm() {
   const canProceedToNext = () => {
     switch (currentStep) {
       case 1:
-        const step1Valid = (
+        return (
           formData.icsProjectNumber &&
           formData.projectTitle &&
           formData.projectManagerId &&
-          formData.divisionId &&
-          formData.clientId
+          formData.clientName
         )
-        
-        // Debug logging
-        console.log('Step 1 validation:', {
-          icsProjectNumber: formData.icsProjectNumber,
-          projectTitle: formData.projectTitle,
-          projectManagerId: formData.projectManagerId,
-          divisionId: formData.divisionId,
-          clientId: formData.clientId,
-          valid: step1Valid
-        })
-        
-        return step1Valid
       case 2:
         return (
           formData.poLineItems.length > 0 &&
           formData.poLineItems.every(item => item.description && item.amount > 0)
         )
       case 3:
+        // For import mode, check if we have a budget preview with data
+        if (formData.budgetSource === 'import') {
+          return budgetPreview && budgetPreview.totals && budgetPreview.totals.grand_total > 0
+        }
+        // For manual mode, check if any budget values are entered
         return totalEstimatedJobCost > 0
       default:
         return true
@@ -282,244 +219,119 @@ export default function ProjectSetupForm() {
     }
   }
 
-  // Budget file handling
+  // Budget file handling - using coversheet import style
+  // Toggle WBS node expansion
+  const toggleWBS = (code: string) => {
+    const newExpanded = new Set(expandedWBS)
+    if (newExpanded.has(code)) {
+      newExpanded.delete(code)
+    } else {
+      newExpanded.add(code)
+    }
+    setExpandedWBS(newExpanded)
+  }
+
+  // Render WBS tree node
+  const renderWBSNode = (node: WBSNode, depth: number = 0) => {
+    const hasChildren = node.children && node.children.length > 0
+    const isExpanded = expandedWBS.has(node.code)
+
+    return (
+      <div key={node.code}>
+        <div
+          className={cn(
+            "flex items-center justify-between py-2 px-4 hover:bg-muted/50 cursor-pointer",
+            depth > 0 && "border-l-2 border-muted"
+          )}
+          style={{ paddingLeft: `${depth * 24 + 16}px` }}
+          onClick={() => hasChildren && toggleWBS(node.code)}
+        >
+          <div className="flex items-center gap-2">
+            {hasChildren && (
+              isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
+            )}
+            {!hasChildren && <div className="w-4" />}
+            <Badge variant="outline">{node.code}</Badge>
+            <span className="text-sm">{node.description}</span>
+          </div>
+          <div className="text-right font-medium">
+            ${node.budget_total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+        </div>
+        {hasChildren && isExpanded && (
+          <div>
+            {node.children.map(child => renderWBSNode(child, depth + 1))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   const handleBudgetFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
     if (!selectedFile) return
 
     setBudgetFile(selectedFile)
+    setBudgetError(null)
     setBudgetPreview(null)
+    setLoadingPreview(true)
 
     try {
-      const arrayBuffer = await selectedFile.arrayBuffer()
-      const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+      // Create a temporary project ID for preview (will use real ID after creation)
+      const tempProjectId = 'preview-only'
       
-      if (!workbook.SheetNames.includes('BUDGETS')) {
-        setBudgetPreview({
-          disciplines: [],
-          totalBudget: 0,
-          isValid: false,
-          errors: ['No BUDGETS sheet found in Excel file.'],
-          categoryBreakdown: {
-            labor: { items: [], total: 0 },
-            materials: { items: [], total: 0 },
-            equipment: { items: [], total: 0 },
-            subcontracts: { items: [], total: 0 },
-            small_tools_consumables: { items: [], total: 0 },
-            other: { items: [], total: 0 }
-          }
-        })
-        return
-      }
-      
-      const worksheet = workbook.Sheets['BUDGETS']
-      const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1')
-      const rows: unknown[][] = []
-      
-      for (let R = range.s.r; R <= range.e.r; ++R) {
-        const row: unknown[] = []
-        for (let C = range.s.c; C <= range.e.c; ++C) {
-          const cellAddress = XLSX.utils.encode_cell({ r: R, c: C })
-          const cell = worksheet[cellAddress]
-          row.push(cell ? cell.v : undefined)
-        }
-        rows.push(row)
-      }
+      const formData = new FormData()
+      formData.append('file', selectedFile)
+      formData.append('projectId', tempProjectId)
+      formData.append('mode', 'preview')
 
-      // Process budget data
-      const disciplines = new Map<string, Array<{cost_type: string; manhours: number | null; value: number; category: 'labor' | 'materials' | 'equipment' | 'subcontracts' | 'small_tools_consumables' | 'other'}>>()
-      const budgetBreakdowns: Array<{discipline: string; cost_type: string; manhours: number | null; value: number}> = []
-      let currentDiscipline = ''
-      let totalBudget = 0
-      const categoryTotals = {
-        labor: 0,
-        materials: 0,
-        equipment: 0,
-        subcontracts: 0,
-        small_tools_consumables: 0,
-        other: 0
-      }
-      const categoryBreakdown: BudgetPreview['categoryBreakdown'] = {
-        labor: { items: [], total: 0 },
-        materials: { items: [], total: 0 },
-        equipment: { items: [], total: 0 },
-        subcontracts: { items: [], total: 0 },
-        small_tools_consumables: { items: [], total: 0 },
-        other: { items: [], total: 0 }
-      }
-      
-      // Debug: Track all disciplines found
-      const debugInfo: string[] = []
-      const disciplinesFound = new Set<string>()
-      let skippedRows = 0
-      
-      for (let i = 1; i < rows.length; i++) {
-        const row = rows[i]
-        const disciplineName = row[1]
-        const description = row[3]?.toString() || ''
-        const manhours = row[4]
-        const value = row[5]
-        
-        // Debug: Log row details
-        if (disciplineName && typeof disciplineName === 'string' && disciplineName.trim()) {
-          const newDiscipline = disciplineName.trim().toUpperCase()
-          console.log(`Row ${i + 1}: Found discipline: "${newDiscipline}" (raw: "${disciplineName}")`)
-          debugInfo.push(`Row ${i + 1}: New discipline detected: ${newDiscipline}`)
-          disciplinesFound.add(newDiscipline)
-        }
-        
-        if (!description || !value) {
-          if (description || value) {
-            debugInfo.push(`Row ${i + 1}: Skipped - missing ${!description ? 'description' : 'value'} (discipline: ${currentDiscipline || 'none'})`)
-          }
-          skippedRows++
-          continue
-        }
-        
-        if (disciplineName && typeof disciplineName === 'string' && disciplineName.trim()) {
-          currentDiscipline = disciplineName.trim().toUpperCase()
-        }
-        
-        if (!currentDiscipline) {
-          debugInfo.push(`Row ${i + 1}: Skipped - no current discipline set`)
-          skippedRows++
-          continue
-        }
-        
-        if (description.toUpperCase().includes('TOTAL') || 
-            description.toUpperCase() === 'ALL LABOR') {
-          debugInfo.push(`Row ${i + 1}: Skipped - total row (${description})`)
-          skippedRows++
-          continue
-        }
-        
-        const numericValue = typeof value === 'number' ? value : parseFloat(value.toString().replace(/[$,]/g, '') || '0')
-        const numericManhours = manhours ? (typeof manhours === 'number' ? manhours : parseFloat(manhours.toString() || '0')) : null
-        
-        if (!disciplines.has(currentDiscipline)) {
-          disciplines.set(currentDiscipline, [])
-        }
-        
-        // Determine category
-        const costType = description.trim().toUpperCase()
-        let category: 'labor' | 'materials' | 'equipment' | 'subcontracts' | 'small_tools_consumables' | 'other'
-        
-        if (costType.includes('LABOR')) {
-          category = 'labor'
-          categoryTotals.labor += numericValue
-          categoryBreakdown.labor.items.push(`${currentDiscipline}: ${description.trim()}`)
-          categoryBreakdown.labor.total += numericValue
-        } else if (costType === 'MATERIALS') {
-          category = 'materials'
-          categoryTotals.materials += numericValue
-          categoryBreakdown.materials.items.push(`${currentDiscipline}: ${description.trim()}`)
-          categoryBreakdown.materials.total += numericValue
-        } else if (costType === 'EQUIPMENT') {
-          category = 'equipment'
-          categoryTotals.equipment += numericValue
-          categoryBreakdown.equipment.items.push(`${currentDiscipline}: ${description.trim()}`)
-          categoryBreakdown.equipment.total += numericValue
-        } else if (costType === 'SUBCONTRACTS') {
-          category = 'subcontracts'
-          categoryTotals.subcontracts += numericValue
-          categoryBreakdown.subcontracts.items.push(`${currentDiscipline}: ${description.trim()}`)
-          categoryBreakdown.subcontracts.total += numericValue
-        } else if (costType === 'SMALL TOOLS & CONSUMABLES') {
-          category = 'small_tools_consumables'
-          categoryTotals.small_tools_consumables += numericValue
-          categoryBreakdown.small_tools_consumables.items.push(`${currentDiscipline}: ${description.trim()}`)
-          categoryBreakdown.small_tools_consumables.total += numericValue
-        } else {
-          category = 'other'
-          categoryTotals.other += numericValue
-          categoryBreakdown.other.items.push(`${currentDiscipline}: ${description.trim()}`)
-          categoryBreakdown.other.total += numericValue
-        }
-        
-        const item = {
-          cost_type: description.trim(),
-          manhours: numericManhours,
-          value: numericValue,
-          category
-        }
-        
-        disciplines.get(currentDiscipline)!.push(item)
-        budgetBreakdowns.push({
-          discipline: currentDiscipline,
-          cost_type: description.trim(),
-          manhours: numericManhours,
-          value: numericValue
-        })
-        
-        totalBudget += numericValue
-      }
-
-      const disciplineArray = Array.from(disciplines.entries()).map(([name, items]) => ({
-        name,
-        items,
-        total: items.reduce((sum, item) => sum + item.value, 0)
-      }))
-
-      // Add debug summary
-      const debugSummary = [
-        `Total rows processed: ${rows.length - 1}`,
-        `Disciplines found: ${Array.from(disciplinesFound).join(', ')}`,
-        `Valid items: ${budgetBreakdowns.length}`,
-        `Skipped rows: ${skippedRows}`,
-        ...debugInfo.slice(0, 10) // Show first 10 debug messages
-      ]
-      
-      if (debugInfo.length > 10) {
-        debugSummary.push(`... and ${debugInfo.length - 10} more debug messages`)
-      }
-      
-      console.log('Budget Import Debug Summary:', {
-        totalRows: rows.length - 1,
-        disciplinesFound: Array.from(disciplinesFound),
-        validItems: budgetBreakdowns.length,
-        skippedRows,
-        disciplineBreakdown: Object.fromEntries(
-          Array.from(disciplines.entries()).map(([name, items]) => [name, items.length])
-        )
+      const response = await fetch('/api/project-budgets/import-coversheet', {
+        method: 'POST',
+        body: formData
       })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to preview file')
+      }
+
+      // Map the data structure
+      const mappedData = {
+        ...result.data,
+        totals: {
+          labor: result.data.totals.totalLabor || 0,
+          laborDirect: result.data.totals.laborDirect || 0,
+          laborIndirect: result.data.totals.laborIndirect || 0,
+          laborStaff: result.data.totals.laborStaff || 0,
+          material: result.data.totals.materials || 0,
+          equipment: result.data.totals.equipment || 0,
+          subcontract: result.data.totals.subcontracts || 0,
+          smallTools: result.data.totals.smallTools || 0,
+          grand_total: result.data.totals.grandTotal || 0
+        }
+      }
       
-      setBudgetPreview({
-        disciplines: disciplineArray,
-        totalBudget,
-        isValid: disciplineArray.length > 0,
-        errors: disciplineArray.length === 0 ? ['No valid budget data found'] : debugSummary,
-        categoryBreakdown
-      })
+      setBudgetPreview(mappedData)
       
-      // Update form data with imported values
-      if (disciplineArray.length > 0) {
+      // Update form data with imported totals
+      if (mappedData.totals.grand_total > 0) {
         setFormData(prev => ({
           ...prev,
           budgetSource: 'import',
-          labor: categoryTotals.labor,
-          materials: categoryTotals.materials,
-          equipment: categoryTotals.equipment,
-          subcontracts: categoryTotals.subcontracts,
-          smallToolsConsumables: categoryTotals.small_tools_consumables,
-          otherBudget: categoryTotals.other,
-          budgetBreakdowns
+          labor: mappedData.totals.labor,
+          materials: mappedData.totals.material,
+          equipment: mappedData.totals.equipment,
+          subcontracts: mappedData.totals.subcontract,
+          smallToolsConsumables: mappedData.totals.smallTools,
+          otherBudget: 0
         }))
       }
-    } catch {
-      setBudgetPreview({
-        disciplines: [],
-        totalBudget: 0,
-        isValid: false,
-        errors: ['Failed to parse Excel file'],
-        categoryBreakdown: {
-          labor: { items: [], total: 0 },
-          materials: { items: [], total: 0 },
-          equipment: { items: [], total: 0 },
-          subcontracts: { items: [], total: 0 },
-          small_tools_consumables: { items: [], total: 0 },
-          other: { items: [], total: 0 }
-        }
-      })
+    } catch (err) {
+      setBudgetError(err instanceof Error ? err.message : 'Failed to preview file')
+      setBudgetPreview(null)
+    } finally {
+      setLoadingPreview(false)
     }
   }, [])
 
@@ -547,14 +359,13 @@ export default function ProjectSetupForm() {
         line_number: index + 1,
         description: item.description,
         amount: item.amount
-      })),
-      budget_breakdowns: formData.budgetSource === 'import' ? formData.budgetBreakdowns : [],
-      budget_source: formData.budgetSource
+      }))
     }
     
     console.log('Submitting project data:', submissionData)
     
     try {
+      // Step 1: Create the project
       const response = await fetch('/api/projects', {
         method: 'POST',
         headers: {
@@ -582,7 +393,35 @@ export default function ProjectSetupForm() {
       }
 
       const { project } = await response.json()
-      router.push(`/projects/${project.id}`)
+      
+      // Step 2: If there's a budget file, import it
+      if (budgetFile && formData.budgetSource === 'import') {
+        try {
+          const formData = new FormData()
+          formData.append('file', budgetFile)
+          formData.append('projectId', project.id)
+          formData.append('mode', 'import')
+
+          const budgetResponse = await fetch('/api/project-budgets/import-coversheet', {
+            method: 'POST',
+            body: formData
+          })
+
+          if (!budgetResponse.ok) {
+            const budgetError = await budgetResponse.json()
+            console.error('Budget import error:', budgetError)
+            // Continue even if budget import fails - project is created
+            alert(`Project created but budget import failed: ${budgetError.error || 'Unknown error'}`)
+          }
+        } catch (budgetError) {
+          console.error('Budget import error:', budgetError)
+          // Continue even if budget import fails
+          alert('Project created but budget import failed')
+        }
+      }
+      
+      // Step 3: Navigate to the created project
+      router.push(`/projects/${project.id}/overview?tab=budget`)
     } catch (error) {
       console.error('Error creating project:', error)
       alert('An error occurred while creating the project')
@@ -621,61 +460,32 @@ export default function ProjectSetupForm() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="projectManagerName">Project Manager</Label>
-            <AutocompleteInput
-              value={formData.projectManagerName}
-              onChange={(value, option) => {
-                console.log('Project Manager onChange:', { value, option })
-                setFormData(prev => ({
-                  ...prev,
-                  projectManagerName: value,
-                  projectManagerId: option?.value || ''
-                }))
-              }}
-              options={projectManagerOptions}
-              placeholder="Enter or select project manager"
-              onCreateNew={createNewProjectManager}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="division">Division</Label>
-            <AutocompleteInput
-              value={formData.division}
-              onChange={(value, option) => {
-                console.log('Division onChange:', { value, option })
-                setFormData(prev => ({
-                  ...prev,
-                  division: value,
-                  divisionId: option?.value || ''
-                }))
-              }}
-              options={divisionOptions}
-              placeholder="Enter or select division"
-              onCreateNew={createNewDivision}
-              required
-            />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="projectManagerName">Project Manager</Label>
+          <AutocompleteInput
+            value={formData.projectManagerName}
+            onChange={(value, option) => {
+              console.log('Project Manager onChange:', { value, option })
+              setFormData(prev => ({
+                ...prev,
+                projectManagerName: value,
+                projectManagerId: option?.value || ''
+              }))
+            }}
+            options={projectManagerOptions}
+            placeholder="Select project manager"
+            required
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="clientName">Client Name</Label>
-            <AutocompleteInput
+            <Input
+              id="clientName"
               value={formData.clientName}
-              onChange={(value, option) => {
-                console.log('Client onChange:', { value, option })
-                setFormData(prev => ({
-                  ...prev,
-                  clientName: value,
-                  clientId: option?.value || ''
-                }))
-              }}
-              options={clientOptions}
-              placeholder="Enter or select client"
-              onCreateNew={createNewClient}
+              onChange={(e) => handleInputChange("clientName", e.target.value)}
+              placeholder="Enter client name"
               required
             />
           </div>
@@ -687,22 +497,6 @@ export default function ProjectSetupForm() {
               onChange={(e) => handleInputChange("clientRepresentative", e.target.value)}
               placeholder="Enter client representative"
             />
-          </div>
-        </div>
-        
-        {/* Debug Display - Remove after fixing */}
-        <div className="mt-4 p-4 bg-gray-100 rounded-lg">
-          <h4 className="font-semibold mb-2">Debug Info:</h4>
-          <div className="text-sm space-y-1">
-            <div>ICS Project Number: &quot;{formData.icsProjectNumber}&quot;</div>
-            <div>Project Title: &quot;{formData.projectTitle}&quot;</div>
-            <div>Project Manager Name: &quot;{formData.projectManagerName}&quot;</div>
-            <div>Project Manager ID: &quot;{formData.projectManagerId}&quot;</div>
-            <div>Division: &quot;{formData.division}&quot;</div>
-            <div>Division ID: &quot;{formData.divisionId}&quot;</div>
-            <div>Client Name: &quot;{formData.clientName}&quot;</div>
-            <div>Client ID: &quot;{formData.clientId}&quot;</div>
-            <div>Can Proceed: {canProceedToNext() ? 'YES' : 'NO'}</div>
           </div>
         </div>
       </CardContent>
@@ -981,10 +775,6 @@ export default function ProjectSetupForm() {
             <div>
               <p className="text-foreground/60">Client</p>
               <p className="font-medium">{formData.clientName}</p>
-            </div>
-            <div>
-              <p className="text-foreground/60">Division</p>
-              <p className="font-medium">{formData.division}</p>
             </div>
             <div>
               <p className="text-foreground/60">Project Manager</p>

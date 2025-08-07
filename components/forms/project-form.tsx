@@ -9,13 +9,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { format } from 'date-fns'
-import type { Project, Client, Division, User, ProjectFormData as ProjectFormDataType } from '@/types/api'
+import type { Project, User, ProjectFormData as ProjectFormDataType } from '@/types/api'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(200),
   job_number: z.string().min(1, 'Job number is required').max(50),
-  client_id: z.string().uuid('Please select a client'),
-  division_id: z.string().uuid('Please select a division'),
   project_manager_id: z.string().uuid('Please select a project manager'),
   original_contract: z.string().min(1, 'Contract amount is required'),
   start_date: z.string().min(1, 'Start date is required'),
@@ -55,27 +53,6 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
     }
   })
 
-  // Fetch clients
-  const { data: clients } = useQuery({
-    queryKey: ['clients'],
-    queryFn: async () => {
-      const response = await fetch('/api/clients')
-      if (!response.ok) return []
-      const data = await response.json()
-      return data.clients || []
-    }
-  })
-
-  // Fetch divisions
-  const { data: divisions } = useQuery({
-    queryKey: ['divisions'],
-    queryFn: async () => {
-      const response = await fetch('/api/divisions')
-      if (!response.ok) return []
-      const data = await response.json()
-      return data.divisions || []
-    }
-  })
 
   // Fetch users (project managers)
   const { data: users } = useQuery({
@@ -136,47 +113,6 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-foreground/80 mb-1">
-              Client *
-            </label>
-            <select
-              {...register('client_id')}
-              className="w-full px-3 py-2 border border-foreground/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={!!project}
-            >
-              <option value="">Select a client</option>
-              {clients?.map((client: Client) => (
-                <option key={client.id} value={client.id}>
-                  {client.name}
-                </option>
-              ))}
-            </select>
-            {errors.client_id && (
-              <p className="text-red-500 text-sm mt-1">{errors.client_id.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-foreground/80 mb-1">
-              Division *
-            </label>
-            <select
-              {...register('division_id')}
-              className="w-full px-3 py-2 border border-foreground/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={!!project}
-            >
-              <option value="">Select a division</option>
-              {divisions?.map((division: Division) => (
-                <option key={division.id} value={division.id}>
-                  {division.name} ({division.code})
-                </option>
-              ))}
-            </select>
-            {errors.division_id && (
-              <p className="text-red-500 text-sm mt-1">{errors.division_id.message}</p>
-            )}
-          </div>
 
           <div>
             <label className="block text-sm font-medium text-foreground/80 mb-1">

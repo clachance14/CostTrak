@@ -82,18 +82,8 @@ export function useSignIn() {
         // First login - redirect to profile setup
         router.push('/setup-profile')
       } else {
-        // Route based on role
-        const roleRoutes: Record<string, string> = {
-          executive: '/dashboard/executive',
-          controller: '/dashboard/controller',
-          ops_manager: '/dashboard/ops-manager',
-          project_manager: '/dashboard/project-manager',
-          accounting: '/dashboard/accounting',
-          viewer: '/dashboard/viewer',
-        }
-        
-        const route = roleRoutes[data.profile.role] || '/dashboard'
-        router.push(route)
+        // Redirect all users to the main dashboard
+        router.push('/dashboard')
       }
     },
     onError: (error) => {
