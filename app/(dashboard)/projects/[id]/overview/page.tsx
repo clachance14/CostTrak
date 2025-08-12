@@ -22,6 +22,7 @@ import { ProjectHealthDashboard } from '@/components/project/overview/project-he
 import { PurchaseOrdersTab } from '@/components/project/overview/purchase-orders-tab'
 import { FloatingActionButton } from '@/components/project/overview/floating-action-button'
 import { UncommittedBudgetCard } from '@/components/project/uncommitted-budget-card'
+import { SpendProjectionsChart } from '@/components/project/spend-projections-chart'
 
 interface ProjectOverviewPageProps {
   params: Promise<{ id: string }>
@@ -117,9 +118,9 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
         {/* Financial Summary Cards */}
         <FinancialSummaryCards data={financialData} />
 
-        {/* Uncommitted Budget Card */}
-        {financialData.uncommittedBudget && (
-          <div className="mb-6">
+        {/* Uncommitted Budget & Projections Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          {financialData.uncommittedBudget && (
             <UncommittedBudgetCard
               totalBudget={financialData.uncommittedBudget.totalBudget}
               totalCommitted={financialData.uncommittedBudget.totalCommitted}
@@ -128,8 +129,21 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
               spendPercentage={financialData.uncommittedBudget.spendPercentage}
               categories={financialData.uncommittedBudget.categories}
             />
-          </div>
-        )}
+          )}
+          
+          {financialData.projections && (
+            <SpendProjectionsChart
+              currentSpendPercentage={financialData.projections.currentSpendPercentage}
+              projectionMethod={financialData.projections.projectionMethod}
+              baseMargin={financialData.projections.baseMargin}
+              projections={financialData.projections.projections}
+              summary={financialData.projections.summary}
+              transitionPoint={financialData.projections.transitionPoint}
+              projectStartDate={financialData.projections.projectStartDate}
+              projectEndDate={financialData.projections.projectEndDate}
+            />
+          )}
+        </div>
 
         {/* Project Health Dashboard */}
         <ProjectHealthDashboard 

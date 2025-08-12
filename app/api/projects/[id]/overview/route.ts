@@ -186,6 +186,132 @@ export async function GET(
     let marginHealth = 'on-target'
     if (marginDiff < -5) marginHealth = 'critical'
     else if (marginDiff < -2) marginHealth = 'at-risk'
+    
+    // Calculate spend projections
+    const projectStartDate = new Date(project.start_date)
+    const projectEndDate = new Date(project.end_date)
+    const projectDurationMonths = Math.ceil((projectEndDate.getTime() - projectStartDate.getTime()) / (30 * 24 * 60 * 60 * 1000))
+    const currentDate = new Date()
+    const monthsElapsed = Math.ceil((currentDate.getTime() - projectStartDate.getTime()) / (30 * 24 * 60 * 60 * 1000))
+    
+    // Generate projection data points
+    const projectionData: any[] = []
+    let cumulativeActual = 0
+    let cumulativeProjected = 0
+    
+    // Get monthly actual costs
+    const { data: monthlyActuals } = await supabase
+      .from('labor_employee_actuals')
+      .select('week_ending, st_wages, ot_wages, total_cost_with_burden')
+      .eq('project_id', projectId)
+      .order('week_ending', { ascending: true })
+    
+    // Group actuals by month
+    const actualsByMonth = new Map<string, number>()
+    monthlyActuals?.forEach(actual => {
+      const monthKey = format(new Date(actual.week_ending), 'MMM yyyy')
+      const cost = actual.total_cost_with_burden || (actual.st_wages || 0) + (actual.ot_wages || 0) + ((actual.st_wages || 0) * 0.28)
+      actualsByMonth.set(monthKey, (actualsByMonth.get(monthKey) || 0) + cost)
+    })
+    
+    // Calculate projections based on method
+    if (spendPercentage < 25) {
+      // Phase 1: Margin-based projection
+      const projectedTotal = totalBudget * (1 - baseMarginPercentage / 100)
+      const monthlyProjected = projectedTotal / projectDurationMonths
+      
+      for (let i = 0; i < projectDurationMonths; i++) {
+        const monthDate = new Date(projectStartDate)
+        monthDate.setMonth(monthDate.getMonth() + i)
+        const monthKey = format(monthDate, 'MMM yyyy')
+        
+        const actualCost = actualsByMonth.get(monthKey) || 0
+        cumulativeActual += actualCost
+        cumulativeProjected += monthlyProjected
+        
+        projectionData.push({
+          month: monthKey,
+          actual: actualCost > 0 ? cumulativeActual : undefined,
+          projected: cumulativeProjected,
+          method: 'margin-based',
+          confidence: 'estimated'
+        })
+      }
+      
+      var projectionSummary = {
+        totalBudget,
+        currentSpend: totalLaborCost,
+        projectedFinalCost: projectedTotal,
+        projectedMargin: baseMarginPercentage,
+        projectedVariance: totalBudget - projectedTotal,
+        confidenceLevel: 'Estimated based on target margin'
+      }
+      
+      var transitionPoint = {
+        date: format(new Date(projectStartDate.getTime() + (projectDurationMonths * 0.25 * 30 * 24 * 60 * 60 * 1000)), 'MMM yyyy'),
+        spendAmount: projectedTotal * 0.25,
+        message: `Will switch to data-driven projections after reaching 25% spend (${formatCurrency(projectedTotal * 0.25)})`
+      }
+    } else {
+      // Phase 2: Data-driven projection
+      const actualMonthlyRate = totalLaborCost / Math.max(monthsElapsed, 1)
+      const remainingMonths = projectDurationMonths - monthsElapsed
+      const projectedRemaining = actualMonthlyRate * remainingMonths
+      const projectedTotal = totalLaborCost + projectedRemaining
+      
+      // Calculate variance for confidence intervals
+      const monthlyActualValues = Array.from(actualsByMonth.values())
+      const avgMonthly = monthlyActualValues.reduce((a, b) => a + b, 0) / monthlyActualValues.length
+      const variance = monthlyActualValues.reduce((sum, val) => sum + Math.pow(val - avgMonthly, 2), 0) / monthlyActualValues.length
+      const stdDev = Math.sqrt(variance)
+      
+      for (let i = 0; i < projectDurationMonths; i++) {
+        const monthDate = new Date(projectStartDate)
+        monthDate.setMonth(monthDate.getMonth() + i)
+        const monthKey = format(monthDate, 'MMM yyyy')
+        
+        const actualCost = actualsByMonth.get(monthKey) || 0
+        const isActual = actualCost > 0
+        
+        if (isActual) {
+          cumulativeActual += actualCost
+          cumulativeProjected = cumulativeActual
+        } else {
+          cumulativeProjected += actualMonthlyRate
+        }
+        
+        projectionData.push({
+          month: monthKey,
+          actual: isActual ? cumulativeActual : undefined,
+          projected: cumulativeProjected,
+          upperBound: cumulativeProjected + (stdDev * 2),
+          lowerBound: Math.max(cumulativeProjected - (stdDev * 2), 0),
+          method: 'data-driven',
+          confidence: stdDev < avgMonthly * 0.1 ? 'high' : stdDev < avgMonthly * 0.2 ? 'medium' : 'low'
+        })
+      }
+      
+      var projectionSummary = {
+        totalBudget,
+        currentSpend: totalLaborCost,
+        projectedFinalCost: projectedTotal,
+        projectedMargin: ((totalBudget - projectedTotal) / totalBudget) * 100,
+        projectedVariance: totalBudget - projectedTotal,
+        confidenceLevel: 'Data-driven forecast'
+      }
+      
+      var transitionPoint = null
+    }
+    
+    // Helper function for currency formatting
+    function formatCurrency(value: number) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(value)
+    }
 
     // Calculate burn rate (last 4 weeks average)
     const fourWeeksAgo = subDays(new Date(), 28)
@@ -544,6 +670,17 @@ export async function GET(
           spendPercentage,
           categories: budgetCategories,
           projectCompletionPercentage: commitmentPercentage // Using commitment as proxy for completion
+        },
+        // New projection data
+        projections: {
+          currentSpendPercentage: spendPercentage,
+          projectionMethod: spendPercentage < 25 ? 'margin-based' : 'data-driven',
+          baseMargin: baseMarginPercentage,
+          projections: projectionData,
+          summary: projectionSummary,
+          transitionPoint,
+          projectStartDate: project.start_date,
+          projectEndDate: project.end_date
         }
       },
       healthDashboard: {
