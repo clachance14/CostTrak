@@ -26,15 +26,25 @@ export async function GET(
 
     if (projectError) throw projectError
 
-    // Get change orders
-    const { data: changeOrders } = await supabase
+    // Get approved change orders
+    const { data: approvedChangeOrders } = await supabase
       .from('change_orders')
       .select('*')
       .eq('project_id', projectId)
       .eq('status', 'approved')
 
-    const changeOrdersTotal = changeOrders?.reduce((sum, co) => sum + (co.amount || 0), 0) || 0
-    const changeOrdersCount = changeOrders?.length || 0
+    const changeOrdersTotal = approvedChangeOrders?.reduce((sum, co) => sum + (co.amount || 0), 0) || 0
+    const changeOrdersCount = approvedChangeOrders?.length || 0
+
+    // Get pending change orders
+    const { data: pendingChangeOrders } = await supabase
+      .from('change_orders')
+      .select('*')
+      .eq('project_id', projectId)
+      .eq('status', 'pending')
+
+    const pendingChangeOrdersTotal = pendingChangeOrders?.reduce((sum, co) => sum + (co.amount || 0), 0) || 0
+    const pendingChangeOrdersCount = pendingChangeOrders?.length || 0
 
     // Get purchase orders
     const { data: purchaseOrders } = await supabase
@@ -117,6 +127,65 @@ export async function GET(
     const totalCommitted = totalPOAmount + totalLaborCost
     const commitmentPercentage = revisedContract > 0 ? (totalCommitted / revisedContract) * 100 : 0
     const remainingBudget = revisedContract - totalCommitted
+    
+    // Calculate uncommitted budget and margin analysis
+    const totalBudget = revisedContract
+    const uncommittedBudget = totalBudget - totalCommitted
+    const uncommittedPercentage = totalBudget > 0 ? (uncommittedBudget / totalBudget) * 100 : 0
+    const baseMarginPercentage = project.base_margin_percentage || 15
+    const expectedTotalSpend = totalBudget * (1 - baseMarginPercentage / 100)
+    const projectedMargin = totalBudget > 0 ? ((totalBudget - totalCommitted) / totalBudget) * 100 : 0
+    const spendPercentage = totalBudget > 0 ? (totalLaborCost / totalBudget) * 100 : 0
+    
+    // Calculate budget categories breakdown
+    const budgetCategories = [
+      {
+        category: 'Labor',
+        budget: laborBudget,
+        committed: totalLaborCost,
+        uncommitted: laborBudget - totalLaborCost,
+        percentage: laborBudget > 0 ? ((laborBudget - totalLaborCost) / laborBudget) * 100 : 0,
+        expectedSpend: laborBudget * (1 - baseMarginPercentage / 100)
+      },
+      {
+        category: 'Materials',
+        budget: project.materials_budget || 0,
+        committed: materialCosts,
+        uncommitted: (project.materials_budget || 0) - materialCosts,
+        percentage: (project.materials_budget || 0) > 0 ? (((project.materials_budget || 0) - materialCosts) / (project.materials_budget || 0)) * 100 : 0,
+        expectedSpend: (project.materials_budget || 0) * (1 - baseMarginPercentage / 100)
+      },
+      {
+        category: 'Equipment',
+        budget: project.equipment_budget || 0,
+        committed: 0, // TODO: Calculate from POs with equipment category
+        uncommitted: project.equipment_budget || 0,
+        percentage: 100,
+        expectedSpend: (project.equipment_budget || 0) * (1 - baseMarginPercentage / 100)
+      },
+      {
+        category: 'Subcontracts',
+        budget: project.subcontracts_budget || 0,
+        committed: 0, // TODO: Calculate from POs with subcontract category
+        uncommitted: project.subcontracts_budget || 0,
+        percentage: 100,
+        expectedSpend: (project.subcontracts_budget || 0) * (1 - baseMarginPercentage / 100)
+      },
+      {
+        category: 'Other',
+        budget: project.small_tools_budget || 0,
+        committed: 0, // TODO: Calculate from POs with other category
+        uncommitted: project.small_tools_budget || 0,
+        percentage: 100,
+        expectedSpend: (project.small_tools_budget || 0) * (1 - baseMarginPercentage / 100)
+      }
+    ]
+    
+    // Determine margin health
+    const marginDiff = projectedMargin - baseMarginPercentage
+    let marginHealth = 'on-target'
+    if (marginDiff < -5) marginHealth = 'critical'
+    else if (marginDiff < -2) marginHealth = 'at-risk'
 
     // Calculate burn rate (last 4 weeks average)
     const fourWeeksAgo = subDays(new Date(), 28)
@@ -143,7 +212,8 @@ export async function GET(
     const burnRate = recentTotalCost / 4 // Weekly average
     
     // Get labor forecasts (headcount-based) - using week_ending field
-    const currentDate = new Date()
+    // Note: We get ALL forecasts and filter by actuals, not by date
+    // This ensures past weeks with forecasts but no actuals are included
     const { data: laborForecasts } = await supabase
       .from('labor_headcount_forecasts')
       .select(`
@@ -154,7 +224,6 @@ export async function GET(
         craft_types (category)
       `)
       .eq('project_id', projectId)
-      .gte('week_ending', currentDate.toISOString().split('T')[0]) // Only future weeks
     
     // Get unique week endings from labor actuals to determine which weeks have data
     const { data: actualWeeks } = await supabase
@@ -447,6 +516,8 @@ export async function GET(
         originalContract: project.original_contract || 0,
         changeOrdersTotal,
         changeOrdersCount,
+        pendingChangeOrdersTotal,
+        pendingChangeOrdersCount,
         revisedContract,
         totalCommitted,
         commitmentPercentage,
@@ -459,7 +530,21 @@ export async function GET(
         materialBudget: nonLaborBudget,
         remainingBudget,
         burnRate,
-        projectHealth
+        projectHealth,
+        // New uncommitted budget data
+        uncommittedBudget: {
+          totalBudget,
+          totalCommitted,
+          uncommitted: uncommittedBudget,
+          uncommittedPercentage,
+          baseMarginPercentage,
+          expectedTotalSpend,
+          projectedMargin,
+          marginHealth,
+          spendPercentage,
+          categories: budgetCategories,
+          projectCompletionPercentage: commitmentPercentage // Using commitment as proxy for completion
+        }
       },
       healthDashboard: {
         budgetData: {

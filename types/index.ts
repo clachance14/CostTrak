@@ -20,6 +20,7 @@ export interface Project {
   status: 'active' | 'completed' | 'on_hold' | 'cancelled'
   original_contract: number
   revised_contract?: number
+  base_margin_percentage?: number
   start_date: string
   end_date?: string
   created_at: string

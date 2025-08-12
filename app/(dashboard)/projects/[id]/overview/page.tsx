@@ -21,6 +21,7 @@ import { FinancialSummaryCards } from '@/components/project/overview/financial-s
 import { ProjectHealthDashboard } from '@/components/project/overview/project-health-dashboard'
 import { PurchaseOrdersTab } from '@/components/project/overview/purchase-orders-tab'
 import { FloatingActionButton } from '@/components/project/overview/floating-action-button'
+import { UncommittedBudgetCard } from '@/components/project/uncommitted-budget-card'
 
 interface ProjectOverviewPageProps {
   params: Promise<{ id: string }>
@@ -115,6 +116,20 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
 
         {/* Financial Summary Cards */}
         <FinancialSummaryCards data={financialData} />
+
+        {/* Uncommitted Budget Card */}
+        {financialData.uncommittedBudget && (
+          <div className="mb-6">
+            <UncommittedBudgetCard
+              totalBudget={financialData.uncommittedBudget.totalBudget}
+              totalCommitted={financialData.uncommittedBudget.totalCommitted}
+              baseMarginPercentage={financialData.uncommittedBudget.baseMarginPercentage}
+              projectCompletionPercentage={financialData.uncommittedBudget.projectCompletionPercentage}
+              spendPercentage={financialData.uncommittedBudget.spendPercentage}
+              categories={financialData.uncommittedBudget.categories}
+            />
+          </div>
+        )}
 
         {/* Project Health Dashboard */}
         <ProjectHealthDashboard 
