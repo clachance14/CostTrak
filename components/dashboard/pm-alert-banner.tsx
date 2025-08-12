@@ -149,14 +149,15 @@ export function PMAlertBanner({ projectIds, onImportClick }: PMAlertBannerProps)
                   project_id: projectId,
                   project_name: summary.project.name,
                   job_number: summary.project.job_number,
-                alert_type: 'budget_overrun',
-                message: `Forecasted overrun: $${Math.abs(summary.financial.variance_at_completion).toLocaleString()}`,
-                severity: 'warning'
-              })
+                  alert_type: 'budget_overrun',
+                  message: `Forecasted overrun: $${Math.abs(summary.financial.variance_at_completion).toLocaleString()}`,
+                  severity: 'warning'
+                })
+              }
             }
           }
         } catch (error) {
-          console.error('Error fetching project summary:', error)
+          console.error('Error fetching project alerts:', error)
         }
       }
 
