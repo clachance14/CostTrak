@@ -312,6 +312,104 @@ export async function GET(
         maximumFractionDigits: 0,
       }).format(value)
     }
+    
+    // Calculate budget risk assessment
+    const projectTimeElapsed = ((currentDate.getTime() - projectStartDate.getTime()) / (projectEndDate.getTime() - projectStartDate.getTime())) * 100
+    
+    // Get PO coverage by category
+    const { data: posByCategory } = await supabase
+      .from('purchase_orders')
+      .select('total_amount, cost_code:cost_codes(category)')
+      .eq('project_id', projectId)
+      .eq('status', 'approved')
+    
+    const categoryCommitments = new Map<string, number>()
+    posByCategory?.forEach(po => {
+      const category = po.cost_code?.category || 'other'
+      categoryCommitments.set(category, (categoryCommitments.get(category) || 0) + (po.total_amount || 0))
+    })
+    
+    // Assess risk for each budget category
+    const budgetRiskCategories = budgetCategories.map(category => {
+      const coveragePercentage = category.budget > 0 ? (category.committed / category.budget) * 100 : 0
+      
+      // Calculate risk level based on phase and coverage
+      let riskLevel: 'critical' | 'warning' | 'healthy' = 'healthy'
+      let recommendedAction: string | undefined
+      
+      if (spendPercentage < 25) {
+        // Early stage - use margin-based thresholds
+        const expectedCommitment = category.expectedSpend * (projectTimeElapsed / 100)
+        if (category.committed > category.expectedSpend) {
+          riskLevel = 'critical'
+          recommendedAction = 'Review commitments - exceeding margin targets'
+        } else if (category.committed > expectedCommitment * 1.2) {
+          riskLevel = 'warning'
+          recommendedAction = 'Monitor spending pace'
+        }
+      } else {
+        // Later stage - more aggressive thresholds
+        if (projectTimeElapsed > 30 && coveragePercentage < 30) {
+          riskLevel = 'critical'
+          recommendedAction = 'Create POs immediately'
+        } else if (projectTimeElapsed > 20 && coveragePercentage < 50) {
+          riskLevel = 'warning'
+          recommendedAction = 'Review and commit budget'
+        }
+      }
+      
+      return {
+        name: category.category,
+        budgetAmount: category.budget,
+        committedAmount: category.committed,
+        coveragePercentage,
+        marginImpact: category.budget > 0 ? ((category.committed - category.expectedSpend) / category.budget) * 100 : 0,
+        riskLevel,
+        recommendedAction
+      }
+    })
+    
+    // Determine overall risk
+    const criticalCount = budgetRiskCategories.filter(c => c.riskLevel === 'critical').length
+    const warningCount = budgetRiskCategories.filter(c => c.riskLevel === 'warning').length
+    const overallRisk = criticalCount > 0 ? 'critical' : warningCount > 1 ? 'warning' : 'healthy'
+    
+    // Generate alerts
+    const budgetAlerts: any[] = []
+    
+    if (marginHealth === 'critical') {
+      budgetAlerts.push({
+        severity: 'error',
+        message: `Margin at critical risk: ${projectedMargin.toFixed(1)}% vs target ${baseMarginPercentage}%`,
+        marginImpact: `May reduce margin by ${Math.abs(projectedMargin - baseMarginPercentage).toFixed(1)}%`,
+        actionLink: '/purchase-orders/new',
+        actionLabel: 'Create PO'
+      })
+    }
+    
+    budgetRiskCategories.forEach(category => {
+      if (category.riskLevel === 'critical') {
+        budgetAlerts.push({
+          severity: 'error',
+          message: `${category.name}: Only ${category.coveragePercentage.toFixed(0)}% committed`,
+          marginImpact: category.marginImpact > 0 ? `Impacting margin by ${category.marginImpact.toFixed(1)}%` : undefined,
+          actionLink: `/purchase-orders/new?category=${category.name}`,
+          actionLabel: 'Create PO'
+        })
+      }
+    })
+    
+    const budgetRisks = {
+      overallRisk,
+      projectTimeElapsed,
+      spendPercentage,
+      baseMargin: baseMarginPercentage,
+      projectedMargin,
+      marginAtRisk: marginHealth !== 'on-target',
+      assessmentMethod: spendPercentage < 25 ? 'margin-based' : 'data-driven',
+      categories: budgetRiskCategories,
+      alerts: budgetAlerts
+    }
 
     // Calculate burn rate (last 4 weeks average)
     const fourWeeksAgo = subDays(new Date(), 28)
@@ -681,7 +779,9 @@ export async function GET(
           transitionPoint,
           projectStartDate: project.start_date,
           projectEndDate: project.end_date
-        }
+        },
+        // New budget risk data
+        budgetRisks
       },
       healthDashboard: {
         budgetData: {

@@ -2,17 +2,19 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { AlertCircle, AlertTriangle, Clock, Upload } from 'lucide-react'
+import { CircleAlert, AlertTriangle, Clock, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface ProjectAlert {
   project_id: string
   project_name: string
   job_number: string
-  alert_type: 'stale_data' | 'missing_data' | 'budget_overrun' | 'margin_warning'
+  alert_type: 'stale_data' | 'missing_data' | 'budget_overrun' | 'margin_warning' | 'coverage_risk'
   message: string
   severity: 'error' | 'warning' | 'info'
   action_needed?: string
+  actionLink?: string
+  actionLabel?: string
 }
 
 interface PMAlertBannerProps {
@@ -77,27 +79,76 @@ export function PMAlertBanner({ projectIds, onImportClick }: PMAlertBannerProps)
         }
       })
 
-      // Also check for financial alerts
+      // Check for financial and budget risk alerts
       for (const projectId of projectIds) {
         try {
-          const summaryResponse = await fetch(`/api/projects/${projectId}/dashboard-summary`)
-          if (summaryResponse.ok) {
-            const summary = await summaryResponse.json()
+          // Get project overview with budget risk data
+          const overviewResponse = await fetch(`/api/projects/${projectId}/overview`)
+          if (overviewResponse.ok) {
+            const overview = await overviewResponse.json()
             
-            if (summary.financial.margin_percent < 5) {
-              newAlerts.push({
-                project_id: projectId,
-                project_name: summary.project.name,
-                job_number: summary.project.job_number,
-                alert_type: 'margin_warning',
-                message: `Margin at ${summary.financial.margin_percent.toFixed(1)}%`,
-                severity: 'error'
-              })
-            } else if (summary.financial.variance_at_completion < 0) {
-              newAlerts.push({
-                project_id: projectId,
-                project_name: summary.project.name,
-                job_number: summary.project.job_number,
+            // Check for margin warnings
+            if (overview.financialData?.uncommittedBudget) {
+              const { projectedMargin, baseMarginPercentage, marginHealth } = overview.financialData.uncommittedBudget
+              
+              if (marginHealth === 'critical') {
+                newAlerts.push({
+                  project_id: projectId,
+                  project_name: overview.project.name,
+                  job_number: overview.project.job_number,
+                  alert_type: 'margin_warning',
+                  message: `Margin at risk: ${projectedMargin.toFixed(1)}% (target: ${baseMarginPercentage}%)`,
+                  severity: 'error',
+                  action_needed: 'Review uncommitted budget'
+                })
+              }
+            }
+            
+            // Check for budget coverage risks
+            if (overview.financialData?.budgetRisks) {
+              const risks = overview.financialData.budgetRisks
+              
+              const criticalCategories = risks.categories?.filter((cat: any) => cat.riskLevel === 'critical') || []
+              if (criticalCategories.length > 0) {
+                newAlerts.push({
+                  project_id: projectId,
+                  project_name: overview.project.name,
+                  job_number: overview.project.job_number,
+                  alert_type: 'coverage_risk',
+                  message: `Low PO coverage in ${criticalCategories.map((c: any) => c.name).join(', ')}`,
+                  severity: 'error',
+                  action_needed: 'Create purchase orders',
+                  actionLink: `/purchase-orders/new?project=${projectId}`,
+                  actionLabel: 'Create PO'
+                })
+              }
+              
+              const warningCategories = risks.categories?.filter((cat: any) => cat.riskLevel === 'warning') || []
+              if (warningCategories.length > 0 && criticalCategories.length === 0) {
+                newAlerts.push({
+                  project_id: projectId,
+                  project_name: overview.project.name,
+                  job_number: overview.project.job_number,
+                  alert_type: 'coverage_risk',
+                  message: `Review coverage in ${warningCategories.map((c: any) => c.name).join(', ')}`,
+                  severity: 'warning',
+                  action_needed: 'Review uncommitted',
+                  actionLink: `/projects/${projectId}/overview`,
+                  actionLabel: 'View Details'
+                })
+              }
+            }
+            
+            // Legacy check for low margin
+            const summaryResponse = await fetch(`/api/projects/${projectId}/dashboard-summary`)
+            if (summaryResponse.ok) {
+              const summary = await summaryResponse.json()
+              
+              if (summary.financial?.variance_at_completion < 0) {
+                newAlerts.push({
+                  project_id: projectId,
+                  project_name: summary.project.name,
+                  job_number: summary.project.job_number,
                 alert_type: 'budget_overrun',
                 message: `Forecasted overrun: $${Math.abs(summary.financial.variance_at_completion).toLocaleString()}`,
                 severity: 'warning'
@@ -141,7 +192,7 @@ export function PMAlertBanner({ projectIds, onImportClick }: PMAlertBannerProps)
     <div className="space-y-2 mb-6">
       {errorAlerts.length > 0 && (
         <Alert variant="destructive" className="border-red-600">
-          <AlertCircle className="h-4 w-4" />
+          <CircleAlert className="h-4 w-4" />
           <AlertTitle className="flex items-center justify-between">
             <span>Action Required - {errorAlerts.length} Critical Issue{errorAlerts.length > 1 ? 's' : ''}</span>
             <Button
