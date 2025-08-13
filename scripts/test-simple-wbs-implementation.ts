@@ -35,7 +35,7 @@ const mockDiscipline: BudgetSheetDiscipline = {
 }
 
 // Expected WBS mapping
-const wbsMapping = {
+const wbsMapping: Record<string, { category: string; subcategory: string; description: string }> = {
   'L-001': { category: 'LABOR', subcategory: 'DIRECT', description: 'Direct Labor' },
   'L-002': { category: 'LABOR', subcategory: 'INDIRECT', description: 'Indirect Labor' },
   'L-003': { category: 'LABOR', subcategory: 'STAFF', description: 'Staff Labor' },

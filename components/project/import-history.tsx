@@ -52,9 +52,9 @@ export function ImportHistory({ projectId }: ImportHistoryProps) {
   // const getStatusIcon = (status: string) => {
   //   switch (status) {
   //     case 'success':
-  //       return <CheckCircle className="h-4 w-4 text-green-600" />
+  //       return <CircleCheck className="h-4 w-4 text-green-600" />
   //     case 'failed':
-  //       return <AlertCircle className="h-4 w-4 text-red-600" />
+  //       return <CircleAlert className="h-4 w-4 text-red-600" />
   //     case 'processing':
   //     case 'pending':
   //       return <Clock className="h-4 w-4 text-yellow-600" />

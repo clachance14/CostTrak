@@ -46,7 +46,7 @@ function testTuesdayWeekGeneration() {
   // Check if the forecast weeks would include the database dates
   console.log('\n📊 Checking if generated weeks include database dates:')
   const dbDates = ['2025-07-29', '2025-08-05', '2025-08-12', '2025-08-19']
-  const generatedWeeks = []
+  const generatedWeeks: string[] = []
   
   // Generate many weeks to see when we hit the database dates
   for (let i = 0; i < 80; i++) {

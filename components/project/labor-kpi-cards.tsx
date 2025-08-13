@@ -9,7 +9,7 @@ import {
   TrendingUp, 
   TrendingDown,
   AlertTriangle,
-  CheckCircle
+  CircleCheck
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -58,7 +58,7 @@ export function LaborKPICards({ kpis }: LaborKPICardsProps) {
   const getVarianceIcon = (variance: number) => {
     if (variance > 0) return <TrendingUp className="h-4 w-4" />
     if (variance < 0) return <TrendingDown className="h-4 w-4" />
-    return <CheckCircle className="h-4 w-4" />
+    return <CircleCheck className="h-4 w-4" />
   }
 
   const getVarianceColor = (variance: number) => {

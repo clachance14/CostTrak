@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Settings, Save, RotateCcw, AlertCircle, CheckCircle } from 'lucide-react'
+import { Settings, Save, RotateCcw, CircleAlert, CircleCheck } from 'lucide-react'
 
 interface ColumnMapping {
   [field: string]: number
@@ -435,7 +435,7 @@ export function SheetMappingEditor({ analysisResult, onMappingChange }: SheetMap
                                   }`}
                                 >
                                   Col {idx + 1}
-                                  {isMapped && <CheckCircle className="inline h-3 w-3 ml-1" />}
+                                  {isMapped && <CircleCheck className="inline h-3 w-3 ml-1" />}
                                 </th>
                               )
                             })}
@@ -459,7 +459,7 @@ export function SheetMappingEditor({ analysisResult, onMappingChange }: SheetMap
 
                 {!sheetData && (
                   <Alert>
-                    <AlertCircle className="h-4 w-4" />
+                    <CircleAlert className="h-4 w-4" />
                     <AlertDescription>
                       No data available for this sheet. It may be missing from the uploaded file.
                     </AlertDescription>

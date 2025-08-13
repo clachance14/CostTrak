@@ -4,7 +4,7 @@ import { useState, useRef, DragEvent } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Upload, FileSpreadsheet, X, Loader2, AlertCircle } from 'lucide-react'
+import { Upload, FileSpreadsheet, X, LoaderCircle, CircleAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface FileUploadZoneProps {
@@ -192,7 +192,7 @@ export function FileUploadZone({
               <div className="flex items-center gap-2">
                 {loading ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
                     Analyzing...
                   </div>
                 ) : (
@@ -230,7 +230,7 @@ export function FileUploadZone({
       
       {error && (
         <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
+          <CircleAlert className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}

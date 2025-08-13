@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Clock, CheckCircle, AlertTriangle } from 'lucide-react'
+import { Clock, CircleCheck, AlertTriangle } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
 
@@ -62,7 +62,7 @@ export function DataHealthStatus({
   const getStatusIcon = () => {
     switch (overallStatus) {
       case 'current':
-        return <CheckCircle className="h-4 w-4 text-green-600" />
+        return <CircleCheck className="h-4 w-4 text-green-600" />
       case 'warning':
         return <Clock className="h-4 w-4 text-yellow-600" />
       case 'stale':

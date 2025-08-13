@@ -157,6 +157,43 @@ export async function GET(
             }
           })
           
+          // Get per diem costs for this project
+          let perDiemQuery = supabase
+            .from('per_diem_costs')
+            .select('employee_type, amount')
+            .eq('project_id', projectId)
+          
+          if (divisionId) {
+            // If filtering by division, we need to join with labor_employee_actuals
+            perDiemQuery = supabase
+              .from('per_diem_costs')
+              .select(`
+                employee_type, 
+                amount,
+                labor_employee_actuals!inner(division_id)
+              `)
+              .eq('project_id', projectId)
+              .eq('labor_employee_actuals.division_id', divisionId)
+          }
+          
+          const { data: perDiemCosts } = await perDiemQuery
+          
+          // Add per diem costs to the appropriate labor categories
+          let directPerDiem = 0
+          let indirectPerDiem = 0
+          
+          perDiemCosts?.forEach(perDiem => {
+            if (perDiem.employee_type === 'Direct') {
+              directPerDiem += perDiem.amount || 0
+            } else if (perDiem.employee_type === 'Indirect') {
+              indirectPerDiem += perDiem.amount || 0
+            }
+          })
+          
+          // Add per diem to actuals
+          directActuals += directPerDiem
+          indirectActuals += indirectPerDiem
+          
           actuals = directActuals + indirectActuals + staffActuals
           committed = actuals // For labor, committed = actuals
 

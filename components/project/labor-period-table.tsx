@@ -131,7 +131,7 @@ export function LaborPeriodTable({ periodBreakdown, onDrillDown }: LaborPeriodTa
     return null
   }
 
-  // Filter data
+  // Funnel data
   let filteredData = periodBreakdown.map(period => {
     let filteredEmployees = period.employees
 
@@ -166,7 +166,7 @@ export function LaborPeriodTable({ periodBreakdown, onDrillDown }: LaborPeriodTa
     })
   }
 
-  // Filter out weeks with no employees after filtering
+  // Funnel out weeks with no employees after filtering
   filteredData = filteredData.filter(period => period.employees.length > 0 || period.totalForecastedHours > 0)
 
   // Get unique craft types for filter

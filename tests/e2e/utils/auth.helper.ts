@@ -30,7 +30,7 @@ export async function logout(page: Page) {
 export async function setupAuthState(page: Page, role: string = 'project_manager') {
   // This can be used to set up authentication state before tests
   // For now, we'll use regular login flow
-  const roleCredentials = {
+  const roleCredentials: Record<string, { email: string; password: string }> = {
     controller: {
       email: process.env.TEST_CONTROLLER_EMAIL || 'controller@ics.ac',
       password: process.env.TEST_CONTROLLER_PASSWORD || 'testpassword123'

@@ -5,7 +5,7 @@ console.log('=== Testing SuperClaude --c7 Alternative for WSL ===\n')
 
 // Simulate Context7 functionality using WebFetch
 async function fetchDocumentation(library: string, topic: string) {
-  const docSources = {
+  const docSources: Record<string, Record<string, string>> = {
     react: {
       useState: 'https://react.dev/reference/react/useState',
       useEffect: 'https://react.dev/reference/react/useEffect',

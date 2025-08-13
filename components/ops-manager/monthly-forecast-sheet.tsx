@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { formatCurrency } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Save, AlertCircle } from 'lucide-react'
+import { LoaderCircle, Save, CircleAlert } from 'lucide-react'
 
 interface ProjectForecast {
   projectId: string
@@ -179,7 +179,7 @@ export function MonthlyForecastSheet() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <LoaderCircle className="h-8 w-8 animate-spin" />
       </div>
     )
   }
@@ -205,7 +205,7 @@ export function MonthlyForecastSheet() {
           >
             {saving ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                 Saving...
               </>
             ) : (
@@ -219,7 +219,7 @@ export function MonthlyForecastSheet() {
         <CardContent>
           {error && (
             <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
+              <CircleAlert className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}

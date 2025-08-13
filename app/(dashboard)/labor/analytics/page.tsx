@@ -11,7 +11,7 @@ import {
   Clock, 
   TrendingUp, 
   Search, 
-  Loader2 
+  LoaderCircle 
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -432,7 +432,7 @@ export default function LaborAnalyticsDashboard() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-600" />
+          <LoaderCircle className="h-12 w-12 animate-spin mx-auto text-blue-600" />
           <p className="mt-4 text-foreground">Loading analytics...</p>
         </div>
       </div>

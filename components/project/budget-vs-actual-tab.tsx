@@ -4,8 +4,9 @@ import { useState, Fragment } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Card } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/utils'
-import { ChevronRight, ChevronDown, BarChart3, FolderTree } from 'lucide-react'
+import { ChevronRight, ChevronDown, BarChart3, FolderTree, DollarSign } from 'lucide-react'
 import { BudgetCategoryPOModal } from './budget-category-po-modal'
+import { BudgetPerDiemRow } from './budget-per-diem-row'
 // DivisionFilter removed - divisions no longer used
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -164,7 +165,7 @@ export function BudgetVsActualTab({ projectId, contractValue }: BudgetVsActualTa
         </div>
       )}
 
-      {/* Division Filter removed - no longer used */}
+      {/* Division Funnel removed - no longer used */}
 
       {/* Budget vs Actual Table */}
       <Card className="p-6">
@@ -306,6 +307,8 @@ export function BudgetVsActualTab({ projectId, contractValue }: BudgetVsActualTa
                   </Fragment>
                 )
               })}
+              {/* Add Per Diem row if enabled */}
+              <BudgetPerDiemRow projectId={projectId} />
             </tbody>
             <tfoot>
               <tr className="font-semibold">

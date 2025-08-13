@@ -34,7 +34,10 @@
       "Bash(curl:*)",
       "Bash(claude mcp add:*)",
       "mcp__agent-os__list_directory",
-      "mcp__agent-os__read_text_file"
+      "mcp__agent-os__read_text_file",
+      "Bash(for:*)",
+      "Bash(do sed -i 's/\\bFilter\\b/Funnel/g' \"$file\")",
+      "Bash(psql:*)"
     ],
     "deny": []
   }

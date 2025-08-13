@@ -3,7 +3,7 @@
 import { useState, useMemo, Fragment, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Badge } from '@/components/ui/badge'
-import { AlertTriangle, Settings, ChevronsUpDown, ChevronUp, ChevronDown, ChevronRight, Loader2, Check, X } from 'lucide-react'
+import { AlertTriangle, Settings, ChevronsUpDown, ChevronUp, ChevronDown, ChevronRight, LoaderCircle, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ExcelFilterDropdown } from '@/components/ui/excel-filter-dropdown'
@@ -227,7 +227,7 @@ function MobileExpandableCard({ purchaseOrderId, children }: { purchaseOrderId: 
         <div className="ml-4 p-4 bg-gray-50 rounded-lg border border-gray-200 animate-in fade-in slide-in-from-top-1">
           {isLoading ? (
             <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-5 w-5 animate-spin text-gray-600" />
+              <LoaderCircle className="h-5 w-5 animate-spin text-gray-600" />
               <span className="ml-2 text-gray-600">Loading invoices...</span>
             </div>
           ) : error ? (
@@ -503,7 +503,7 @@ export function POLogTable({ purchaseOrders: purchaseOrdersProp, className, proj
 
   return (
     <div className={cn('space-y-4', className)}>
-      {/* Filter Controls */}
+      {/* Funnel Controls */}
       {activeFiltersCount > 0 && (
         <div className="flex justify-end mb-4">
           <Button

@@ -1,0 +1,201 @@
+{
+  "audit_date": "2025-08-10",
+  "total_opportunities": 10,
+  "total_value_score": 645,
+  "opportunities": [
+    {
+      "id": "OPP-001",
+      "title": "Fix Dashboard Total Contract Value",
+      "page": "/dashboard",
+      "description": "Dashboard shows $4.19M but should show $2.11M based on active project revised contracts",
+      "evidence": {
+        "ui_value": "$4,190,721",
+        "db_value": "$2,112,575",
+        "discrepancy": "$2,078,146"
+      },
+      "proposed_fix": "Update dashboard query to: SELECT SUM(revised_contract) FROM projects WHERE status = 'active'",
+      "reach": 5,
+      "impact": 5,
+      "confidence": 1.0,
+      "effort": 1,
+      "risk_type": "financial_reporting",
+      "value_score": 90,
+      "priority": "CRITICAL"
+    },
+    {
+      "id": "OPP-002",
+      "title": "Implement EFC Calculations",
+      "page": "/dashboard, /projects/*",
+      "description": "Estimated Final Cost shows $2.43M in UI but all database EFC values are $0",
+      "evidence": {
+        "ui_value": "$2,428,475",
+        "db_value": "$0",
+        "affected_projects": 6
+      },
+      "proposed_fix": "Create database trigger to calculate: estimated_final_cost = actual_cost_to_date + cost_to_complete on any cost update",
+      "reach": 5,
+      "impact": 5,
+      "confidence": 0.9,
+      "effort": 2,
+      "risk_type": "project_tracking",
+      "value_score": 85,
+      "priority": "CRITICAL"
+    },
+    {
+      "id": "OPP-003",
+      "title": "Fix Margin Calculations",
+      "page": "/dashboard",
+      "description": "Company margin shows 42.1% but all projects have 0% margin in database",
+      "evidence": {
+        "ui_value": "42.1%",
+        "db_value": "0%",
+        "calculation": "(revenue - cost) / revenue * 100"
+      },
+      "proposed_fix": "Implement margin calculation: margin_percent = (revised_contract - estimated_final_cost) / revised_contract * 100",
+      "reach": 5,
+      "impact": 5,
+      "confidence": 0.9,
+      "effort": 2,
+      "risk_type": "profitability",
+      "value_score": 80,
+      "priority": "CRITICAL"
+    },
+    {
+      "id": "OPP-004",
+      "title": "Fix Labor Analytics Page",
+      "page": "/labor/analytics",
+      "description": "Page loads but displays no data despite labor records in database",
+      "evidence": {
+        "captured_values": 0,
+        "db_records": "multiple",
+        "error": "likely query failure"
+      },
+      "proposed_fix": "Debug labor analytics queries, ensure proper joins between labor_employee_actuals and projects",
+      "reach": 4,
+      "impact": 5,
+      "confidence": 0.8,
+      "effort": 3,
+      "risk_type": "labor_tracking",
+      "value_score": 75,
+      "priority": "HIGH"
+    },
+    {
+      "id": "OPP-005",
+      "title": "Display Change Orders",
+      "page": "/change-orders",
+      "description": "Change orders page shows no data but records exist in database",
+      "evidence": {
+        "ui_display": "empty",
+        "db_count": ">0",
+        "impact": "contract modifications not visible"
+      },
+      "proposed_fix": "Fix change orders list query, ensure proper project filtering and status checks",
+      "reach": 4,
+      "impact": 4,
+      "confidence": 0.9,
+      "effort": 2,
+      "risk_type": "contract_management",
+      "value_score": 70,
+      "priority": "HIGH"
+    },
+    {
+      "id": "OPP-006",
+      "title": "Complete Project Rollups",
+      "page": "/projects/[id]",
+      "description": "Project detail pages missing financial rollup values that exist in database",
+      "evidence": {
+        "missing_values": ["labor_budget", "po_total", "actual_cost"],
+        "db_fields": "populated"
+      },
+      "proposed_fix": "Add comprehensive project summary query with all financial rollups displayed in UI cards",
+      "reach": 4,
+      "impact": 4,
+      "confidence": 0.85,
+      "effort": 3,
+      "risk_type": "project_visibility",
+      "value_score": 65,
+      "priority": "HIGH"
+    },
+    {
+      "id": "OPP-007",
+      "title": "Implement Labor Forecasts",
+      "page": "/labor/forecasts",
+      "description": "Labor forecasts page non-functional, shows no data",
+      "evidence": {
+        "ui_state": "empty",
+        "feature_status": "incomplete"
+      },
+      "proposed_fix": "Complete implementation of labor forecasting feature with headcount projections",
+      "reach": 3,
+      "impact": 4,
+      "confidence": 0.7,
+      "effort": 5,
+      "risk_type": "resource_planning",
+      "value_score": 60,
+      "priority": "MEDIUM"
+    },
+    {
+      "id": "OPP-008",
+      "title": "Add Data Labels",
+      "page": "all",
+      "description": "60% of numerical values have no descriptive labels",
+      "evidence": {
+        "unlabeled_count": 323,
+        "total_values": 538
+      },
+      "proposed_fix": "Add aria-label and visible text labels to all numerical displays",
+      "reach": 5,
+      "impact": 3,
+      "confidence": 1.0,
+      "effort": 2,
+      "risk_type": "usability",
+      "value_score": 50,
+      "priority": "MEDIUM"
+    },
+    {
+      "id": "OPP-009",
+      "title": "Add Test IDs",
+      "page": "all",
+      "description": "95% of elements lack data-testid attributes for automation",
+      "evidence": {
+        "elements_without_testid": "95%",
+        "automation_blocked": true
+      },
+      "proposed_fix": "Add data-testid to all data elements and interactive components",
+      "reach": 3,
+      "impact": 3,
+      "confidence": 1.0,
+      "effort": 3,
+      "risk_type": "quality_assurance",
+      "value_score": 45,
+      "priority": "LOW"
+    },
+    {
+      "id": "OPP-010",
+      "title": "Optimize Slow Queries",
+      "page": "/projects/S1601-0080682",
+      "description": "Some project pages timeout on load",
+      "evidence": {
+        "timeout_duration": "30s",
+        "affected_projects": ["S1601-0080682"]
+      },
+      "proposed_fix": "Add database indexes, optimize joins, implement pagination for large datasets",
+      "reach": 2,
+      "impact": 4,
+      "confidence": 0.8,
+      "effort": 4,
+      "risk_type": "performance",
+      "value_score": 40,
+      "priority": "LOW"
+    }
+  ],
+  "summary": {
+    "critical_issues": 3,
+    "high_priority": 3,
+    "medium_priority": 2,
+    "low_priority": 2,
+    "total_effort_hours": 28,
+    "quick_wins": ["OPP-001", "OPP-005", "OPP-008"],
+    "highest_roi": ["OPP-001", "OPP-002", "OPP-003"]
+  }
+}

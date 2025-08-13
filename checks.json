@@ -1,0 +1,111 @@
+[
+  {
+    "page": "Dashboard",
+    "element": "Total Contract Value",
+    "ui_value": "$4,190,721",
+    "ui_normalized": 4190721,
+    "db_value": 2112575.20,
+    "delta": 2078145.80,
+    "status": "FAIL",
+    "sql_query": "SELECT SUM(p.revised_contract) as total_revised FROM projects p WHERE p.status = 'active'",
+    "issue": "UI showing wrong total - may be including inactive projects or using original_contract"
+  },
+  {
+    "page": "Dashboard",
+    "element": "Forecasted Final Cost",
+    "ui_value": "$2,428,475",
+    "ui_normalized": 2428475,
+    "db_value": 0,
+    "delta": 2428475,
+    "status": "FAIL",
+    "sql_query": "SELECT SUM(estimated_final_cost) as forecasted_final_cost FROM projects WHERE status = 'active'",
+    "issue": "Database EFC fields all zero - calculation not running"
+  },
+  {
+    "page": "Dashboard",
+    "element": "Company Margin",
+    "ui_value": "42.1%",
+    "ui_normalized": 42.1,
+    "db_value": 0,
+    "delta": 42.1,
+    "status": "FAIL",
+    "sql_query": "SELECT AVG(margin_percent) as avg_margin FROM projects WHERE status = 'active'",
+    "issue": "Margin calculation not working - all projects show 0% margin"
+  },
+  {
+    "page": "Dashboard",
+    "element": "Project 5772 Contract",
+    "ui_value": "$1,146,635",
+    "ui_normalized": 1146635,
+    "db_value": 1146635.25,
+    "delta": 0.25,
+    "status": "PASS",
+    "sql_query": "SELECT revised_contract FROM projects WHERE job_number = '5772'"
+  },
+  {
+    "page": "Projects List",
+    "element": "S1601-0073913 - Revised Contract",
+    "ui_value": "$665,353",
+    "ui_normalized": 665353,
+    "db_value": 0,
+    "delta": 665353,
+    "status": "FAIL",
+    "sql_query": "SELECT revised_contract FROM projects WHERE job_number = 'S1601-0073913'",
+    "issue": "Project shows $0 revised contract but UI shows value"
+  },
+  {
+    "page": "Purchase Orders",
+    "element": "Total PO Count",
+    "ui_value": "153 items",
+    "ui_normalized": 153,
+    "db_value": 248,
+    "delta": 95,
+    "status": "FAIL",
+    "sql_query": "SELECT COUNT(DISTINCT pol.id) FROM po_line_items pol",
+    "issue": "UI showing different count than database"
+  },
+  {
+    "page": "Project S1601-0073913",
+    "element": "Labor Budget",
+    "ui_value": "NOT FOUND",
+    "ui_normalized": 0,
+    "db_value": 163238.14,
+    "delta": 163238.14,
+    "status": "FAIL",
+    "sql_query": "SELECT total_labor_budget FROM projects WHERE job_number = 'S1601-0073913'",
+    "issue": "Labor budget exists in DB but not displayed in UI"
+  },
+  {
+    "page": "Labor Analytics",
+    "element": "Page Data",
+    "ui_value": "NO DATA",
+    "ui_normalized": 0,
+    "db_value": "EXISTS",
+    "delta": null,
+    "status": "FAIL",
+    "sql_query": "SELECT COUNT(*) FROM labor_employee_actuals",
+    "issue": "Page displays no data despite labor records in database"
+  },
+  {
+    "page": "Labor Forecasts",
+    "element": "Page Data",
+    "ui_value": "NO DATA",
+    "ui_normalized": 0,
+    "db_value": "EXISTS",
+    "delta": null,
+    "status": "FAIL",
+    "sql_query": "SELECT COUNT(*) FROM labor_headcount_forecasts",
+    "issue": "Forecast page empty - feature may not be implemented"
+  },
+  {
+    "page": "Change Orders",
+    "element": "Page Data",
+    "ui_value": "NO DATA",
+    "ui_normalized": 0,
+    "db_value": "EXISTS",
+    "delta": null,
+    "status": "FAIL",
+    "sql_query": "SELECT COUNT(*) FROM change_orders",
+    "issue": "Change orders exist but page shows none"
+  }
+]

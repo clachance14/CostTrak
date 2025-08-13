@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronRight, Loader2 } from 'lucide-react'
+import { ChevronRight, LoaderCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 
@@ -74,7 +74,7 @@ export function ExpandableRow({ purchaseOrderId, children, onExpand, colSpan = 1
             <div className="bg-background border-t border-b border-foreground/20 animate-in fade-in slide-in-from-top-1">
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-foreground/70" />
+                  <LoaderCircle className="h-6 w-6 animate-spin text-foreground/70" />
                   <span className="ml-2 text-foreground/70">Loading invoices...</span>
                 </div>
               ) : error ? (

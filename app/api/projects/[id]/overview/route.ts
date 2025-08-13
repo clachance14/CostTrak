@@ -62,10 +62,18 @@ export async function GET(
       .select('st_wages, ot_wages, total_hours, total_cost_with_burden, employees!inner(category)')
       .eq('project_id', projectId)
 
-    // Calculate total actual labor cost (using burdened costs)
-    const totalLaborCost = laborActuals?.reduce((sum, la) => {
+    // Get per diem costs
+    const { data: perDiemCosts } = await supabase
+      .from('per_diem_costs')
+      .select('amount')
+      .eq('project_id', projectId)
+    
+    const totalPerDiemCost = perDiemCosts?.reduce((sum, pd) => sum + (pd.amount || 0), 0) || 0
+
+    // Calculate total actual labor cost (using burdened costs + per diem)
+    const totalLaborCost = (laborActuals?.reduce((sum, la) => {
       return sum + (la.total_cost_with_burden || (la.st_wages || 0) + (la.ot_wages || 0) + ((la.st_wages || 0) * 0.28))
-    }, 0) || 0
+    }, 0) || 0) + totalPerDiemCost
     
     // Calculate total actual labor hours
     const totalLaborHours = laborActuals?.reduce((sum, la) => sum + (la.total_hours || 0), 0) || 0
@@ -124,9 +132,18 @@ export async function GET(
 
     // Calculate financial metrics
     const revisedContract = (project.original_contract || 0) + changeOrdersTotal
-    const totalCommitted = totalPOAmount + totalLaborCost
-    const commitmentPercentage = revisedContract > 0 ? (totalCommitted / revisedContract) * 100 : 0
-    const remainingBudget = revisedContract - totalCommitted
+    
+    // Calculate actual costs vs committed costs
+    const totalActualCosts = totalLaborCost + totalInvoicedAmount  // Actual spent
+    const totalCommitted = totalPOAmount + totalLaborCost  // Committed (POs + labor actual)
+    
+    // CRITICAL: Ensure forecasted final never less than actual spent
+    const forecastedFinalCost = Math.max(totalCommitted, totalActualCosts)
+    
+    const commitmentPercentage = revisedContract > 0 ? (forecastedFinalCost / revisedContract) * 100 : 0
+    
+    // CRITICAL FIX: Remaining budget based on actual costs spent, not committed
+    const remainingBudget = revisedContract - totalActualCosts
     
     // Calculate uncommitted budget and margin analysis
     const totalBudget = revisedContract
@@ -214,9 +231,9 @@ export async function GET(
       actualsByMonth.set(monthKey, (actualsByMonth.get(monthKey) || 0) + cost)
     })
     
-    // Calculate projections based on method
-    if (spendPercentage < 25) {
-      // Phase 1: Margin-based projection
+    // Calculate projections based on method (20% threshold)
+    if (spendPercentage < 20) {
+      // Phase 1: Margin-based projection (under 20% spent)
       const projectedTotal = totalBudget * (1 - baseMarginPercentage / 100)
       const monthlyProjected = projectedTotal / projectDurationMonths
       
@@ -238,32 +255,28 @@ export async function GET(
         })
       }
       
+      // For forecasted final cost when under 20%: use margin-based calculation
       var projectionSummary = {
         totalBudget,
-        currentSpend: totalLaborCost,
-        projectedFinalCost: projectedTotal,
+        currentSpend: totalCommitted,  // Use total committed not just labor
+        projectedFinalCost: projectedTotal,  // This is budget * (1 - margin%)
         projectedMargin: baseMarginPercentage,
         projectedVariance: totalBudget - projectedTotal,
         confidenceLevel: 'Estimated based on target margin'
       }
       
       var transitionPoint = {
-        date: format(new Date(projectStartDate.getTime() + (projectDurationMonths * 0.25 * 30 * 24 * 60 * 60 * 1000)), 'MMM yyyy'),
-        spendAmount: projectedTotal * 0.25,
-        message: `Will switch to data-driven projections after reaching 25% spend (${formatCurrency(projectedTotal * 0.25)})`
+        date: format(new Date(projectStartDate.getTime() + (projectDurationMonths * 0.2 * 30 * 24 * 60 * 60 * 1000)), 'MMM yyyy'),
+        spendAmount: totalBudget * 0.2,
+        message: `Will switch to committed-based projections after reaching 20% spend (${formatCurrency(totalBudget * 0.2)})`
       }
     } else {
-      // Phase 2: Data-driven projection
-      const actualMonthlyRate = totalLaborCost / Math.max(monthsElapsed, 1)
-      const remainingMonths = projectDurationMonths - monthsElapsed
-      const projectedRemaining = actualMonthlyRate * remainingMonths
-      const projectedTotal = totalLaborCost + projectedRemaining
+      // Phase 2: Use total committed value (over 20% spent)
+      // For forecasted final cost when over 20%: use total committed
+      const projectedTotal = totalCommitted  // Simply use total committed value
       
-      // Calculate variance for confidence intervals
-      const monthlyActualValues = Array.from(actualsByMonth.values())
-      const avgMonthly = monthlyActualValues.reduce((a, b) => a + b, 0) / monthlyActualValues.length
-      const variance = monthlyActualValues.reduce((sum, val) => sum + Math.pow(val - avgMonthly, 2), 0) / monthlyActualValues.length
-      const stdDev = Math.sqrt(variance)
+      // For visualization, still show monthly projection but final cost is total committed
+      const actualMonthlyRate = totalCommitted / Math.max(monthsElapsed, 1)
       
       for (let i = 0; i < projectDurationMonths; i++) {
         const monthDate = new Date(projectStartDate)
@@ -277,27 +290,28 @@ export async function GET(
           cumulativeActual += actualCost
           cumulativeProjected = cumulativeActual
         } else {
-          cumulativeProjected += actualMonthlyRate
+          // For future months, project based on committed value spread over project duration
+          const remainingMonths = projectDurationMonths - i
+          const remainingCommitted = projectedTotal - cumulativeProjected
+          cumulativeProjected += (remainingCommitted / Math.max(remainingMonths, 1))
         }
         
         projectionData.push({
           month: monthKey,
           actual: isActual ? cumulativeActual : undefined,
-          projected: cumulativeProjected,
-          upperBound: cumulativeProjected + (stdDev * 2),
-          lowerBound: Math.max(cumulativeProjected - (stdDev * 2), 0),
+          projected: Math.min(cumulativeProjected, projectedTotal),  // Cap at total committed
           method: 'data-driven',
-          confidence: stdDev < avgMonthly * 0.1 ? 'high' : stdDev < avgMonthly * 0.2 ? 'medium' : 'low'
+          confidence: 'committed'
         })
       }
       
       var projectionSummary = {
         totalBudget,
-        currentSpend: totalLaborCost,
-        projectedFinalCost: projectedTotal,
+        currentSpend: totalCommitted,  // Current spend is total committed
+        projectedFinalCost: projectedTotal,  // This is total committed value
         projectedMargin: ((totalBudget - projectedTotal) / totalBudget) * 100,
         projectedVariance: totalBudget - projectedTotal,
-        confidenceLevel: 'Data-driven forecast'
+        confidenceLevel: 'Based on committed values'
       }
       
       var transitionPoint = null
@@ -337,7 +351,7 @@ export async function GET(
       let riskLevel: 'critical' | 'warning' | 'healthy' = 'healthy'
       let recommendedAction: string | undefined
       
-      if (spendPercentage < 25) {
+      if (spendPercentage < 20) {
         // Early stage - use margin-based thresholds
         const expectedCommitment = category.expectedSpend * (projectTimeElapsed / 100)
         if (category.committed > category.expectedSpend) {
@@ -406,7 +420,7 @@ export async function GET(
       baseMargin: baseMarginPercentage,
       projectedMargin,
       marginAtRisk: marginHealth !== 'on-target',
-      assessmentMethod: spendPercentage < 25 ? 'margin-based' : 'data-driven',
+      assessmentMethod: spendPercentage < 20 ? 'margin-based' : 'committed-based',
       categories: budgetRiskCategories,
       alerts: budgetAlerts
     }
@@ -743,7 +757,9 @@ export async function GET(
         pendingChangeOrdersTotal,
         pendingChangeOrdersCount,
         revisedContract,
-        totalCommitted,
+        totalActualCosts,  // NEW: Actual costs spent
+        totalCommitted,    // Committed amounts
+        forecastedFinalCost,  // NEW: Max of committed and actual
         commitmentPercentage,
         laborCosts: totalLaborCost,
         laborBudget,
@@ -772,7 +788,7 @@ export async function GET(
         // New projection data
         projections: {
           currentSpendPercentage: spendPercentage,
-          projectionMethod: spendPercentage < 25 ? 'margin-based' : 'data-driven',
+          projectionMethod: spendPercentage < 20 ? 'margin-based' : 'data-driven',
           baseMargin: baseMarginPercentage,
           projections: projectionData,
           summary: projectionSummary,

@@ -19,7 +19,7 @@ import {
   FileSpreadsheet,
   Image as FileImage,
   File,
-  Loader2
+  LoaderCircle
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from '@/hooks/use-toast'
@@ -222,7 +222,7 @@ export function DocumentList({ entityType, entityId }: DocumentListProps) {
                       disabled={downloadingId === doc.id}
                     >
                       {downloadingId === doc.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
                       ) : (
                         <Download className="h-4 w-4" />
                       )}

@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { FileSpreadsheet, AlertCircle, CheckCircle, XCircle, Users, Package, Wrench, FileText, DollarSign } from 'lucide-react'
+import { FileSpreadsheet, CircleAlert, CircleCheck, XCircle, Users, Package, Wrench, FileText, DollarSign } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
 import { formatCurrency } from '@/lib/utils'
 
@@ -99,7 +99,7 @@ export function RawDataViewer({ analysisResult }: RawDataViewerProps) {
             {validation.warnings.length > 0 && (
               <div>
                 <h4 className="font-medium mb-2 flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <CircleAlert className="h-4 w-4 text-amber-600" />
                   Warnings ({validation.warnings.length})
                 </h4>
                 <div className="space-y-1">
@@ -115,7 +115,7 @@ export function RawDataViewer({ analysisResult }: RawDataViewerProps) {
             {validation.info?.length > 0 && (
               <div>
                 <h4 className="font-medium mb-2 flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-blue-600" />
+                  <CircleCheck className="h-4 w-4 text-blue-600" />
                   Information ({validation.info.length})
                 </h4>
                 <div className="space-y-1">
@@ -208,7 +208,7 @@ export function RawDataViewer({ analysisResult }: RawDataViewerProps) {
                           <Badge key={field} variant="outline">
                             {field}: "{info.headerText}" (col {info.index + 1})
                             {info.confidence >= 0.8 && (
-                              <CheckCircle className="h-3 w-3 ml-1 text-green-600" />
+                              <CircleCheck className="h-3 w-3 ml-1 text-green-600" />
                             )}
                           </Badge>
                         ))}
@@ -417,7 +417,7 @@ export function RawDataViewer({ analysisResult }: RawDataViewerProps) {
                 if (disciplines.length === 0) {
                   return (
                     <Alert>
-                      <AlertCircle className="h-4 w-4" />
+                      <CircleAlert className="h-4 w-4" />
                       <AlertDescription>
                         No discipline data available. Upload a file with BUDGETS sheet to see discipline breakdown.
                       </AlertDescription>
@@ -511,7 +511,7 @@ export function RawDataViewer({ analysisResult }: RawDataViewerProps) {
                 if (disciplines.length === 0) {
                   return (
                     <Alert>
-                      <AlertCircle className="h-4 w-4" />
+                      <CircleAlert className="h-4 w-4" />
                       <AlertDescription>
                         No cost type data available. Upload a file with BUDGETS sheet to see cost type breakdown.
                       </AlertDescription>

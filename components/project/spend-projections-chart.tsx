@@ -192,7 +192,7 @@ export function SpendProjectionsChart({
                   stroke="#f59e0b"
                   strokeDasharray="3 3"
                   label={{
-                    value: "25% Threshold",
+                    value: "20% Threshold",
                     position: "top",
                     className: "text-xs fill-amber-600"
                   }}
@@ -264,15 +264,15 @@ export function SpendProjectionsChart({
                 <p className="font-medium">Margin-Based Projection</p>
                 <p className="text-xs mt-1">
                   Using {formatPercentage(baseMargin || 15)} target margin for linear projection.
-                  Will switch to data-driven forecasting after 25% spend.
+                  Will switch to committed-based forecasting after 20% spend.
                 </p>
               </>
             ) : (
               <>
-                <p className="font-medium">Data-Driven Projection</p>
+                <p className="font-medium">Committed-Based Projection</p>
                 <p className="text-xs mt-1">
-                  Using actual burn rate and historical patterns for projection.
-                  Confidence intervals based on variance in actual data.
+                  Using total committed values (POs + Labor) for projection.
+                  Final cost equals current commitments.
                 </p>
               </>
             )}
@@ -280,7 +280,7 @@ export function SpendProjectionsChart({
         </div>
 
         {/* Transition Point Notice */}
-        {transitionPoint && currentSpendPercentage < 25 && (
+        {transitionPoint && currentSpendPercentage < 20 && (
           <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg">
             <Info className="h-4 w-4 text-amber-600 mt-0.5" />
             <div className="text-sm text-amber-900">

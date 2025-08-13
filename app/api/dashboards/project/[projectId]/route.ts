@@ -108,32 +108,65 @@ export async function GET(
       ?.filter(co => co.status === 'approved')
       .reduce((sum, co) => sum + (co.amount || 0), 0) || 0
 
-    // Get labor actuals (if any exist)
+    // Get labor actuals from employee actuals (includes burden)
     const { data: laborData, error: laborError } = await supabase
-      .from('labor_actuals')
-      .select('craft_type_id, actual_hours, actual_cost')
+      .from('labor_employee_actuals')
+      .select('total_hours, total_cost_with_burden, employees!inner(category)')
       .eq('project_id', projectId)
 
     if (laborError) {
       console.log('Labor actuals error:', laborError)
     }
 
-    const laborSummary = laborData?.reduce((acc, labor) => ({
-      totalActualHours: acc.totalActualHours + (labor.actual_hours || 0),
-      totalActualCost: acc.totalActualCost + (labor.actual_cost || 0),
-      totalForecastedHours: 0, // TODO: Get from labor_headcount_forecasts
-      totalForecastedCost: 0 // TODO: Get from labor_headcount_forecasts
-    }), {
-      totalActualHours: 0,
-      totalActualCost: 0,
-      totalForecastedHours: 0,
-      totalForecastedCost: 0
-    }) || {
-      totalActualHours: 0,
-      totalActualCost: 0,
-      totalForecastedHours: 0,
-      totalForecastedCost: 0
+    // Get per diem costs
+    const { data: perDiemData, error: perDiemError } = await supabase
+      .from('per_diem_costs')
+      .select('amount, employee_type')
+      .eq('project_id', projectId)
+
+    if (perDiemError) {
+      console.log('Per diem error:', perDiemError)
     }
+
+    // Calculate labor costs including per diem
+    const laborSummary = {
+      totalActualHours: 0,
+      totalActualCost: 0,
+      totalForecastedHours: 0,
+      totalForecastedCost: 0,
+      directLaborCost: 0,
+      indirectLaborCost: 0,
+      directPerDiem: 0,
+      indirectPerDiem: 0
+    }
+
+    // Add labor actuals
+    laborData?.forEach(labor => {
+      laborSummary.totalActualHours += labor.total_hours || 0
+      const cost = labor.total_cost_with_burden || 0
+      laborSummary.totalActualCost += cost
+      
+      const category = labor.employees?.category?.toLowerCase() || 'direct'
+      if (category === 'indirect') {
+        laborSummary.indirectLaborCost += cost
+      } else {
+        laborSummary.directLaborCost += cost
+      }
+    })
+
+    // Add per diem costs
+    perDiemData?.forEach(perDiem => {
+      const amount = perDiem.amount || 0
+      laborSummary.totalActualCost += amount
+      
+      if (perDiem.employee_type === 'Direct') {
+        laborSummary.directPerDiem += amount
+        laborSummary.directLaborCost += amount
+      } else if (perDiem.employee_type === 'Indirect') {
+        laborSummary.indirectPerDiem += amount
+        laborSummary.indirectLaborCost += amount
+      }
+    })
 
     // Calculate financial metrics
     const originalContract = project.original_contract || 0
@@ -229,6 +262,15 @@ export async function GET(
           })) || []
         },
         laborForecast: laborSummary,
+        labor: {
+          totalActualHours: laborSummary.totalActualHours,
+          totalActualCost: laborSummary.totalActualCost,
+          directLaborCost: laborSummary.directLaborCost,
+          indirectLaborCost: laborSummary.indirectLaborCost,
+          directPerDiem: laborSummary.directPerDiem,
+          indirectPerDiem: laborSummary.indirectPerDiem,
+          totalPerDiem: laborSummary.directPerDiem + laborSummary.indirectPerDiem
+        },
         recentActivity: auditLogs?.map(log => ({
           action: log.action,
           entityType: log.entity_type,

@@ -70,7 +70,7 @@ export function PhaseAllocationsTable({ allocations }: PhaseAllocationsTableProp
     return sorted
   }, [allocations])
 
-  // Filter allocations based on search
+  // Funnel allocations based on search
   const filteredPhaseData = useMemo(() => {
     if (!searchTerm && showZeroFTE) return phaseData
     

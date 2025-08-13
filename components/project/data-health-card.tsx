@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AlertCircle, Clock, CheckCircle, Upload, RefreshCw } from 'lucide-react'
+import { CircleAlert, Clock, CircleCheck, Upload, RefreshCw } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 interface DataHealthCardProps {
@@ -21,13 +21,13 @@ export function DataHealthCard({ dataHealth, onImportClick, onRefreshClick }: Da
   const getStatusIcon = () => {
     switch (dataHealth.status) {
       case 'current':
-        return <CheckCircle className="h-5 w-5 text-green-600" />
+        return <CircleCheck className="h-5 w-5 text-green-600" />
       case 'stale':
         return <Clock className="h-5 w-5 text-yellow-600" />
       case 'missing':
-        return <AlertCircle className="h-5 w-5 text-red-600" />
+        return <CircleAlert className="h-5 w-5 text-red-600" />
       default:
-        return <AlertCircle className="h-5 w-5 text-gray-400" />
+        return <CircleAlert className="h-5 w-5 text-gray-400" />
     }
   }
 

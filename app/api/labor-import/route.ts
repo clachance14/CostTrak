@@ -467,7 +467,7 @@ export async function POST(request: NextRequest) {
     )
     
     // Arrays to collect batch operations
-    const newEmployeesToCreate: any[] = []
+    const newEmployeesToCreate = new Map<string, any>() // Use Map to prevent duplicates
     const laborRecordsToUpsert: any[] = []
     const craftCodeWarnings: string[] = []
     
@@ -557,29 +557,34 @@ export async function POST(request: NextRequest) {
             continue
           }
           
-          console.log(`Creating new employee: ${employeeIdCell} - ${employeeName}`)
-          
-          // Parse employee name with enhanced suffix handling
-          const { firstName, lastName } = parseEmployeeName(employeeName)
-          
-          // Infer category from craft code if present
-          if (craftCode) {
-            employeeCategory = inferCategoryFromCraftCode(craftCode)
+          // Only add employee if not already in the map (prevent duplicates)
+          if (!newEmployeesToCreate.has(employeeIdCell)) {
+            console.log(`Creating new employee: ${employeeIdCell} - ${employeeName}`)
+            
+            // Parse employee name with enhanced suffix handling
+            const { firstName, lastName } = parseEmployeeName(employeeName)
+            
+            // Infer category from craft code if present
+            if (craftCode) {
+              employeeCategory = inferCategoryFromCraftCode(craftCode)
+            }
+            
+            const newEmployee = {
+              employee_number: employeeIdCell,
+              first_name: firstName,
+              last_name: lastName,
+              craft_type_id: categoryToCraftTypeId[employeeCategory],
+              base_rate: 0, // Always 0 for new employees per requirements
+              category: employeeCategory.charAt(0).toUpperCase() + employeeCategory.slice(1), // Capitalize
+              is_direct: employeeCategory === 'direct',
+              is_active: true
+            }
+            
+            newEmployeesToCreate.set(employeeIdCell, newEmployee)
+            newEmployeesCreated++
+          } else {
+            console.log(`Skipping duplicate employee: ${employeeIdCell} - already queued for creation`)
           }
-          
-          const newEmployee = {
-            employee_number: employeeIdCell,
-            first_name: firstName,
-            last_name: lastName,
-            craft_type_id: categoryToCraftTypeId[employeeCategory],
-            base_rate: 0, // Always 0 for new employees per requirements
-            category: employeeCategory.charAt(0).toUpperCase() + employeeCategory.slice(1), // Capitalize
-            is_direct: employeeCategory === 'direct',
-            is_active: true
-          }
-          
-          newEmployeesToCreate.push(newEmployee)
-          newEmployeesCreated++
           
           // Skip wage calculations since base_rate is 0
           zeroRateEmployees++
@@ -633,17 +638,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Batch create new employees if any
-    if (newEmployeesToCreate.length > 0) {
+    if (newEmployeesToCreate.size > 0) {
+      const employeesToInsert = Array.from(newEmployeesToCreate.values())
       const { data: createdEmployees, error: createError } = await adminSupabase
         .from('employees')
-        .insert(newEmployeesToCreate)
+        .insert(employeesToInsert)
         .select('id, employee_number, base_rate, category')
       
       if (createError) {
         console.error('Failed to create employees:', createError)
         result.errors.push({
           row: 0,
-          message: `Failed to create ${newEmployeesToCreate.length} employees: ${createError.message}`
+          message: `Failed to create ${newEmployeesToCreate.size} employees: ${createError.message}`
         })
       } else if (createdEmployees) {
         // Add created employees to our map
@@ -901,6 +907,34 @@ export async function POST(request: NextRequest) {
     // Set success based on whether we processed data without critical errors
     result.success = (result.imported > 0 || result.updated > 0) && result.errors.length === 0
 
+    // Check if per diem is enabled for this project
+    let perDiemInfo = null
+    if (result.imported > 0 || result.updated > 0) {
+      const { data: projectPerDiem } = await adminSupabase
+        .from('projects')
+        .select('per_diem_enabled, per_diem_rate_direct, per_diem_rate_indirect')
+        .eq('id', project.id)
+        .single()
+      
+      if (projectPerDiem?.per_diem_enabled) {
+        // Count how many per diem records would be created
+        const { count: perDiemCount } = await adminSupabase
+          .from('per_diem_costs')
+          .select('*', { count: 'exact', head: true })
+          .eq('project_id', project.id)
+          .gte('work_date', weekEndingISO)
+          .lte('work_date', weekEndingISO)
+        
+        perDiemInfo = {
+          enabled: true,
+          directRate: projectPerDiem.per_diem_rate_direct,
+          indirectRate: projectPerDiem.per_diem_rate_indirect,
+          recordsCreated: perDiemCount || 0,
+          message: 'Per diem costs have been automatically calculated based on worked days'
+        }
+      }
+    }
+
     // Create data_imports record to trigger project.last_labor_import_at update
     if (result.success || (result.errors.length > 0 && (result.imported > 0 || result.updated > 0))) {
       try {
@@ -957,6 +991,11 @@ export async function POST(request: NextRequest) {
       } catch (importTrackingError) {
         console.error('Error creating data_imports record:', importTrackingError)
       }
+    }
+
+    // Add per diem info to result if available
+    if (perDiemInfo) {
+      ;(result as any).perDiem = perDiemInfo
     }
 
     return NextResponse.json(result)

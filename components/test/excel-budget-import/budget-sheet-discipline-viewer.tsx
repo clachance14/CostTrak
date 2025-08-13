@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { AlertCircle, CheckCircle, XCircle, DollarSign, Clock, Users } from 'lucide-react'
+import { CircleAlert, CircleCheck, XCircle, DollarSign, Clock, Users } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { EquipmentDrillDown } from './equipment-drill-down'
 
@@ -57,7 +57,7 @@ export function BudgetSheetDisciplineViewer({ analysisResult }: BudgetSheetDisci
       <Card>
         <CardContent className="py-8">
           <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
+            <CircleAlert className="h-4 w-4" />
             <AlertDescription>
               No disciplines found in BUDGETS sheet. Please check if the BUDGETS sheet exists and follows the expected 12-row block format.
             </AlertDescription>
@@ -312,7 +312,7 @@ export function BudgetSheetDisciplineViewer({ analysisResult }: BudgetSheetDisci
                   </div>
                 ) : (
                   <Alert>
-                    <AlertCircle className="h-4 w-4" />
+                    <CircleAlert className="h-4 w-4" />
                     <AlertDescription>
                       Raw data not available. Make sure includeRawData is enabled in the analysis options.
                     </AlertDescription>

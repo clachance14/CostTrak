@@ -4,8 +4,8 @@ import { use, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { 
-  AlertCircle, 
-  CheckCircle,
+  CircleAlert, 
+  CircleCheck,
   Download,
   ArrowLeft,
   Info,
@@ -468,7 +468,7 @@ export default function BudgetImportPage({ params }: BudgetImportPageProps) {
       <div className="container mx-auto px-4 py-8">
         <Card className="p-6">
           <div className="flex items-center gap-2 text-red-600">
-            <AlertCircle className="h-5 w-5" />
+            <CircleAlert className="h-5 w-5" />
             <p>You don&apos;t have permission to import budget breakdowns for this project</p>
           </div>
         </Card>
@@ -565,7 +565,7 @@ export default function BudgetImportPage({ params }: BudgetImportPageProps) {
             <div className="space-y-2">
               {preview.errors.map((error, i) => (
                 <div key={i} className="flex items-center gap-2 text-red-600">
-                  <AlertCircle className="h-4 w-4" />
+                  <CircleAlert className="h-4 w-4" />
                   <span className="text-sm">{error}</span>
                 </div>
               ))}
@@ -654,12 +654,12 @@ export default function BudgetImportPage({ params }: BudgetImportPageProps) {
             <div className="flex items-center gap-2">
               {importResult.success ? (
                 <>
-                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <CircleCheck className="h-5 w-5 text-green-600" />
                   <h3 className="font-semibold text-green-600">Import Successful</h3>
                 </>
               ) : (
                 <>
-                  <AlertCircle className="h-5 w-5 text-red-600" />
+                  <CircleAlert className="h-5 w-5 text-red-600" />
                   <h3 className="font-semibold text-red-600">Import Completed with Errors</h3>
                 </>
               )}
