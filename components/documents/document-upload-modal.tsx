@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Upload, X, FileText, Loader2 } from 'lucide-react'
+import { Upload, X, FileText, LoaderCircle } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils/cn'
 
@@ -232,7 +232,7 @@ export function DocumentUploadModal({
           >
             {uploadMutation.isPending ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                 Uploading...
               </>
             ) : (

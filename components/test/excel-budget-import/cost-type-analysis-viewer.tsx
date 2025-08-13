@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { 
-  AlertCircle, 
+  CircleAlert, 
   DollarSign, 
   TrendingUp, 
   Users, 
@@ -47,7 +47,7 @@ const COST_TYPE_ICONS: Record<string, any> = {
   'SUBCONTRACTS': FileText,
   'SMALL TOOLS & CONSUMABLES': Wrench,
   'ADD ONS': TrendingUp,
-  'RISK': AlertCircle,
+  'RISK': CircleAlert,
   'OTHER': Building2
 }
 
@@ -112,7 +112,7 @@ export function CostTypeAnalysisViewer({ analysisResult }: CostTypeAnalysisViewe
       <Card>
         <CardContent className="py-8">
           <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
+            <CircleAlert className="h-4 w-4" />
             <AlertDescription>
               No cost type data found. Please ensure the BUDGETS sheet is properly formatted.
             </AlertDescription>
@@ -360,7 +360,7 @@ export function CostTypeAnalysisViewer({ analysisResult }: CostTypeAnalysisViewe
       <CardContent>
         <div className="space-y-4">
           <Alert>
-            <AlertCircle className="h-4 w-4" />
+            <CircleAlert className="h-4 w-4" />
             <AlertDescription>
               These queries will work after importing the data to the production database
             </AlertDescription>

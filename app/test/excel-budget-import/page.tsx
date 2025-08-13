@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { AlertCircle, FileSpreadsheet, Upload, ChevronRight } from 'lucide-react'
+import { CircleAlert, FileSpreadsheet, Upload, ChevronRight } from 'lucide-react'
 import { FileUploadZone } from '@/components/test/excel-budget-import/file-upload-zone'
 import { RawDataViewer } from '@/components/test/excel-budget-import/raw-data-viewer'
 import { SheetMappingEditor } from '@/components/test/excel-budget-import/sheet-mapping-editor'
@@ -178,7 +178,7 @@ export default function ExcelBudgetImportTestPage() {
       <div className="bg-yellow-50 dark:bg-yellow-950/20 border-b border-yellow-200 dark:border-yellow-900">
         <div className="container mx-auto px-4 py-3">
           <Alert className="border-0 bg-transparent p-0">
-            <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
+            <CircleAlert className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
             <AlertTitle className="text-yellow-800 dark:text-yellow-400">Test Environment</AlertTitle>
             <AlertDescription className="text-yellow-700 dark:text-yellow-500">
               This is a testing tool. No data will be saved to the production database.
@@ -237,7 +237,7 @@ export default function ExcelBudgetImportTestPage() {
             <CardContent>
               {error && (
                 <Alert variant="destructive" className="mb-4">
-                  <AlertCircle className="h-4 w-4" />
+                  <CircleAlert className="h-4 w-4" />
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}

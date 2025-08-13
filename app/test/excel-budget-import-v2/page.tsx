@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { FileSpreadsheet, AlertCircle, Download, Loader2 } from 'lucide-react'
+import { FileSpreadsheet, CircleAlert, Download, LoaderCircle } from 'lucide-react'
 import { FileDropZone } from '@/components/test/excel-budget-import-v2/file-drop-zone'
 import { WBS5LevelViewer } from '@/components/test/excel-budget-import-v2/wbs-5level-viewer'
 import { BudgetSummaryCards } from '@/components/test/excel-budget-import-v2/budget-summary-cards'
@@ -137,7 +137,7 @@ export default function ExcelBudgetImportV2TestPage() {
       <div className="bg-yellow-50 dark:bg-yellow-950/20 border-b border-yellow-200 dark:border-yellow-900">
         <div className="container mx-auto px-4 py-3">
           <Alert className="border-0 bg-transparent p-0">
-            <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
+            <CircleAlert className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
             <AlertTitle className="text-yellow-800 dark:text-yellow-400">Test Environment</AlertTitle>
             <AlertDescription className="text-yellow-700 dark:text-yellow-500">
               This tool uses the new 5-level WBS parser. No data will be saved to the database.
@@ -161,7 +161,7 @@ export default function ExcelBudgetImportV2TestPage() {
                 <FileDropZone onFileUpload={handleFileUpload} loading={loading} />
                 {error && (
                   <Alert variant="destructive" className="mt-4">
-                    <AlertCircle className="h-4 w-4" />
+                    <CircleAlert className="h-4 w-4" />
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}

@@ -136,7 +136,7 @@ export default function TeamManagementPage({ params }: TeamManagementPageProps) 
       const response = await fetch('/api/users')
       if (!response.ok) throw new Error('Failed to fetch users')
       const data = await response.json()
-      // Filter out users already assigned and the current project manager
+      // Funnel out users already assigned and the current project manager
       const assignedUserIds = assignments.map((a) => a.user_id)
       return data.users.filter((u: User) => 
         !assignedUserIds.includes(u.id) && 

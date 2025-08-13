@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button, Input, Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui'
 import { newPasswordSchema, type NewPasswordInput } from '@/lib/validations/auth'
-import { AlertCircle, CheckCircle, Eye, EyeOff, Lock } from 'lucide-react'
+import { CircleAlert, CircleCheck, Eye, EyeOff, Lock } from 'lucide-react'
 import Link from 'next/link'
 
 // Main component with Suspense wrapper
@@ -148,7 +148,7 @@ function PasswordResetForm() {
             <div className="space-y-4">
               <div className="flex justify-center">
                 <div className="rounded-full bg-success-100 p-3">
-                  <CheckCircle className="h-8 w-8 text-success-600" />
+                  <CircleCheck className="h-8 w-8 text-success-600" />
                 </div>
               </div>
               
@@ -260,7 +260,7 @@ function PasswordResetForm() {
 
               {errors.root && (
                 <div className="flex items-center gap-2 rounded-md bg-danger-50 p-3 text-sm text-danger-700">
-                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  <CircleAlert className="h-4 w-4 flex-shrink-0" />
                   <p>{errors.root.message}</p>
                 </div>
               )}

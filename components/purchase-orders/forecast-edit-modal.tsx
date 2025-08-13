@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { RiskStatusBadge } from '@/components/ui/risk-status-badge'
-import { Loader2 } from 'lucide-react'
+import { LoaderCircle } from 'lucide-react'
 
 interface ForecastEditModalProps {
   open: boolean
@@ -173,7 +173,7 @@ export function ForecastEditModal({
             disabled={isSubmitting || riskStatus === purchaseOrder.risk_status || 
               (riskStatus !== 'normal' && !reason.trim())}
           >
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
             Update Risk Status
           </Button>
         </DialogFooter>

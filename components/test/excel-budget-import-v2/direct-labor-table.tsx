@@ -102,7 +102,7 @@ export function DirectLaborTable({ allocations }: DirectLaborTableProps) {
     return grouped
   }, [allocations])
 
-  // Filter data
+  // Funnel data
   const filteredRoles = useMemo(() => {
     const searchLower = searchTerm.toLowerCase()
     

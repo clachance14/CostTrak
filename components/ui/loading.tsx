@@ -1,4 +1,4 @@
-import { Loader2 } from 'lucide-react'
+import { LoaderCircle } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
 interface LoadingProps {
@@ -16,7 +16,7 @@ const sizeMap = {
 export function Loading({ size = 'md', className, text }: LoadingProps) {
   return (
     <div className={cn('flex flex-col items-center justify-center', className)}>
-      <Loader2 className={cn('animate-spin text-primary-600', sizeMap[size])} />
+      <LoaderCircle className={cn('animate-spin text-primary-600', sizeMap[size])} />
       {text && <p className="mt-2 text-sm text-foreground">{text}</p>}
     </div>
   )
@@ -31,5 +31,5 @@ export function LoadingPage() {
 }
 
 export function LoadingSpinner({ className }: { className?: string }) {
-  return <Loader2 className={cn('h-4 w-4 animate-spin', className)} />
+  return <LoaderCircle className={cn('h-4 w-4 animate-spin', className)} />
 }

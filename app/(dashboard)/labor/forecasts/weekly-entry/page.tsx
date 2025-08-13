@@ -171,7 +171,7 @@ export default function WeeklyLaborEntryPage() {
       setError(null)
       setSuccessMessage(null)
 
-      // Filter out entries with no data
+      // Funnel out entries with no data
       const entriesToSave = Array.from(laborEntries.values()).filter(
         entry => entry.totalCost > 0 || entry.totalHours > 0
       )

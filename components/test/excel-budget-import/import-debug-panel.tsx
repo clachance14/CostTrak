@@ -5,8 +5,8 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
-  AlertCircle, 
-  CheckCircle, 
+  CircleAlert, 
+  CircleCheck, 
   XCircle, 
   Info, 
   FileSpreadsheet,
@@ -30,14 +30,14 @@ interface LogEntry {
 const LOG_TYPE_ICONS: Record<string, any> = {
   start: FileSpreadsheet,
   budgets_sheet_start: Database,
-  budgets_sheet_disciplines: CheckCircle,
+  budgets_sheet_disciplines: CircleCheck,
   cost_type_found: Zap,
   sheet_start: FileSpreadsheet,
-  sheet_complete: CheckCircle,
+  sheet_complete: CircleCheck,
   skip_sheet: Info,
-  complete: CheckCircle,
+  complete: CircleCheck,
   error: XCircle,
-  warning: AlertCircle,
+  warning: CircleAlert,
   custom_mappings: Database,
   apply_custom_mapping: Zap
 }
@@ -141,7 +141,7 @@ export function ImportDebugPanel({ analysisResult }: ImportDebugPanelProps) {
               {stats.errors > 0 ? (
                 <XCircle className="h-5 w-5 text-destructive" />
               ) : (
-                <AlertCircle className="h-5 w-5 text-yellow-500" />
+                <CircleAlert className="h-5 w-5 text-yellow-500" />
               )}
               Validation Results
             </CardTitle>
@@ -155,7 +155,7 @@ export function ImportDebugPanel({ analysisResult }: ImportDebugPanelProps) {
             ))}
             {validation.warnings.map((warning: string, index: number) => (
               <Alert key={`warning-${index}`} className="border-yellow-500">
-                <AlertCircle className="h-4 w-4 text-yellow-500" />
+                <CircleAlert className="h-4 w-4 text-yellow-500" />
                 <AlertDescription>{warning}</AlertDescription>
               </Alert>
             ))}

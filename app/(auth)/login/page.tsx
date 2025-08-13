@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Eye, EyeOff, AlertCircle, Shield, Lock } from "lucide-react"
+import { Eye, EyeOff, CircleAlert, Shield, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -145,7 +145,7 @@ export default function LoginScreen() {
               {/* Security Alerts */}
               {errors.root && (
                 <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
+                  <CircleAlert className="h-4 w-4" />
                   <AlertDescription>{errors.root.message}</AlertDescription>
                 </Alert>
               )}

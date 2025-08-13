@@ -26,15 +26,25 @@ export async function GET(
 
     if (projectError) throw projectError
 
-    // Get change orders
-    const { data: changeOrders } = await supabase
+    // Get approved change orders
+    const { data: approvedChangeOrders } = await supabase
       .from('change_orders')
       .select('*')
       .eq('project_id', projectId)
       .eq('status', 'approved')
 
-    const changeOrdersTotal = changeOrders?.reduce((sum, co) => sum + (co.amount || 0), 0) || 0
-    const changeOrdersCount = changeOrders?.length || 0
+    const changeOrdersTotal = approvedChangeOrders?.reduce((sum, co) => sum + (co.amount || 0), 0) || 0
+    const changeOrdersCount = approvedChangeOrders?.length || 0
+
+    // Get pending change orders
+    const { data: pendingChangeOrders } = await supabase
+      .from('change_orders')
+      .select('*')
+      .eq('project_id', projectId)
+      .eq('status', 'pending')
+
+    const pendingChangeOrdersTotal = pendingChangeOrders?.reduce((sum, co) => sum + (co.amount || 0), 0) || 0
+    const pendingChangeOrdersCount = pendingChangeOrders?.length || 0
 
     // Get purchase orders
     const { data: purchaseOrders } = await supabase
@@ -52,10 +62,18 @@ export async function GET(
       .select('st_wages, ot_wages, total_hours, total_cost_with_burden, employees!inner(category)')
       .eq('project_id', projectId)
 
-    // Calculate total actual labor cost (using burdened costs)
-    const totalLaborCost = laborActuals?.reduce((sum, la) => {
+    // Get per diem costs
+    const { data: perDiemCosts } = await supabase
+      .from('per_diem_costs')
+      .select('amount')
+      .eq('project_id', projectId)
+    
+    const totalPerDiemCost = perDiemCosts?.reduce((sum, pd) => sum + (pd.amount || 0), 0) || 0
+
+    // Calculate total actual labor cost (using burdened costs + per diem)
+    const totalLaborCost = (laborActuals?.reduce((sum, la) => {
       return sum + (la.total_cost_with_burden || (la.st_wages || 0) + (la.ot_wages || 0) + ((la.st_wages || 0) * 0.28))
-    }, 0) || 0
+    }, 0) || 0) + totalPerDiemCost
     
     // Calculate total actual labor hours
     const totalLaborHours = laborActuals?.reduce((sum, la) => sum + (la.total_hours || 0), 0) || 0
@@ -114,9 +132,298 @@ export async function GET(
 
     // Calculate financial metrics
     const revisedContract = (project.original_contract || 0) + changeOrdersTotal
-    const totalCommitted = totalPOAmount + totalLaborCost
-    const commitmentPercentage = revisedContract > 0 ? (totalCommitted / revisedContract) * 100 : 0
-    const remainingBudget = revisedContract - totalCommitted
+    
+    // Calculate actual costs vs committed costs
+    const totalActualCosts = totalLaborCost + totalInvoicedAmount  // Actual spent
+    const totalCommitted = totalPOAmount + totalLaborCost  // Committed (POs + labor actual)
+    
+    // CRITICAL: Ensure forecasted final never less than actual spent
+    const forecastedFinalCost = Math.max(totalCommitted, totalActualCosts)
+    
+    const commitmentPercentage = revisedContract > 0 ? (forecastedFinalCost / revisedContract) * 100 : 0
+    
+    // CRITICAL FIX: Remaining budget based on actual costs spent, not committed
+    const remainingBudget = revisedContract - totalActualCosts
+    
+    // Calculate uncommitted budget and margin analysis
+    const totalBudget = revisedContract
+    const uncommittedBudget = totalBudget - totalCommitted
+    const uncommittedPercentage = totalBudget > 0 ? (uncommittedBudget / totalBudget) * 100 : 0
+    const baseMarginPercentage = project.base_margin_percentage || 15
+    const expectedTotalSpend = totalBudget * (1 - baseMarginPercentage / 100)
+    const projectedMargin = totalBudget > 0 ? ((totalBudget - totalCommitted) / totalBudget) * 100 : 0
+    const spendPercentage = totalBudget > 0 ? (totalLaborCost / totalBudget) * 100 : 0
+    
+    // Calculate budget categories breakdown
+    const budgetCategories = [
+      {
+        category: 'Labor',
+        budget: laborBudget,
+        committed: totalLaborCost,
+        uncommitted: laborBudget - totalLaborCost,
+        percentage: laborBudget > 0 ? ((laborBudget - totalLaborCost) / laborBudget) * 100 : 0,
+        expectedSpend: laborBudget * (1 - baseMarginPercentage / 100)
+      },
+      {
+        category: 'Materials',
+        budget: project.materials_budget || 0,
+        committed: materialCosts,
+        uncommitted: (project.materials_budget || 0) - materialCosts,
+        percentage: (project.materials_budget || 0) > 0 ? (((project.materials_budget || 0) - materialCosts) / (project.materials_budget || 0)) * 100 : 0,
+        expectedSpend: (project.materials_budget || 0) * (1 - baseMarginPercentage / 100)
+      },
+      {
+        category: 'Equipment',
+        budget: project.equipment_budget || 0,
+        committed: 0, // TODO: Calculate from POs with equipment category
+        uncommitted: project.equipment_budget || 0,
+        percentage: 100,
+        expectedSpend: (project.equipment_budget || 0) * (1 - baseMarginPercentage / 100)
+      },
+      {
+        category: 'Subcontracts',
+        budget: project.subcontracts_budget || 0,
+        committed: 0, // TODO: Calculate from POs with subcontract category
+        uncommitted: project.subcontracts_budget || 0,
+        percentage: 100,
+        expectedSpend: (project.subcontracts_budget || 0) * (1 - baseMarginPercentage / 100)
+      },
+      {
+        category: 'Other',
+        budget: project.small_tools_budget || 0,
+        committed: 0, // TODO: Calculate from POs with other category
+        uncommitted: project.small_tools_budget || 0,
+        percentage: 100,
+        expectedSpend: (project.small_tools_budget || 0) * (1 - baseMarginPercentage / 100)
+      }
+    ]
+    
+    // Determine margin health
+    const marginDiff = projectedMargin - baseMarginPercentage
+    let marginHealth = 'on-target'
+    if (marginDiff < -5) marginHealth = 'critical'
+    else if (marginDiff < -2) marginHealth = 'at-risk'
+    
+    // Calculate spend projections
+    const projectStartDate = new Date(project.start_date)
+    const projectEndDate = new Date(project.end_date)
+    const projectDurationMonths = Math.ceil((projectEndDate.getTime() - projectStartDate.getTime()) / (30 * 24 * 60 * 60 * 1000))
+    const currentDate = new Date()
+    const monthsElapsed = Math.ceil((currentDate.getTime() - projectStartDate.getTime()) / (30 * 24 * 60 * 60 * 1000))
+    
+    // Generate projection data points
+    const projectionData: any[] = []
+    let cumulativeActual = 0
+    let cumulativeProjected = 0
+    
+    // Get monthly actual costs
+    const { data: monthlyActuals } = await supabase
+      .from('labor_employee_actuals')
+      .select('week_ending, st_wages, ot_wages, total_cost_with_burden')
+      .eq('project_id', projectId)
+      .order('week_ending', { ascending: true })
+    
+    // Group actuals by month
+    const actualsByMonth = new Map<string, number>()
+    monthlyActuals?.forEach(actual => {
+      const monthKey = format(new Date(actual.week_ending), 'MMM yyyy')
+      const cost = actual.total_cost_with_burden || (actual.st_wages || 0) + (actual.ot_wages || 0) + ((actual.st_wages || 0) * 0.28)
+      actualsByMonth.set(monthKey, (actualsByMonth.get(monthKey) || 0) + cost)
+    })
+    
+    // Calculate projections based on method (20% threshold)
+    if (spendPercentage < 20) {
+      // Phase 1: Margin-based projection (under 20% spent)
+      const projectedTotal = totalBudget * (1 - baseMarginPercentage / 100)
+      const monthlyProjected = projectedTotal / projectDurationMonths
+      
+      for (let i = 0; i < projectDurationMonths; i++) {
+        const monthDate = new Date(projectStartDate)
+        monthDate.setMonth(monthDate.getMonth() + i)
+        const monthKey = format(monthDate, 'MMM yyyy')
+        
+        const actualCost = actualsByMonth.get(monthKey) || 0
+        cumulativeActual += actualCost
+        cumulativeProjected += monthlyProjected
+        
+        projectionData.push({
+          month: monthKey,
+          actual: actualCost > 0 ? cumulativeActual : undefined,
+          projected: cumulativeProjected,
+          method: 'margin-based',
+          confidence: 'estimated'
+        })
+      }
+      
+      // For forecasted final cost when under 20%: use margin-based calculation
+      var projectionSummary = {
+        totalBudget,
+        currentSpend: totalCommitted,  // Use total committed not just labor
+        projectedFinalCost: projectedTotal,  // This is budget * (1 - margin%)
+        projectedMargin: baseMarginPercentage,
+        projectedVariance: totalBudget - projectedTotal,
+        confidenceLevel: 'Estimated based on target margin'
+      }
+      
+      var transitionPoint = {
+        date: format(new Date(projectStartDate.getTime() + (projectDurationMonths * 0.2 * 30 * 24 * 60 * 60 * 1000)), 'MMM yyyy'),
+        spendAmount: totalBudget * 0.2,
+        message: `Will switch to committed-based projections after reaching 20% spend (${formatCurrency(totalBudget * 0.2)})`
+      }
+    } else {
+      // Phase 2: Use total committed value (over 20% spent)
+      // For forecasted final cost when over 20%: use total committed
+      const projectedTotal = totalCommitted  // Simply use total committed value
+      
+      // For visualization, still show monthly projection but final cost is total committed
+      const actualMonthlyRate = totalCommitted / Math.max(monthsElapsed, 1)
+      
+      for (let i = 0; i < projectDurationMonths; i++) {
+        const monthDate = new Date(projectStartDate)
+        monthDate.setMonth(monthDate.getMonth() + i)
+        const monthKey = format(monthDate, 'MMM yyyy')
+        
+        const actualCost = actualsByMonth.get(monthKey) || 0
+        const isActual = actualCost > 0
+        
+        if (isActual) {
+          cumulativeActual += actualCost
+          cumulativeProjected = cumulativeActual
+        } else {
+          // For future months, project based on committed value spread over project duration
+          const remainingMonths = projectDurationMonths - i
+          const remainingCommitted = projectedTotal - cumulativeProjected
+          cumulativeProjected += (remainingCommitted / Math.max(remainingMonths, 1))
+        }
+        
+        projectionData.push({
+          month: monthKey,
+          actual: isActual ? cumulativeActual : undefined,
+          projected: Math.min(cumulativeProjected, projectedTotal),  // Cap at total committed
+          method: 'data-driven',
+          confidence: 'committed'
+        })
+      }
+      
+      var projectionSummary = {
+        totalBudget,
+        currentSpend: totalCommitted,  // Current spend is total committed
+        projectedFinalCost: projectedTotal,  // This is total committed value
+        projectedMargin: ((totalBudget - projectedTotal) / totalBudget) * 100,
+        projectedVariance: totalBudget - projectedTotal,
+        confidenceLevel: 'Based on committed values'
+      }
+      
+      var transitionPoint = null
+    }
+    
+    // Helper function for currency formatting
+    function formatCurrency(value: number) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(value)
+    }
+    
+    // Calculate budget risk assessment
+    const projectTimeElapsed = ((currentDate.getTime() - projectStartDate.getTime()) / (projectEndDate.getTime() - projectStartDate.getTime())) * 100
+    
+    // Get PO coverage by category
+    const { data: posByCategory } = await supabase
+      .from('purchase_orders')
+      .select('total_amount, cost_code:cost_codes(category)')
+      .eq('project_id', projectId)
+      .eq('status', 'approved')
+    
+    const categoryCommitments = new Map<string, number>()
+    posByCategory?.forEach(po => {
+      const category = po.cost_code?.category || 'other'
+      categoryCommitments.set(category, (categoryCommitments.get(category) || 0) + (po.total_amount || 0))
+    })
+    
+    // Assess risk for each budget category
+    const budgetRiskCategories = budgetCategories.map(category => {
+      const coveragePercentage = category.budget > 0 ? (category.committed / category.budget) * 100 : 0
+      
+      // Calculate risk level based on phase and coverage
+      let riskLevel: 'critical' | 'warning' | 'healthy' = 'healthy'
+      let recommendedAction: string | undefined
+      
+      if (spendPercentage < 20) {
+        // Early stage - use margin-based thresholds
+        const expectedCommitment = category.expectedSpend * (projectTimeElapsed / 100)
+        if (category.committed > category.expectedSpend) {
+          riskLevel = 'critical'
+          recommendedAction = 'Review commitments - exceeding margin targets'
+        } else if (category.committed > expectedCommitment * 1.2) {
+          riskLevel = 'warning'
+          recommendedAction = 'Monitor spending pace'
+        }
+      } else {
+        // Later stage - more aggressive thresholds
+        if (projectTimeElapsed > 30 && coveragePercentage < 30) {
+          riskLevel = 'critical'
+          recommendedAction = 'Create POs immediately'
+        } else if (projectTimeElapsed > 20 && coveragePercentage < 50) {
+          riskLevel = 'warning'
+          recommendedAction = 'Review and commit budget'
+        }
+      }
+      
+      return {
+        name: category.category,
+        budgetAmount: category.budget,
+        committedAmount: category.committed,
+        coveragePercentage,
+        marginImpact: category.budget > 0 ? ((category.committed - category.expectedSpend) / category.budget) * 100 : 0,
+        riskLevel,
+        recommendedAction
+      }
+    })
+    
+    // Determine overall risk
+    const criticalCount = budgetRiskCategories.filter(c => c.riskLevel === 'critical').length
+    const warningCount = budgetRiskCategories.filter(c => c.riskLevel === 'warning').length
+    const overallRisk = criticalCount > 0 ? 'critical' : warningCount > 1 ? 'warning' : 'healthy'
+    
+    // Generate alerts
+    const budgetAlerts: any[] = []
+    
+    if (marginHealth === 'critical') {
+      budgetAlerts.push({
+        severity: 'error',
+        message: `Margin at critical risk: ${projectedMargin.toFixed(1)}% vs target ${baseMarginPercentage}%`,
+        marginImpact: `May reduce margin by ${Math.abs(projectedMargin - baseMarginPercentage).toFixed(1)}%`,
+        actionLink: '/purchase-orders/new',
+        actionLabel: 'Create PO'
+      })
+    }
+    
+    budgetRiskCategories.forEach(category => {
+      if (category.riskLevel === 'critical') {
+        budgetAlerts.push({
+          severity: 'error',
+          message: `${category.name}: Only ${category.coveragePercentage.toFixed(0)}% committed`,
+          marginImpact: category.marginImpact > 0 ? `Impacting margin by ${category.marginImpact.toFixed(1)}%` : undefined,
+          actionLink: `/purchase-orders/new?category=${category.name}`,
+          actionLabel: 'Create PO'
+        })
+      }
+    })
+    
+    const budgetRisks = {
+      overallRisk,
+      projectTimeElapsed,
+      spendPercentage,
+      baseMargin: baseMarginPercentage,
+      projectedMargin,
+      marginAtRisk: marginHealth !== 'on-target',
+      assessmentMethod: spendPercentage < 20 ? 'margin-based' : 'committed-based',
+      categories: budgetRiskCategories,
+      alerts: budgetAlerts
+    }
 
     // Calculate burn rate (last 4 weeks average)
     const fourWeeksAgo = subDays(new Date(), 28)
@@ -143,7 +450,8 @@ export async function GET(
     const burnRate = recentTotalCost / 4 // Weekly average
     
     // Get labor forecasts (headcount-based) - using week_ending field
-    const currentDate = new Date()
+    // Note: We get ALL forecasts and filter by actuals, not by date
+    // This ensures past weeks with forecasts but no actuals are included
     const { data: laborForecasts } = await supabase
       .from('labor_headcount_forecasts')
       .select(`
@@ -154,7 +462,6 @@ export async function GET(
         craft_types (category)
       `)
       .eq('project_id', projectId)
-      .gte('week_ending', currentDate.toISOString().split('T')[0]) // Only future weeks
     
     // Get unique week endings from labor actuals to determine which weeks have data
     const { data: actualWeeks } = await supabase
@@ -447,8 +754,12 @@ export async function GET(
         originalContract: project.original_contract || 0,
         changeOrdersTotal,
         changeOrdersCount,
+        pendingChangeOrdersTotal,
+        pendingChangeOrdersCount,
         revisedContract,
-        totalCommitted,
+        totalActualCosts,  // NEW: Actual costs spent
+        totalCommitted,    // Committed amounts
+        forecastedFinalCost,  // NEW: Max of committed and actual
         commitmentPercentage,
         laborCosts: totalLaborCost,
         laborBudget,
@@ -459,7 +770,34 @@ export async function GET(
         materialBudget: nonLaborBudget,
         remainingBudget,
         burnRate,
-        projectHealth
+        projectHealth,
+        // New uncommitted budget data
+        uncommittedBudget: {
+          totalBudget,
+          totalCommitted,
+          uncommitted: uncommittedBudget,
+          uncommittedPercentage,
+          baseMarginPercentage,
+          expectedTotalSpend,
+          projectedMargin,
+          marginHealth,
+          spendPercentage,
+          categories: budgetCategories,
+          projectCompletionPercentage: commitmentPercentage // Using commitment as proxy for completion
+        },
+        // New projection data
+        projections: {
+          currentSpendPercentage: spendPercentage,
+          projectionMethod: spendPercentage < 20 ? 'margin-based' : 'data-driven',
+          baseMargin: baseMarginPercentage,
+          projections: projectionData,
+          summary: projectionSummary,
+          transitionPoint,
+          projectStartDate: project.start_date,
+          projectEndDate: project.end_date
+        },
+        // New budget risk data
+        budgetRisks
       },
       healthDashboard: {
         budgetData: {

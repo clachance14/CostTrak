@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog'
 import { POLogTable } from '@/components/purchase-orders/po-log-table'
 import { formatCurrency } from '@/lib/utils'
-import { Loader2 } from 'lucide-react'
+import { LoaderCircle } from 'lucide-react'
 
 interface BudgetCategoryPOModalProps {
   projectId: string
@@ -83,7 +83,7 @@ export function BudgetCategoryPOModal({
         <div className="flex-1 overflow-auto">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin" />
+              <LoaderCircle className="h-8 w-8 animate-spin" />
             </div>
           ) : error ? (
             <div className="text-center py-8 text-destructive">

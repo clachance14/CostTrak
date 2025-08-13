@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { FileSpreadsheet, AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
+import { FileSpreadsheet, CircleAlert, CircleCheck, LoaderCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface QuickImportSectionProps {
@@ -246,7 +246,7 @@ export function QuickImportSection({
 
           {isProcessing && (
             <div className="space-y-2">
-              <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+              <LoaderCircle className="mx-auto h-8 w-8 animate-spin text-primary" />
               <p className="text-sm font-medium">{status.message}</p>
               {status.progress && (
                 <Progress value={status.progress} className="w-full max-w-xs mx-auto" />
@@ -256,7 +256,7 @@ export function QuickImportSection({
 
           {status.type === 'success' && (
             <div className="space-y-2">
-              <CheckCircle className="mx-auto h-8 w-8 text-green-600" />
+              <CircleCheck className="mx-auto h-8 w-8 text-green-600" />
               <p className="text-sm font-medium text-green-600">{status.message}</p>
               <Button
                 size="sm"
@@ -271,7 +271,7 @@ export function QuickImportSection({
 
           {status.type === 'error' && (
             <div className="space-y-2">
-              <AlertCircle className="mx-auto h-8 w-8 text-red-600" />
+              <CircleAlert className="mx-auto h-8 w-8 text-red-600" />
               <p className="text-sm font-medium text-red-600">{status.message}</p>
               {status.details?.errors && status.details.errors.length > 0 && (
                 <div className="mt-2 text-xs text-left max-h-20 overflow-y-auto">
@@ -337,7 +337,7 @@ export function QuickImportSection({
             </div>
           ) : (
             <Alert>
-              <AlertCircle className="h-4 w-4" />
+              <CircleAlert className="h-4 w-4" />
               <AlertDescription>
                 Please select a project above to enable file imports
               </AlertDescription>

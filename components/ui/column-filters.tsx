@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Search, Calendar, DollarSign, Filter, X, Check, ChevronDown } from 'lucide-react'
+import { Search, Calendar, DollarSign, Funnel, X, Check, ChevronDown } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -13,7 +13,7 @@ interface TextFilterProps {
   className?: string
 }
 
-export function TextFilter({ value, onChange, placeholder = "Filter...", className }: TextFilterProps) {
+export function TextFilter({ value, onChange, placeholder = "Funnel...", className }: TextFilterProps) {
   return (
     <div className="relative">
       <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-foreground" />
@@ -169,7 +169,7 @@ export function MultiSelectFilter({
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="flex items-center gap-2">
-          <Filter className={cn(
+          <Funnel className={cn(
             "h-3 w-3",
             selectedValues.length > 0 ? "text-blue-600" : "text-foreground"
           )} />

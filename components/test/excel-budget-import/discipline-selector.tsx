@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { FileText, Users, CheckCircle, Info } from 'lucide-react'
+import { FileText, Users, CircleCheck, Info } from 'lucide-react'
 import { InputSheetAnalyzer, InputSheetData } from '@/lib/services/input-sheet-analyzer'
 import { DisciplineMapper } from '@/lib/services/discipline-mapper'
 
@@ -114,7 +114,7 @@ export function DisciplineSelector({ analysisResult, onDisciplinesConfirmed }: D
               </CardDescription>
             </div>
             <Button onClick={handleConfirm}>
-              <CheckCircle className="h-4 w-4 mr-2" />
+              <CircleCheck className="h-4 w-4 mr-2" />
               Confirm Disciplines
             </Button>
           </div>

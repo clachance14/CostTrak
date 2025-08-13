@@ -141,7 +141,7 @@ export function ExcelFilterDropdown({
     }
   }
 
-  // Filter values based on search term
+  // Funnel values based on search term
   const filteredValues = useMemo(() => {
     if (!searchTerm) return values
     return values.filter(item => 

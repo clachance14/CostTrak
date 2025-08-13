@@ -8,7 +8,7 @@ import {
   Clock, 
   TrendingUp, 
   Search, 
-  Loader2 
+  LoaderCircle 
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -23,6 +23,7 @@ import { laborPivotPresets, dimensionFormatters, measureFormatters, exportPivotT
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MultiSelect, type MultiSelectOption } from "@/components/ui/multi-select"
 import { getMonthFromWeekEnding } from "@/lib/utils/date-helpers"
+import { LaborPerDiemSection } from "@/components/labor/labor-per-diem-section"
 
 interface LaborAnalyticsViewProps {
   projectId: string
@@ -467,7 +468,7 @@ export function LaborAnalyticsView({ projectId, jobNumber }: LaborAnalyticsViewP
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-600" />
+          <LoaderCircle className="h-12 w-12 animate-spin mx-auto text-blue-600" />
           <p className="mt-4 text-foreground">Loading analytics...</p>
         </div>
       </div>
@@ -958,6 +959,9 @@ export function LaborAnalyticsView({ projectId, jobNumber }: LaborAnalyticsViewP
               </div>
             </CardContent>
           </Card>
+          
+          {/* Per Diem Section */}
+          <LaborPerDiemSection projectId={projectId} />
         </div>
       )}
     </div>

@@ -13,7 +13,7 @@ import {
   FolderClosed, 
   FileText,
   Info,
-  AlertCircle
+  CircleAlert
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -145,7 +145,7 @@ export function WBSStructurePreview({ budgetData, onNext }: WBSStructurePreviewP
       <Card>
         <CardContent className="py-8">
           <Alert>
-            <AlertCircle className="h-4 w-4" />
+            <CircleAlert className="h-4 w-4" />
             <AlertDescription>
               No WBS structure found. Please ensure your budget data contains WBS codes.
             </AlertDescription>

@@ -10,7 +10,7 @@ import {
   User,
   Package,
   Clock,
-  AlertCircle
+  CircleAlert
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -60,7 +60,7 @@ export default function PurchaseOrderDetailPage({ params }: PODetailPageProps) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card className="p-8 text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <CircleAlert className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">Error Loading Purchase Order</h2>
           <p className="text-foreground mb-4">Unable to load purchase order details.</p>
           <Button
@@ -376,7 +376,7 @@ export default function PurchaseOrderDetailPage({ params }: PODetailPageProps) {
                 {po.calculated.variance !== 0 && (
                   <div className="flex items-center justify-between">
                     <span className="flex items-center text-foreground">
-                      <AlertCircle className="h-4 w-4 mr-2" />
+                      <CircleAlert className="h-4 w-4 mr-2" />
                       Variance
                     </span>
                     <span className={`font-semibold ${

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { LoadingPage } from '@/components/ui/loading'
@@ -39,6 +39,7 @@ import {
   Edit,
   Eye,
   Search,
+  AlertTriangle,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -69,9 +70,31 @@ export default function DashboardPage() {
   const router = useRouter()
   const queryClient = useQueryClient()
   
-  // Filter states
+  // Funnel states
   const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>(() => {
+    // Load from localStorage, default to 'active' to show active projects by default
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('dashboard-status-filter')
+        return stored || 'active'
+      } catch (error) {
+        console.error('Error loading status filter:', error)
+      }
+    }
+    return 'active'
+  })
+
+  // Save status filter to localStorage when it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('dashboard-status-filter', statusFilter)
+      } catch (error) {
+        console.error('Error saving status filter:', error)
+      }
+    }
+  }, [statusFilter])
 
   const { data: dashboardData, isLoading } = useQuery({
     queryKey: ['dashboard-comprehensive'],
@@ -115,7 +138,7 @@ export default function DashboardPage() {
     }
   })
   
-  // Filter projects based on search and status
+  // Funnel projects based on search and status
   const filteredProjects = useMemo(() => {
     if (!dashboardData?.projects) return []
     
@@ -236,6 +259,7 @@ export default function DashboardPage() {
   async function fetchProjects() {
     try {
       // First, fetch just the projects
+      // Note: base_margin_percentage will be null if column doesn't exist yet
       const { data: projects, error: projectsError } = await supabase
         .from('projects')
         .select(`
@@ -270,10 +294,37 @@ export default function DashboardPage() {
         .eq('status', 'approved')
 
       // Fetch labor actuals with burden
-      const { data: laborActuals } = await supabase
+      // Note: Supabase "Max Rows Returned" setting should be set to 10000+ to get all records
+      const { data: laborActuals, error: laborError } = await supabase
         .from('labor_employee_actuals')
         .select('project_id, st_wages, ot_wages, total_cost_with_burden')
         .in('project_id', projectIds)
+      
+      if (laborError) {
+        console.error('Error fetching labor actuals:', laborError)
+      }
+      
+      // Fetch per diem costs
+      const { data: perDiemCosts, error: perDiemError } = await supabase
+        .from('per_diem_costs')
+        .select('project_id, amount')
+        .in('project_id', projectIds)
+      
+      if (perDiemError) {
+        console.error('Error fetching per diem costs:', perDiemError)
+      }
+      
+      // Debug logging for labor data
+      const project5772 = projects.find(p => p.job_number === '5772')
+      if (project5772) {
+        const labor5772 = laborActuals?.filter(la => la.project_id === project5772.id) || []
+        console.log('Labor fetch debug for 5772:', {
+          totalLaborRecords: laborActuals?.length || 0,
+          project5772Id: project5772.id,
+          labor5772Records: labor5772.length,
+          firstFewRecords: labor5772.slice(0, 3)
+        })
+      }
 
       // Fetch labor forecasts with proper fields
       const { data: laborForecasts } = await supabase
@@ -296,33 +347,48 @@ export default function DashboardPage() {
 
       // Map the data
       return projects.map(project => {
-        // Filter related data for this project
+        // Funnel related data for this project
         const projectPOs = purchaseOrders?.filter(po => po.project_id === project.id) || []
         const projectLabor = laborActuals?.filter(la => la.project_id === project.id) || []
         const projectForecasts = laborForecasts?.filter(lf => lf.project_id === project.id) || []
         const projectChangeOrders = changeOrders?.filter(co => co.project_id === project.id) || []
+        const projectPerDiem = perDiemCosts?.filter(pd => pd.project_id === project.id) || []
 
         // Calculate labor actual costs with burden
+        // IMPORTANT: total_cost_with_burden already includes the burden
         const laborActualCosts = projectLabor.reduce(
-          (sum, la) => sum + (la.total_cost_with_burden || 
-            ((la.st_wages || 0) + (la.ot_wages || 0)) * 1.28), 
+          (sum, la) => {
+            // Use total_cost_with_burden if available (it's the correct burdened cost)
+            if (la.total_cost_with_burden !== null && la.total_cost_with_burden !== undefined) {
+              return sum + la.total_cost_with_burden
+            }
+            // Fallback: calculate burden as wages * 1.28 (28% burden)
+            const wages = (la.st_wages || 0) + (la.ot_wages || 0)
+            return sum + (wages * 1.28)
+          }, 
           0
         )
 
-        // Calculate PO actuals (using total_amount to match PO Breakdown)
-        const poActualCosts = projectPOs.reduce(
-          (sum, po) => sum + (po.total_amount || 0), 
+        // Calculate per diem costs for this project
+        const perDiemTotal = projectPerDiem.reduce(
+          (sum, pd) => sum + (pd.amount || 0),
           0
         )
 
-        // Current costs = labor actuals + PO actuals
-        const currentCosts = laborActualCosts + poActualCosts
-
-        // Calculate committed PO costs
+        // Calculate PO committed costs (using committed_amount for accuracy)
         const committedPOCosts = projectPOs.reduce(
-          (sum, po) => sum + (po.committed_amount || 0), 
+          (sum, po) => sum + (po.committed_amount || po.total_amount || 0), 
           0
         )
+        
+        // Calculate PO invoiced costs
+        const poInvoicedCosts = projectPOs.reduce(
+          (sum, po) => sum + (po.invoiced_amount || 0), 
+          0
+        )
+
+        // Current costs = labor actuals + PO invoiced + per diem (what's actually been spent)
+        const currentCosts = laborActualCosts + poInvoicedCosts + perDiemTotal
 
         // Create a set of weeks that have actual data for this project
         const projectActualWeeks = new Set(
@@ -331,7 +397,7 @@ export default function DashboardPage() {
             .map(w => new Date(w.week_ending).toISOString().split('T')[0]) || []
         )
 
-        // Filter forecasts to only include weeks without actuals
+        // Funnel forecasts to only include weeks without actuals
         const futureForecasts = projectForecasts.filter(f => {
           const weekEndingDate = new Date(f.week_ending).toISOString().split('T')[0]
           return !projectActualWeeks.has(weekEndingDate)
@@ -348,9 +414,6 @@ export default function DashboardPage() {
         // Total forecasted labor = actuals + remaining forecast
         const totalForecastedLabor = laborActualCosts + forecastedLaborCosts
 
-        // Committed costs = total forecasted labor + committed PO costs
-        const committedCosts = totalForecastedLabor + committedPOCosts
-
         // Calculate approved change orders total
         const approvedChangeOrdersTotal = projectChangeOrders.reduce(
           (sum, co) => sum + (co.amount || 0),
@@ -359,11 +422,72 @@ export default function DashboardPage() {
 
         // Calculate revised contract (original + approved change orders)
         const revisedContract = (project.original_contract || 0) + approvedChangeOrdersTotal
-
-        // Calculate remaining (uncommitted value) = Contract - Committed
-        const remainingToSpend = revisedContract - committedCosts
         
-        // Calculate project margin percentage
+        // Calculate total committed (labor + POs + per diem)
+        const totalCommitted = laborActualCosts + committedPOCosts + perDiemTotal
+        
+        // Calculate spend percentage
+        const spendPercentage = revisedContract > 0 ? (totalCommitted / revisedContract) * 100 : 0
+        
+        // Apply 20% threshold logic for forecasted final costs
+        let committedCosts: number
+        // Use 15% as default if base_margin_percentage column doesn't exist yet
+        const baseMarginPercentage = (project as any).base_margin_percentage || 15
+        
+        // Debug logging for projects
+        if (project.job_number === '5772' || project.job_number === '5800') {
+          console.log(`Project ${project.job_number} Labor Details:`, {
+            laborRecords: projectLabor.length,
+            firstRecord: projectLabor[0] ? {
+              st_wages: projectLabor[0].st_wages,
+              ot_wages: projectLabor[0].ot_wages,
+              total_cost_with_burden: projectLabor[0].total_cost_with_burden,
+              calculated: projectLabor[0].total_cost_with_burden || ((projectLabor[0].st_wages || 0) + (projectLabor[0].ot_wages || 0)) * 1.28
+            } : null,
+            sumOfBurden: projectLabor.reduce((sum, la) => sum + (la.total_cost_with_burden || 0), 0),
+            sumOfWages: projectLabor.reduce((sum, la) => sum + ((la.st_wages || 0) + (la.ot_wages || 0)), 0)
+          })
+          console.log(`Project ${project.job_number} Debug:`, {
+            laborActualCosts,
+            committedPOCosts,
+            totalCommitted,
+            revisedContract,
+            spendPercentage: spendPercentage.toFixed(1) + '%',
+            baseMarginPercentage,
+            method: spendPercentage < 20 ? 'margin-based' : 'committed-based'
+          })
+        }
+        
+        if (spendPercentage < 20) {
+          // Under 20% spent: use margin-based calculation
+          committedCosts = revisedContract * (1 - baseMarginPercentage / 100)
+        } else {
+          // 20% or more spent: use actual committed value
+          committedCosts = totalCommitted
+        }
+        
+        // CRITICAL: Forecasted final can never be less than what's already spent
+        // If we've spent $4.4M, our forecast must be at least $4.4M
+        committedCosts = Math.max(committedCosts, currentCosts)
+        
+        // More debug logging
+        if (project.job_number === '5772' || project.job_number === '5800') {
+          const expectedValue = project.job_number === '5772' ? 1100636 : 
+                               project.job_number === '5800' ? 329469 : 0 // 5800 should be 387846 * 0.85
+          console.log(`Project ${project.job_number} Final:`, {
+            committedCosts,
+            expectedValue,
+            shouldUseMargin: spendPercentage < 20,
+            marginBasedValue: revisedContract * (1 - baseMarginPercentage / 100)
+          })
+        }
+
+        // Calculate remaining budget = Contract - Current Actual Costs
+        // This shows true remaining budget based on what's actually been spent
+        const remainingToSpend = revisedContract - currentCosts
+        
+        // Calculate project margin percentage based on forecasted final costs
+        // This shows expected margin at completion (can be negative if overrun)
         const margin = revisedContract > 0 
           ? ((revisedContract - committedCosts) / revisedContract) * 100
           : 0
@@ -402,7 +526,17 @@ export default function DashboardPage() {
     return 'text-red-600'
   }
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, remainingBudget?: number) => {
+    // Check for budget overrun first
+    if (remainingBudget !== undefined && remainingBudget < 0 && status === 'active') {
+      return (
+        <Badge className="bg-red-100 text-red-800 hover:bg-red-100 flex items-center gap-1">
+          <AlertTriangle className="h-3 w-3" />
+          Overrun
+        </Badge>
+      )
+    }
+    
     switch (status) {
       case 'active':
         return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>
@@ -591,14 +725,19 @@ export default function DashboardPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
-                        <span className={cn(
-                          'font-medium',
-                          project.remainingToSpend < 0 ? 'text-red-600' : 'text-gray-900'
-                        )}>
-                          {formatCurrency(project.remainingToSpend)}
-                        </span>
+                        <div className="flex items-center justify-end gap-1">
+                          {project.remainingToSpend < 0 && (
+                            <AlertTriangle className="h-4 w-4 text-red-600" />
+                          )}
+                          <span className={cn(
+                            'font-medium',
+                            project.remainingToSpend < 0 ? 'text-red-600 font-semibold' : 'text-gray-900'
+                          )}>
+                            {formatCurrency(project.remainingToSpend)}
+                          </span>
+                        </div>
                       </TableCell>
-                      <TableCell>{getStatusBadge(project.status)}</TableCell>
+                      <TableCell>{getStatusBadge(project.status, project.remainingToSpend)}</TableCell>
                       <TableCell className="text-center">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
