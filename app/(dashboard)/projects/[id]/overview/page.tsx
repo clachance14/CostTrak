@@ -7,7 +7,8 @@ import {
   ArrowLeft, 
   Edit, 
   Upload,
-  Building2
+  Building2,
+  Settings
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -17,10 +18,11 @@ import { LaborAnalyticsView } from '@/components/labor/labor-analytics-view'
 import { LaborForecastTab } from '@/components/project/labor-forecast-tab'
 import { BudgetVsActualTab } from '@/components/project/budget-vs-actual-tab'
 import { ChangeOrdersTab } from '@/components/project/change-orders-tab'
-import { FinancialSummaryCards } from '@/components/project/overview/financial-summary-cards'
+import { KeyMetricsBar } from '@/components/project/overview/key-metrics-bar'
 import { ProjectHealthDashboard } from '@/components/project/overview/project-health-dashboard'
 import { PurchaseOrdersTab } from '@/components/project/overview/purchase-orders-tab'
 import { FloatingActionButton } from '@/components/project/overview/floating-action-button'
+import { PerDiemSummaryCard } from '@/components/project/per-diem-summary-card'
 
 interface ProjectOverviewPageProps {
   params: Promise<{ id: string }>
@@ -105,6 +107,10 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
                 <Upload className="h-4 w-4" />
                 <span>Import Budget</span>
               </Button>
+              <Button variant="outline" className="flex items-center space-x-2 bg-transparent" onClick={() => router.push(`/projects/${id}/settings`)}>
+                <Settings className="h-4 w-4" />
+                <span>Settings</span>
+              </Button>
               <Button className="flex items-center space-x-2" onClick={() => router.push(`/projects/${id}/edit`)}>
                 <Edit className="h-4 w-4" />
                 <span>Edit</span>
@@ -113,20 +119,20 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
           </div>
         </div>
 
-        {/* Financial Summary Cards */}
-        <FinancialSummaryCards data={financialData} />
-
-        {/* Project Health Dashboard */}
-        <ProjectHealthDashboard 
-          budgetData={healthDashboard.budgetData}
-          laborTrends={healthDashboard.laborTrends}
-          currentHeadcount={healthDashboard.currentHeadcount}
-          peakHeadcount={healthDashboard.peakHeadcount}
-          recentActivity={recentActivity}
+        {/* Key Metrics Bar */}
+        <KeyMetricsBar
+          originalContract={financialData.originalContract}
+          revisedContract={financialData.revisedContract}
+          changeOrdersTotal={financialData.changeOrdersTotal}
+          totalSpent={financialData.laborCosts + financialData.materialInvoiced}
+          totalCommitted={financialData.totalCommitted}
+          totalBudget={financialData.revisedContract}
+          remainingBudget={financialData.remainingBudget}
+          projectHealth={financialData.projectHealth}
         />
 
-        {/* Tabbed Content Area */}
-        <Card className="shadow-sm">
+        {/* Tabbed Content Area - Elevated Position */}
+        <Card className="shadow-sm mb-6">
           <CardContent className="p-6">
             <Tabs defaultValue="purchase-orders" className="w-full">
               <TabsList className="grid w-full grid-cols-6">
@@ -188,6 +194,22 @@ export default function ProjectOverviewPage({ params }: ProjectOverviewPageProps
             </Tabs>
           </CardContent>
         </Card>
+
+        {/* Per Diem Summary */}
+        {overviewData?.project?.per_diem_enabled && (
+          <div className="mb-6">
+            <PerDiemSummaryCard projectId={id} />
+          </div>
+        )}
+
+        {/* Project Health Dashboard - Expandable */}
+        <ProjectHealthDashboard 
+          budgetData={healthDashboard.budgetData}
+          laborTrends={healthDashboard.laborTrends}
+          currentHeadcount={healthDashboard.currentHeadcount}
+          peakHeadcount={healthDashboard.peakHeadcount}
+          recentActivity={recentActivity}
+        />
 
         {/* Floating Action Button */}
         <FloatingActionButton projectId={id} />

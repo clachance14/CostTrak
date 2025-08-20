@@ -132,7 +132,7 @@ async function validateMigration() {
 
     if (divisionStats) {
       const divisionCounts = new Map<string, number>()
-      divisionStats.forEach(pd => {
+      divisionStats.forEach((pd: any) => {
         const key = `${pd.divisions.name} (${pd.divisions.code})`
         divisionCounts.set(key, (divisionCounts.get(key) || 0) + 1)
       })

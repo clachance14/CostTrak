@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
   Download, 
   RefreshCw, 
-  AlertCircle,
+  CircleAlert,
   Calendar,
   FileSpreadsheet,
   Upload
@@ -266,7 +266,7 @@ export function LaborTab({ projectId, projectName, jobNumber }: LaborTabProps) {
   if (error) {
     return (
       <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
+        <CircleAlert className="h-4 w-4" />
         <AlertDescription>
           Failed to load labor analytics. Please try again later.
         </AlertDescription>

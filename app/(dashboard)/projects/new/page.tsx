@@ -15,7 +15,7 @@ import { POLineItemInput, type POLineItem } from "@/components/ui/po-line-item-i
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Upload, FileSpreadsheet, ChevronLeft, ChevronRight, AlertCircle, ChevronDown, Loader2 } from 'lucide-react'
+import { Upload, FileSpreadsheet, ChevronLeft, ChevronRight, CircleAlert, ChevronDown, LoaderCircle } from 'lucide-react'
 import type { User } from '@/types/api'
 import { cn } from '@/lib/utils'
 
@@ -31,6 +31,7 @@ interface FormData {
   // Contract Information
   clientPONumber: string
   poLineItems: POLineItem[]
+  baseMarginPercentage: number
 
   // Budget Breakdown
   budgetSource: 'manual' | 'import'
@@ -113,6 +114,7 @@ export default function ProjectSetupForm() {
     clientRepresentative: "",
     clientPONumber: "",
     poLineItems: [{ id: `line-${Date.now()}`, description: '', amount: 0 }],
+    baseMarginPercentage: 15,
     budgetSource: 'manual',
     labor: 0,
     smallToolsConsumables: 0,
@@ -196,9 +198,9 @@ export default function ProjectSetupForm() {
           formData.poLineItems.every(item => item.description && item.amount > 0)
         )
       case 3:
-        // For import mode, check if we have a budget preview with data
+        // For import mode, just check if a file is selected
         if (formData.budgetSource === 'import') {
-          return budgetPreview && budgetPreview.totals && budgetPreview.totals.grand_total > 0
+          return budgetFile !== null
         }
         // For manual mode, check if any budget values are entered
         return totalEstimatedJobCost > 0
@@ -269,12 +271,14 @@ export default function ProjectSetupForm() {
 
   const handleBudgetFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
+    console.log('[DEBUG] Budget file selected:', selectedFile?.name)
     if (!selectedFile) return
 
     setBudgetFile(selectedFile)
     setBudgetError(null)
     setBudgetPreview(null)
     setLoadingPreview(true)
+    console.log('[DEBUG] Starting preview process...')
 
     try {
       // Create a temporary project ID for preview (will use real ID after creation)
@@ -285,14 +289,18 @@ export default function ProjectSetupForm() {
       formData.append('projectId', tempProjectId)
       formData.append('mode', 'preview')
 
+      console.log('[DEBUG] Sending preview request to /api/project-budgets/import-coversheet')
       const response = await fetch('/api/project-budgets/import-coversheet', {
         method: 'POST',
         body: formData
       })
 
+      console.log('[DEBUG] Response status:', response.status)
       const result = await response.json()
+      console.log('[DEBUG] Response data:', result)
 
       if (!response.ok) {
+        console.error('[DEBUG] API error:', result.error)
         throw new Error(result.error || 'Failed to preview file')
       }
 
@@ -312,10 +320,12 @@ export default function ProjectSetupForm() {
         }
       }
       
+      console.log('[DEBUG] Mapped data:', mappedData)
       setBudgetPreview(mappedData)
       
       // Update form data with imported totals
       if (mappedData.totals.grand_total > 0) {
+        console.log('[DEBUG] Updating form data with imported totals')
         setFormData(prev => ({
           ...prev,
           budgetSource: 'import',
@@ -327,11 +337,14 @@ export default function ProjectSetupForm() {
           otherBudget: 0
         }))
       }
+      console.log('[DEBUG] Preview loaded successfully')
     } catch (err) {
+      console.error('[DEBUG] Preview error:', err)
       setBudgetError(err instanceof Error ? err.message : 'Failed to preview file')
       setBudgetPreview(null)
     } finally {
       setLoadingPreview(false)
+      console.log('[DEBUG] Preview process complete')
     }
   }, [])
 
@@ -344,6 +357,7 @@ export default function ProjectSetupForm() {
       project_manager_id: formData.projectManagerId,
       superintendent_id: formData.projectManagerId,
       original_contract: totalContractAmount,
+      base_margin_percentage: formData.baseMarginPercentage,
       start_date: new Date().toISOString(),
       end_date: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(),
       status: 'active',
@@ -519,6 +533,23 @@ export default function ProjectSetupForm() {
           />
         </div>
 
+        <div className="space-y-2">
+          <Label htmlFor="baseMarginPercentage">Target Profit Margin (%)</Label>
+          <Input
+            id="baseMarginPercentage"
+            type="number"
+            min="0"
+            max="100"
+            step="0.5"
+            value={formData.baseMarginPercentage}
+            onChange={(e) => handleInputChange("baseMarginPercentage", parseFloat(e.target.value) || 0)}
+            placeholder="15"
+          />
+          <p className="text-sm text-muted-foreground">
+            This margin will be used for early-stage budget projections
+          </p>
+        </div>
+
         <Separator />
 
         <div>
@@ -576,99 +607,337 @@ export default function ProjectSetupForm() {
                 <p className="text-sm text-foreground/80">File must contain a BUDGETS sheet</p>
               </label>
             </div>
+            
+            {/* Debug Information Panel */}
+            <div className="p-4 bg-gray-50 rounded-lg space-y-2 text-sm mt-4">
+              <div className="font-medium text-gray-700 mb-2">Debug Information:</div>
+              <div className="flex justify-between">
+                <span className="font-medium">File Selected:</span>
+                <span className={budgetFile ? 'text-green-600' : 'text-gray-400'}>
+                  {budgetFile ? `✓ ${budgetFile.name}` : '✗ No file'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium">Loading Preview:</span>
+                <span className={loadingPreview ? 'text-yellow-600' : 'text-gray-400'}>
+                  {loadingPreview ? '⟳ Processing...' : '• Idle'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium">Preview Data:</span>
+                <span className={budgetPreview ? 'text-green-600' : 'text-gray-400'}>
+                  {budgetPreview ? '✓ Loaded' : '✗ Not loaded'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium">Next Button Active:</span>
+                <span className={budgetFile ? 'text-green-600 font-bold' : 'text-red-600'}>
+                  {budgetFile ? 'YES - File selected' : 'NO - Select a file'}
+                </span>
+              </div>
+              {budgetError && (
+                <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-700">
+                  <strong>Error:</strong> {budgetError}
+                </div>
+              )}
+            </div>
+            
+            {/* Loading indicator */}
+            {loadingPreview && (
+              <div className="flex items-center gap-2 p-4 bg-blue-50 rounded-lg mt-4">
+                <LoaderCircle className="h-4 w-4 animate-spin text-blue-600" />
+                <span className="text-blue-700">Processing Excel file...</span>
+              </div>
+            )}
+            
+            {/* Error display */}
+            {budgetError && !loadingPreview && (
+              <Alert variant="destructive" className="mt-4">
+                <CircleAlert className="h-4 w-4" />
+                <AlertDescription>
+                  {budgetError}
+                  <div className="mt-2 text-sm">
+                    You can still proceed with the file or switch to manual entry.
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
 
-            {/* Preview */}
-            {budgetPreview && budgetPreview.isValid && (
-              <div className="space-y-4">
+            {/* Preview - Same structure as working budget-import-coversheet page */}
+            {budgetPreview && (
+              <div className="space-y-4 mt-4">
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <p className="text-sm font-medium text-green-800">Import Summary</p>
                   <p className="text-2xl font-bold text-green-600 mt-1">
-                    Total Budget: {formatCurrency(budgetPreview.totalBudget)}
+                    Total Budget: {formatCurrency(budgetPreview.totals?.grand_total || 0)}
                   </p>
                 </div>
-                
-                {/* Category Breakdown Section */}
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                  <p className="text-sm font-medium text-amber-800 mb-3">Budget Category Mapping</p>
-                  <div className="space-y-2">
-                    {Object.entries(budgetPreview.categoryBreakdown).map(([category, data]) => {
-                      if (data.total === 0) return null
-                      return (
-                        <div key={category} className="border-l-4 border-l-amber-400 pl-3">
-                          <div className="flex justify-between items-center">
-                            <span className="font-medium capitalize">
-                              {category.replace(/_/g, ' ')}: {formatCurrency(data.total)}
-                            </span>
+
+                <Tabs value={selectedBudgetTab} onValueChange={setSelectedBudgetTab}>
+                  <TabsList className="grid grid-cols-6 w-full">
+                    <TabsTrigger value="summary">Summary</TabsTrigger>
+                    <TabsTrigger value="wbs">WBS Structure</TabsTrigger>
+                    <TabsTrigger value="labor">Labor</TabsTrigger>
+                    <TabsTrigger value="materials">Materials</TabsTrigger>
+                    <TabsTrigger value="equipment">Equipment</TabsTrigger>
+                    <TabsTrigger value="subs">Subcontracts</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="summary" className="space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm">Total Budget</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">
+                            ${(budgetPreview.totals?.grand_total || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                           </div>
-                          {category === 'other' && data.items.length > 0 && (
-                            <div className="mt-1 space-y-1">
-                              <p className="text-xs text-amber-700 font-medium">Items in &quot;Other&quot; category:</p>
-                              {data.items.map((item, idx) => (
-                                <p key={idx} className="text-xs text-amber-600 pl-2">• {item}</p>
-                              ))}
-                            </div>
-                          )}
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm">Line Items</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">
+                            {budgetPreview.details ? Object.values(budgetPreview.details).reduce((sum, items) => sum + (Array.isArray(items) ? items.length : 0), 0) : 0}
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm">WBS Codes</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">
+                            {budgetPreview.wbsStructure?.length || 0}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2">Budget by Category</h3>
+                      <div className="space-y-2">
+                        {/* Labor breakdown */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between items-center py-2 border-b font-semibold">
+                            <span>Labor</span>
+                            <span>${(budgetPreview.totals?.labor || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-1 pl-4 text-sm text-muted-foreground">
+                            <span>Direct Labor</span>
+                            <span>${(budgetPreview.totals?.laborDirect || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-1 pl-4 text-sm text-muted-foreground">
+                            <span>Indirect Labor</span>
+                            <span>${(budgetPreview.totals?.laborIndirect || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-1 pl-4 text-sm text-muted-foreground border-b">
+                            <span>Staff Labor</span>
+                            <span>${(budgetPreview.totals?.laborStaff || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                          </div>
                         </div>
-                      )
-                    })}
-                  </div>
-                </div>
-                
-                {/* Detailed Line Items by Discipline */}
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-foreground/80">Detailed Budget by Discipline:</p>
-                  {budgetPreview.disciplines.map((discipline, i) => (
-                    <details key={i} className="bg-background rounded border border-foreground/10">
-                      <summary className="p-3 cursor-pointer hover:bg-muted/50">
-                        <div className="inline-flex justify-between items-center w-full">
-                          <span className="font-medium">{discipline.name}</span>
-                          <span className="text-sm text-foreground/60">
-                            {formatCurrency(discipline.total)} ({discipline.items.length} items)
+                        
+                        {/* Non-labor categories */}
+                        <div className="flex justify-between items-center py-2 border-b">
+                          <span>Materials</span>
+                          <span className="font-medium">
+                            ${(budgetPreview.totals?.material || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                           </span>
                         </div>
-                      </summary>
-                      <div className="border-t border-foreground/10">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-foreground/5">
+                        <div className="flex justify-between items-center py-2 border-b">
+                          <span>Equipment</span>
+                          <span className="font-medium">
+                            ${(budgetPreview.totals?.equipment || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b">
+                          <span>Subcontracts</span>
+                          <span className="font-medium">
+                            ${(budgetPreview.totals?.subcontract || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b">
+                          <span>Small Tools & Consumables</span>
+                          <span className="font-medium">
+                            ${(budgetPreview.totals?.smallTools || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {budgetPreview.details && Object.keys(budgetPreview.details).length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold mb-2">Sheets Processed</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.keys(budgetPreview.details).map(sheetName => (
+                            <Badge key={sheetName} variant="secondary">
+                              {sheetName} ({budgetPreview.details[sheetName].length} items)
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="wbs" className="space-y-4">
+                    {budgetPreview.wbsStructure && budgetPreview.wbsStructure.length > 0 ? (
+                      <div className="border rounded-lg">
+                        {budgetPreview.wbsStructure.map(node => renderWBSNode(node))}
+                      </div>
+                    ) : (
+                      <div className="text-center text-muted-foreground py-8">
+                        No WBS structure found
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="labor">
+                    <div className="space-y-4">
+                      {['DIRECTS', 'INDIRECTS', 'STAFF'].map(sheet => (
+                        budgetPreview.details && budgetPreview.details[sheet] && (
+                          <div key={sheet}>
+                            <h3 className="font-semibold mb-2">{sheet}</h3>
+                            <div className="border rounded-lg overflow-hidden">
+                              <table className="w-full">
+                                <thead className="bg-muted">
+                                  <tr>
+                                    <th className="text-left p-2">WBS</th>
+                                    <th className="text-left p-2">Description</th>
+                                    <th className="text-right p-2">Hours</th>
+                                    <th className="text-right p-2">Total</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {budgetPreview.details[sheet].slice(0, 10).map((item, idx) => (
+                                    <tr key={idx} className="border-t">
+                                      <td className="p-2">{item.wbs_code || '-'}</td>
+                                      <td className="p-2">{item.description}</td>
+                                      <td className="text-right p-2">{item.manhours?.toLocaleString() || '-'}</td>
+                                      <td className="text-right p-2">
+                                        ${item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                              {budgetPreview.details[sheet].length > 10 && (
+                                <div className="p-2 text-center text-sm text-muted-foreground bg-muted">
+                                  ... and {budgetPreview.details[sheet].length - 10} more items
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      ))}
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="materials">
+                    {budgetPreview.details && budgetPreview.details['MATERIALS'] ? (
+                      <div className="border rounded-lg overflow-hidden">
+                        <table className="w-full">
+                          <thead className="bg-muted">
+                            <tr>
+                              <th className="text-left p-2">WBS</th>
                               <th className="text-left p-2">Description</th>
-                              <th className="text-right p-2">Manhours</th>
-                              <th className="text-right p-2">Amount</th>
-                              <th className="text-left p-2">Category</th>
+                              <th className="text-right p-2">Quantity</th>
+                              <th className="text-right p-2">Unit</th>
+                              <th className="text-right p-2">Total</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {discipline.items.map((item, idx) => (
-                              <tr key={idx} className={`border-b border-foreground/5 ${item.category === 'other' ? 'bg-amber-50' : ''}`}>
-                                <td className="p-2">{item.cost_type}</td>
-                                <td className="text-right p-2">{item.manhours || '-'}</td>
-                                <td className="text-right p-2">{formatCurrency(item.value)}</td>
-                                <td className="p-2">
-                                  <span className={`text-xs px-2 py-1 rounded-full ${
-                                    item.category === 'other' 
-                                      ? 'bg-amber-200 text-amber-800' 
-                                      : 'bg-gray-200 text-gray-700'
-                                  }`}>
-                                    {item.category.replace(/_/g, ' ')}
-                                  </span>
+                            {budgetPreview.details['MATERIALS'].slice(0, 20).map((item, idx) => (
+                              <tr key={idx} className="border-t">
+                                <td className="p-2">{item.wbs_code || '-'}</td>
+                                <td className="p-2">{item.description}</td>
+                                <td className="text-right p-2">{item.quantity?.toLocaleString() || '-'}</td>
+                                <td className="text-right p-2">{item.unit_of_measure || '-'}</td>
+                                <td className="text-right p-2">
+                                  ${item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                 </td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
                       </div>
-                    </details>
-                  ))}
-                </div>
-              </div>
-            )}
+                    ) : (
+                      <div className="text-center text-muted-foreground py-8">
+                        No materials data found
+                      </div>
+                    )}
+                  </TabsContent>
 
-            {budgetPreview && !budgetPreview.isValid && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-sm font-medium text-red-800">Import Error</p>
-                {budgetPreview.errors.map((error, i) => (
-                  <p key={i} className="text-sm text-red-600 mt-1">{error}</p>
-                ))}
+                  <TabsContent value="equipment">
+                    {budgetPreview.details && budgetPreview.details['GENERAL EQUIPMENT'] ? (
+                      <div className="border rounded-lg overflow-hidden">
+                        <table className="w-full">
+                          <thead className="bg-muted">
+                            <tr>
+                              <th className="text-left p-2">WBS</th>
+                              <th className="text-left p-2">Description</th>
+                              <th className="text-right p-2">Quantity</th>
+                              <th className="text-right p-2">Duration</th>
+                              <th className="text-right p-2">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {budgetPreview.details['GENERAL EQUIPMENT'].slice(0, 20).map((item, idx) => (
+                              <tr key={idx} className="border-t">
+                                <td className="p-2">{item.wbs_code || '-'}</td>
+                                <td className="p-2">{item.description}</td>
+                                <td className="text-right p-2">{item.quantity?.toLocaleString() || '-'}</td>
+                                <td className="text-right p-2">{item.duration_days || '-'}</td>
+                                <td className="text-right p-2">
+                                  ${item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-center text-muted-foreground py-8">
+                        No equipment data found
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="subs">
+                    {budgetPreview.details && budgetPreview.details['SUBS'] ? (
+                      <div className="border rounded-lg overflow-hidden">
+                        <table className="w-full">
+                          <thead className="bg-muted">
+                            <tr>
+                              <th className="text-left p-2">WBS</th>
+                              <th className="text-left p-2">Description</th>
+                              <th className="text-left p-2">Contractor</th>
+                              <th className="text-right p-2">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {budgetPreview.details['SUBS'].slice(0, 20).map((item, idx) => (
+                              <tr key={idx} className="border-t">
+                                <td className="p-2">{item.wbs_code || '-'}</td>
+                                <td className="p-2">{item.description}</td>
+                                <td className="p-2">{item.contractor_name || '-'}</td>
+                                <td className="text-right p-2">
+                                  ${item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-center text-muted-foreground py-8">
+                        No subcontractor data found
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </div>
             )}
           </div>
@@ -872,7 +1141,13 @@ export default function ProjectSetupForm() {
               </div>
             </div>
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <Label className="text-sm font-medium text-blue-800">Estimated Profit Margin %</Label>
+              <Label className="text-sm font-medium text-blue-800">Target Margin %</Label>
+              <div className="text-2xl font-bold text-blue-600 mt-1">
+                {formatPercentage(formData.baseMarginPercentage)}
+              </div>
+            </div>
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <Label className="text-sm font-medium text-blue-800">Calculated Margin %</Label>
               <div className="text-2xl font-bold text-blue-600 mt-1">
                 {formatPercentage(estimatedProfitMargin)}
               </div>

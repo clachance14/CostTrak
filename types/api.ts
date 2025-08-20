@@ -30,6 +30,7 @@ export interface Project {
   project_manager_id: string
   original_contract: number
   revised_contract: number
+  base_margin_percentage?: number
   start_date: string
   end_date: string
   status: 'active' | 'on_hold' | 'completed' | 'cancelled'

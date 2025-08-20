@@ -4,16 +4,15 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { 
-  Upload, 
- 
-  AlertCircle, 
-  CheckCircle,
+  CircleAlert, 
+  CircleCheck,
   Download,
   ArrowLeft,
   Info
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { FileDropZone } from '@/components/ui/file-drop-zone'
 import { useUser } from '@/hooks/use-auth'
 import * as XLSX from 'xlsx'
 
@@ -93,10 +92,7 @@ export default function PurchaseOrdersImportPage() {
     }
   })
 
-  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0]
-    if (!selectedFile) return
-
+  const handleFileSelect = useCallback(async (selectedFile: File) => {
     setFile(selectedFile)
     setPreview(null)
     setImportResult(null)
@@ -200,7 +196,7 @@ export default function PurchaseOrdersImportPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card className="p-8 text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <CircleAlert className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">Permission Denied</h2>
           <p className="text-foreground">You don&apos;t have permission to import purchase orders.</p>
           <Button
@@ -285,22 +281,19 @@ export default function PurchaseOrdersImportPage() {
 
       {/* File Upload */}
       <Card className="p-6 mb-6">
-        <div className="border-2 border-dashed border-foreground/30 rounded-lg p-8 text-center">
-          <input
-            type="file"
-            accept=".csv,.xlsx,.xls"
-            onChange={handleFileSelect}
-            className="hidden"
-            id="file-upload"
-          />
-          <label htmlFor="file-upload" className="cursor-pointer">
-            <Upload className="h-12 w-12 text-foreground mx-auto mb-4" />
-            <p className="text-lg font-medium text-foreground mb-2">
-              {file ? file.name : 'Click to upload or drag and drop'}
-            </p>
-            <p className="text-sm text-foreground/80">ICS PO Log CSV files up to 10MB</p>
-          </label>
-        </div>
+        <FileDropZone
+          onFileSelect={handleFileSelect}
+          acceptedFileTypes={['.csv', '.xlsx', '.xls']}
+          maxFileSize={10 * 1024 * 1024} // 10MB
+          file={file}
+          onFileRemove={() => {
+            setFile(null)
+            setPreview(null)
+            setImportResult(null)
+          }}
+          placeholder="Click to upload or drag and drop"
+          description="ICS PO Log CSV files up to 10MB"
+        />
       </Card>
 
       {/* Preview */}
@@ -311,7 +304,7 @@ export default function PurchaseOrdersImportPage() {
           {preview.errors.length > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
               <div className="flex items-start">
-                <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-2" />
+                <CircleAlert className="h-5 w-5 text-red-500 mt-0.5 mr-2" />
                 <div>
                   <p className="font-medium text-red-800">Validation Errors:</p>
                   <ul className="list-disc ml-5 mt-1">
@@ -368,9 +361,9 @@ export default function PurchaseOrdersImportPage() {
         <Card className="p-6 mb-6">
           <div className={`flex items-start ${importResult.success ? 'text-green-700' : 'text-red-700'}`}>
             {importResult.success ? (
-              <CheckCircle className="h-5 w-5 mt-0.5 mr-2" />
+              <CircleCheck className="h-5 w-5 mt-0.5 mr-2" />
             ) : (
-              <AlertCircle className="h-5 w-5 mt-0.5 mr-2" />
+              <CircleAlert className="h-5 w-5 mt-0.5 mr-2" />
             )}
             <div className="flex-1">
               <h3 className="font-semibold text-lg mb-2">

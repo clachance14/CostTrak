@@ -6,8 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { LoadingSpinner } from '@/components/ui/loading'
+import { FileDropZone } from '@/components/ui/file-drop-zone'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Upload, FileSpreadsheet, AlertCircle, CheckCircle, X } from 'lucide-react'
+import { Upload, CircleAlert, CircleCheck, X } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import * as XLSX from 'xlsx'
 
@@ -47,7 +48,6 @@ export default function EmployeeImportPage() {
   const [errors, setErrors] = useState<ImportError[]>([])
   const [summary, setSummary] = useState<ImportSummary | null>(null)
   const [craftTypeSummary, setCraftTypeSummary] = useState<CraftTypeSummary | null>(null)
-  const [dragActive, setDragActive] = useState(false)
   const [importMode] = useState<'create-only' | 'update'>('update') // Always update mode
 
   const parseStringValue = (value: unknown): string => {
@@ -66,7 +66,7 @@ export default function EmployeeImportPage() {
   }
 
 
-  const handleFile = useCallback(async (selectedFile: File) => {
+  const handleFileSelect = useCallback(async (selectedFile: File) => {
     if (!selectedFile.name.match(/\.(xlsx|xls)$/)) {
       toast({
         title: 'Invalid file type',
@@ -143,31 +143,6 @@ export default function EmployeeImportPage() {
     }
   }, [])
 
-  const handleDrag = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true)
-    } else if (e.type === 'dragleave') {
-      setDragActive(false)
-    }
-  }, [])
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragActive(false)
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0])
-    }
-  }, [handleFile])
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFile(e.target.files[0])
-    }
-  }
 
   const handleImport = async () => {
     if (!file) return
@@ -253,37 +228,16 @@ export default function EmployeeImportPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center ${
-                dragActive ? 'border-primary bg-primary/10' : 'border-gray-300'
-              }`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
-              <FileSpreadsheet className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-sm text-gray-600 mb-2">
-                Drag and drop your Excel file here, or click to browse
-              </p>
-              <input
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={handleFileInput}
-                className="hidden"
-                id="file-upload"
-              />
-              <label 
-                htmlFor="file-upload"
-                className="inline-flex items-center justify-center rounded-md font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 cursor-pointer transition-colors"
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                Select File
-              </label>
-            </div>
+            <FileDropZone
+              onFileSelect={handleFileSelect}
+              acceptedFileTypes={['.xlsx', '.xls']}
+              maxFileSize={50 * 1024 * 1024} // 50MB
+              placeholder="Drag and drop your Excel file here, or click to browse"
+              description="Excel files (.xlsx, .xls) up to 50MB"
+            />
 
             <Alert className="mt-4">
-              <AlertCircle className="h-4 w-4" />
+              <CircleAlert className="h-4 w-4" />
               <AlertDescription>
                 <strong>Note:</strong> Employee numbers will automatically have &apos;T&apos; prefix added if not present.
                 This import will update existing employees and create new ones.
@@ -311,7 +265,7 @@ export default function EmployeeImportPage() {
             {/* Import Options */}
             <div className="mb-6">
               <Alert>
-                <AlertCircle className="h-4 w-4" />
+                <CircleAlert className="h-4 w-4" />
                 <AlertDescription>
                   <strong>Import Behavior:</strong> This import will update existing employees (base rates, categories, and blank fields) and create any new employees not in the system. Craft types will be automatically assigned based on employee categories and pay grades.
                 </AlertDescription>
@@ -373,7 +327,7 @@ export default function EmployeeImportPage() {
               </>
             ) : (
               <Alert>
-                <AlertCircle className="h-4 w-4" />
+                <CircleAlert className="h-4 w-4" />
                 <AlertDescription>
                   No valid employee data found in the file. Please check the file format.
                 </AlertDescription>
@@ -423,7 +377,7 @@ export default function EmployeeImportPage() {
                   </div>
                   {craftTypeSummary.errors && craftTypeSummary.errors.length > 0 && (
                     <Alert className="mt-4" variant="destructive">
-                      <AlertCircle className="h-4 w-4" />
+                      <CircleAlert className="h-4 w-4" />
                       <AlertDescription>
                         {craftTypeSummary.errors.length} craft type(s) failed to process
                       </AlertDescription>
@@ -460,7 +414,7 @@ export default function EmployeeImportPage() {
 
               <div className="flex gap-4">
                 <Button onClick={() => router.push('/employees')}>
-                  <CheckCircle className="mr-2 h-4 w-4" />
+                  <CircleCheck className="mr-2 h-4 w-4" />
                   View Employees
                 </Button>
                 <Button variant="outline" onClick={resetImport}>

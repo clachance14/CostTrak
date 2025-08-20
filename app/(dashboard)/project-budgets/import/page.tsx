@@ -4,8 +4,8 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { 
-  AlertCircle, 
-  CheckCircle,
+  CircleAlert, 
+  CircleCheck,
   Download,
   ArrowLeft,
   Info,
@@ -304,7 +304,7 @@ export default function ProjectBudgetImportPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card className="p-8 text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <CircleAlert className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">Permission Denied</h2>
           <p className="text-foreground">You must be logged in to import project budgets.</p>
           <Button
@@ -417,7 +417,7 @@ export default function ProjectBudgetImportPage() {
           {preview.errors.length > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
               <div className="flex items-start">
-                <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-2" />
+                <CircleAlert className="h-5 w-5 text-red-500 mt-0.5 mr-2" />
                 <div>
                   <p className="font-medium text-red-800">Validation Errors:</p>
                   <ul className="list-disc ml-5 mt-1">
@@ -468,9 +468,9 @@ export default function ProjectBudgetImportPage() {
         <Card className="p-6 mb-6">
           <div className={`flex items-start ${importResult.success ? 'text-green-700' : 'text-red-700'}`}>
             {importResult.success ? (
-              <CheckCircle className="h-5 w-5 mt-0.5 mr-2" />
+              <CircleCheck className="h-5 w-5 mt-0.5 mr-2" />
             ) : (
-              <AlertCircle className="h-5 w-5 mt-0.5 mr-2" />
+              <CircleAlert className="h-5 w-5 mt-0.5 mr-2" />
             )}
             <div className="flex-1">
               <h3 className="font-semibold text-lg mb-2">

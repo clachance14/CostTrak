@@ -825,52 +825,12 @@ export class ExcelBudgetAnalyzer {
     const items: BudgetLineItem[] = []
     let rowCounter = 1
     
-    // First pass: Calculate total risk across all disciplines
-    let totalRisk = 0
-    let totalBaseForRisk = 0
-    
-    disciplines.forEach(disc => {
-      const risk = disc.categories['RISK']?.value || 0
-      totalRisk += risk
-      
-      // For risk allocation, we need the base value excluding risk itself
-      if (disc.discipline === 'GENERAL STAFFING') {
-        // For GENERAL STAFFING, use the indirect labor value as the base
-        totalBaseForRisk += disc.categories['INDIRECT LABOR']?.value || 0
-      } else {
-        // For other disciplines, sum all base categories
-        totalBaseForRisk += (disc.categories['DIRECT LABOR']?.value || 0) +
-                           (disc.categories['INDIRECT LABOR']?.value || 0) +
-                           (disc.categories['MATERIALS']?.value || 0) +
-                           (disc.categories['EQUIPMENT']?.value || 0) +
-                           (disc.categories['SUBCONTRACTS']?.value || 0) +
-                           (disc.categories['SMALL TOOLS & CONSUMABLES']?.value || 0)
-      }
-    })
-    
-    // Second pass: Process disciplines with proportional risk allocation
+    // Process each discipline using its total value from DISCIPLINE TOTALS row
     disciplines.forEach(disc => {
       // Special handling for GENERAL STAFFING discipline - treat as Staff Labor
       if (disc.discipline === 'GENERAL STAFFING') {
-        // Get the base value for GENERAL STAFFING (from INDIRECT LABOR row)
-        const staffBaseValue = disc.categories['INDIRECT LABOR']?.value || 0
-        
-        // GENERAL STAFFING gets its proportional share of add-ons
-        const addOns = {
-          taxesInsurance: disc.categories['TAXES & INSURANCE']?.value || 0,
-          perdiem: disc.categories['PERDIEM']?.value || 0,
-          addOns: disc.categories['ADD ONS']?.value || 0
-        }
-        
-        // Staff gets Taxes & Insurance, Perdiem, and Add Ons
-        let staffAdditions = addOns.taxesInsurance + addOns.perdiem + addOns.addOns
-        
-        // Add proportional share of total project risk
-        if (totalRisk > 0 && totalBaseForRisk > 0) {
-          staffAdditions += (staffBaseValue / totalBaseForRisk) * totalRisk
-        }
-        
-        const totalStaffCost = staffBaseValue + staffAdditions
+        // Use the discipline total directly (already includes all add-ons and risk)
+        const totalStaffCost = disc.value
         
         if (totalStaffCost > 0) {
           items.push({
@@ -897,7 +857,10 @@ export class ExcelBudgetAnalyzer {
         return // Skip normal processing for GENERAL STAFFING
       }
       
-      // Calculate base amounts for proportional distributions
+      // Get the total value for this discipline (from DISCIPLINE TOTALS row)
+      const disciplineTotal = disc.value
+      
+      // Get base amounts for calculating proportions
       const baseAmounts = {
         directLabor: disc.categories['DIRECT LABOR']?.value || 0,
         indirectLabor: disc.categories['INDIRECT LABOR']?.value || 0,
@@ -907,7 +870,7 @@ export class ExcelBudgetAnalyzer {
         smallTools: disc.categories['SMALL TOOLS & CONSUMABLES']?.value || 0
       }
       
-      // Calculate add-on amounts
+      // Get add-on amounts that are already included in the discipline total
       const addOns = {
         taxesInsurance: disc.categories['TAXES & INSURANCE']?.value || 0,
         perdiem: disc.categories['PERDIEM']?.value || 0,
@@ -916,58 +879,49 @@ export class ExcelBudgetAnalyzer {
         risk: disc.categories['RISK']?.value || 0
       }
       
-      // Calculate total base for proportional distributions
-      const totalLaborBase = baseAmounts.directLabor + baseAmounts.indirectLabor
-      const totalAllBase = Object.values(baseAmounts).reduce((sum, val) => sum + val, 0)
+      // Calculate the sum of all base amounts and add-ons (excluding the total row)
+      const sumOfParts = Object.values(baseAmounts).reduce((sum, val) => sum + val, 0) +
+                         Object.values(addOns).reduce((sum, val) => sum + val, 0)
       
-      // Calculate proportional distributions
-      let directLaborAdditions = 0
-      let indirectLaborAdditions = 0
-      let staffLaborAdditions = 0
-      let materialsAdditions = 0
-      let equipmentAdditions = 0
-      let subcontractsAdditions = 0
-      let smallToolsAdditions = 0
+      // If there's a discrepancy, use proportional scaling to match the discipline total
+      const scaleFactor = sumOfParts > 0 ? disciplineTotal / sumOfParts : 1
       
-      // Taxes & Insurance: Distribute across all labor proportionally
-      if (addOns.taxesInsurance > 0 && totalLaborBase > 0) {
-        directLaborAdditions += (baseAmounts.directLabor / totalLaborBase) * addOns.taxesInsurance
-        indirectLaborAdditions += (baseAmounts.indirectLabor / totalLaborBase) * addOns.taxesInsurance
-        // Staff gets remaining if any (in case we add staff logic later)
-      }
-      
-      // Perdiem: Distribute between Direct + Indirect proportionally
-      if (addOns.perdiem > 0 && totalLaborBase > 0) {
-        directLaborAdditions += (baseAmounts.directLabor / totalLaborBase) * addOns.perdiem
-        indirectLaborAdditions += (baseAmounts.indirectLabor / totalLaborBase) * addOns.perdiem
-      }
-      
-      // Add Ons: Add entirely to Indirect
-      indirectLaborAdditions += addOns.addOns
-      
-      // Scaffolding: Add entirely to Subcontracts
-      subcontractsAdditions += addOns.scaffolding
-      
-      // Risk: Distribute proportionally across ALL categories using total project risk
-      if (totalRisk > 0 && totalBaseForRisk > 0) {
-        directLaborAdditions += (baseAmounts.directLabor / totalBaseForRisk) * totalRisk
-        indirectLaborAdditions += (baseAmounts.indirectLabor / totalBaseForRisk) * totalRisk
-        materialsAdditions += (baseAmounts.materials / totalBaseForRisk) * totalRisk
-        equipmentAdditions += (baseAmounts.equipment / totalBaseForRisk) * totalRisk
-        subcontractsAdditions += (baseAmounts.subcontracts / totalBaseForRisk) * totalRisk
-        smallToolsAdditions += (baseAmounts.smallTools / totalBaseForRisk) * totalRisk
-      }
-      
-      // Create simplified line items (only for categories with values > 0)
+      // Calculate final amounts with proper allocation of add-ons
       const finalAmounts = {
-        laborDirect: baseAmounts.directLabor + directLaborAdditions,
-        laborIndirect: baseAmounts.indirectLabor + indirectLaborAdditions,
-        laborStaff: staffLaborAdditions, // Currently 0, but ready for future use
-        materials: baseAmounts.materials + materialsAdditions,
-        equipment: baseAmounts.equipment + equipmentAdditions,
-        subcontracts: baseAmounts.subcontracts + subcontractsAdditions,
-        smallTools: baseAmounts.smallTools + smallToolsAdditions
+        laborDirect: 0,
+        laborIndirect: 0,
+        laborStaff: 0,
+        materials: 0,
+        equipment: 0,
+        subcontracts: 0,
+        smallTools: 0
       }
+      
+      // Allocate labor with its add-ons
+      if (baseAmounts.directLabor > 0 || baseAmounts.indirectLabor > 0) {
+        const totalLaborBase = baseAmounts.directLabor + baseAmounts.indirectLabor
+        const laborAddOns = addOns.taxesInsurance + addOns.perdiem + addOns.addOns
+        const laborShare = (baseAmounts.directLabor + baseAmounts.indirectLabor + laborAddOns) * scaleFactor
+        
+        if (totalLaborBase > 0) {
+          finalAmounts.laborDirect = (baseAmounts.directLabor / totalLaborBase) * laborShare
+          finalAmounts.laborIndirect = (baseAmounts.indirectLabor / totalLaborBase) * laborShare
+        }
+      }
+      
+      // Materials, Equipment, Small Tools get their base values plus proportional risk
+      finalAmounts.materials = (baseAmounts.materials + (baseAmounts.materials > 0 ? 
+        (baseAmounts.materials / sumOfParts) * addOns.risk : 0)) * scaleFactor
+      
+      finalAmounts.equipment = (baseAmounts.equipment + (baseAmounts.equipment > 0 ? 
+        (baseAmounts.equipment / sumOfParts) * addOns.risk : 0)) * scaleFactor
+      
+      finalAmounts.smallTools = (baseAmounts.smallTools + (baseAmounts.smallTools > 0 ? 
+        (baseAmounts.smallTools / sumOfParts) * addOns.risk : 0)) * scaleFactor
+      
+      // Subcontracts get base plus scaffolding and proportional risk
+      finalAmounts.subcontracts = (baseAmounts.subcontracts + addOns.scaffolding + 
+        (baseAmounts.subcontracts > 0 ? (baseAmounts.subcontracts / sumOfParts) * addOns.risk : 0)) * scaleFactor
       
       // Create line items for each category with positive amounts
       if (finalAmounts.laborDirect > 0) {
@@ -1403,6 +1357,21 @@ export class ExcelBudgetAnalyzer {
             budgetData.totals.totalManhours += item.manhours
           }
         })
+        
+        // Verify totals match discipline totals
+        const disciplineSum = budgetDisciplines.reduce((sum, disc) => sum + disc.value, 0)
+        const lineItemSum = budgetItems.reduce((sum, item) => sum + item.total_cost, 0)
+        
+        console.log(`[BUDGET TOTALS VERIFICATION]`)
+        console.log(`  Discipline Totals Sum: $${disciplineSum.toFixed(2)}`)
+        console.log(`  Line Items Sum: $${lineItemSum.toFixed(2)}`)
+        console.log(`  Grand Total: $${budgetData.totals.grandTotal.toFixed(2)}`)
+        
+        // If there's a discrepancy, adjust the grand total to match discipline totals
+        if (Math.abs(disciplineSum - lineItemSum) > 0.01) {
+          console.log(`  WARNING: Discrepancy detected! Using discipline totals sum.`)
+          budgetData.totals.grandTotal = disciplineSum
+        }
       }
     }
     

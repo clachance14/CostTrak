@@ -5,14 +5,18 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { 
   Upload as UploadIcon, 
-  AlertCircle, 
-  CheckCircle,
+  CircleAlert, 
+  CircleCheck,
   Download,
   ArrowLeft,
   Info as InfoIcon,
   FileSpreadsheet,
   Users,
-  Briefcase
+  Briefcase,
+  Wrench,
+  ChevronDown,
+  ChevronUp,
+  AlertCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -23,8 +27,13 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useUser } from '@/hooks/use-auth'
 import * as XLSX from 'xlsx'
 import { formatCurrency, cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import { parseExcelDate, EXCEL_HEADERS, EXCEL_COLUMNS } from '@/lib/validations/labor-import'
 import type { LaborImportResult } from '@/lib/validations/labor-import'
+import { EmployeeDataFixModal } from '@/components/labor/employee-data-fix-modal'
+import { BulkEmployeeFix } from '@/components/labor/bulk-employee-fix'
+import { ImportProgressIndicator } from '@/components/labor/import-progress-indicator'
+import { ErrorDetailsPanel } from '@/components/labor/error-details-panel'
 
 interface PreviewData {
   contractorNumber: string
@@ -100,10 +109,20 @@ export default function LaborImportPage() {
   const preselectedProjectId = searchParams.get('project_id')
   
   const { data: user } = useUser()
-  const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<File[]>([])
+  const [currentFileIndex, setCurrentFileIndex] = useState<number>(0)
   const [preview, setPreview] = useState<PreviewData | null>(null)
   const [selectedProject, setSelectedProject] = useState<string>(preselectedProjectId || '')
-  const [importResult, setImportResult] = useState<LaborImportResult | null>(null)
+  const [importResults, setImportResults] = useState<Map<string, LaborImportResult>>(new Map())
+  const [isProcessingBatch, setIsProcessingBatch] = useState(false)
+  const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set())
+  const [showRateFixModal, setShowRateFixModal] = useState(false)
+  const [employeesToFixRates, setEmployeesToFixRates] = useState<Array<{
+    employee_number: string
+    name: string
+    current_rate: number
+    new_rate: number
+  }>>([])
   
   // Setup dialog state
   const [showSetupDialog, setShowSetupDialog] = useState(false)
@@ -119,6 +138,14 @@ export default function LaborImportPage() {
   
   // State for tracking rate fetching
   const [isFetchingRates, setIsFetchingRates] = useState(false)
+  
+  // State for employee data fix
+  const [employeesToFix, setEmployeesToFix] = useState<any[]>([])
+  const [showBulkFix, setShowBulkFix] = useState(false)
+  const [showSingleFix, setShowSingleFix] = useState(false)
+  const [selectedEmployeeToFix, setSelectedEmployeeToFix] = useState<any>(null)
+  const [hasFixedEmployees, setHasFixedEmployees] = useState(false)
+  const [isAutoRetrying, setIsAutoRetrying] = useState(false)
 
   // Check permissions
   const canImport = user && user.role === 'project_manager'
@@ -150,6 +177,36 @@ export default function LaborImportPage() {
     }
   })
 
+  // Function to parse errors and extract employees with missing data
+  const parseEmployeeErrors = (errors: any[]) => {
+    const employeeMap = new Map<string, any>()
+    
+    errors.forEach(error => {
+      // Check for base_rate=0 errors
+      if (error.message?.includes('base_rate=0') || error.message?.includes('skipping wage calculations')) {
+        const data = error.data || {}
+        if (data.employee_number) {
+          // Only add if not already in the map (deduplication)
+          if (!employeeMap.has(data.employee_number)) {
+            // Try to find employee info from preview
+            const previewEmp = preview?.employees.find(e => e.employeeId === data.employee_number)
+            employeeMap.set(data.employee_number, {
+              employee_number: data.employee_number,
+              first_name: previewEmp?.firstName || data.name?.split(',')[1]?.trim() || '',
+              last_name: previewEmp?.lastName || data.name?.split(',')[0]?.trim() || '',
+              base_rate: 0,
+              error_message: error.message,
+              row: error.row
+            })
+          }
+        }
+      }
+    })
+    
+    // Convert map values to array (deduplicated list)
+    return Array.from(employeeMap.values())
+  }
+
   // Import mutation
   const importMutation = useMutation({
     mutationFn: async (formData: FormData) => {
@@ -167,20 +224,49 @@ export default function LaborImportPage() {
       return data
     },
     onSuccess: (data) => {
-      // Simplified import - no setup required
-      setImportResult(data)
+      // Clear auto-retry flag when import completes
+      setIsAutoRetrying(false)
+      
+      // Check for employees with missing data
+      if (data.errors && data.errors.length > 0) {
+        const employeesNeedingFix = parseEmployeeErrors(data.errors)
+        if (employeesNeedingFix.length > 0) {
+          setEmployeesToFix(employeesNeedingFix)
+        }
+      }
+      // Store result for current file
+      if (files[currentFileIndex]) {
+        const newResults = new Map(importResults)
+        newResults.set(files[currentFileIndex].name, data)
+        setImportResults(newResults)
+      }
+      
+      // If import was fully successful (no employees to fix), refresh the page after a short delay
+      if (data.success && (!data.errors || data.errors.length === 0)) {
+        setTimeout(() => {
+          window.location.reload()
+        }, 2000) // 2 second delay to show success message
+      }
     },
     onError: (error) => {
-      setImportResult({
-        success: false,
-        imported: 0,
-        updated: 0,
-        skipped: 0,
-        errors: [{
-          row: 0,
-          message: error.message
-        }]
-      })
+      // Clear auto-retry flag on error
+      setIsAutoRetrying(false)
+      
+      // Store error result for current file
+      if (files[currentFileIndex]) {
+        const newResults = new Map(importResults)
+        newResults.set(files[currentFileIndex].name, {
+          success: false,
+          imported: 0,
+          updated: 0,
+          skipped: 0,
+          errors: [{
+            row: 0,
+            message: error.message
+          }]
+        })
+        setImportResults(newResults)
+      }
     }
   })
 
@@ -249,9 +335,7 @@ export default function LaborImportPage() {
   }, [preview?.employees])
 
   const processFile = useCallback(async (selectedFile: File) => {
-    setFile(selectedFile)
     setPreview(null)
-    setImportResult(null)
 
     try {
       // Read and parse file for preview
@@ -410,9 +494,27 @@ export default function LaborImportPage() {
   }, [projectsData?.projects])
 
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0]
-    if (!selectedFile) return
-    await processFile(selectedFile)
+    const selectedFiles = e.target.files
+    if (!selectedFiles || selectedFiles.length === 0) return
+    
+    // Convert FileList to Array and filter for Excel files
+    const excelFiles = Array.from(selectedFiles).filter(file => 
+      file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
+    )
+    
+    if (excelFiles.length === 0) {
+      toast.error('Please select Excel files (.xlsx or .xls)')
+      return
+    }
+    
+    // Set files and process the first one for preview
+    setFiles(excelFiles)
+    setCurrentFileIndex(0)
+    setImportResults(new Map())
+    
+    if (excelFiles.length > 0) {
+      await processFile(excelFiles[0])
+    }
   }, [processFile])
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -444,13 +546,17 @@ export default function LaborImportPage() {
     setIsDragging(false)
     dragCounter.current = 0
 
-    const files = Array.from(e.dataTransfer.files)
-    const excelFile = files.find(file => 
+    const droppedFiles = Array.from(e.dataTransfer.files)
+    const excelFiles = droppedFiles.filter(file => 
       file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
     )
 
-    if (excelFile) {
-      await processFile(excelFile)
+    if (excelFiles.length > 0) {
+      // Set files and process the first one for preview
+      setFiles(excelFiles)
+      setCurrentFileIndex(0)
+      setImportResults(new Map())
+      await processFile(excelFiles[0])
     } else {
       // Show error for invalid file type
       setPreview({
@@ -460,25 +566,177 @@ export default function LaborImportPage() {
         employees: [],
         totals: { employees: 0, totalHours: 0, totalCost: 0 },
         isValid: false,
-        errors: ['Please drop an Excel file (.xlsx or .xls)']
+        errors: ['Please drop Excel files (.xlsx or .xls)']
       })
     }
   }, [processFile])
 
-  const handleImport = async () => {
-    if (!file || !preview?.isValid || !selectedProject) return
-
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('project_id', selectedProject)
+  const extractEmployeesNeedingRates = () => {
+    const employeeMap = new Map<string, { name: string, current_rate: number }>()
     
-    // If we just completed setup, add timestamp to force fresh queries
-    if (justCompletedSetup) {
-      formData.append('force_refresh', Date.now().toString())
-      setJustCompletedSetup(false) // Reset the flag
+    // Extract from all error messages across all results
+    Array.from(importResults.values()).forEach(result => {
+      if (result.errors) {
+        result.errors.forEach(error => {
+          if (error.message?.includes('base_rate=0') || 
+              error.message?.includes('Employee has base_rate=0') ||
+              error.message?.includes('New employee created with base_rate=0')) {
+            
+            // Try to extract employee info from error data if available
+            let employeeNumber = null
+            let name = 'Unknown'
+            
+            // First check if employee data is in the error object
+            if (error.data && typeof error.data === 'object') {
+              const errorData = error.data as any
+              if (errorData.employee_number) {
+                employeeNumber = errorData.employee_number
+              }
+              if (errorData.name) {
+                name = errorData.name
+              }
+            }
+            
+            // If not found in data, try to extract from message (format: T####)
+            if (!employeeNumber) {
+              const employeeMatch = error.message.match(/T\d+/)
+              if (employeeMatch) {
+                employeeNumber = employeeMatch[0]
+                
+                // Extract name if available
+                const nameMatch = error.message.match(/T\d+\s*-?\s*([^,]+)/) || 
+                                  error.message.match(/employee:\s*([^,]+)/)
+                if (nameMatch && nameMatch[1]) {
+                  name = nameMatch[1].trim()
+                }
+              }
+            }
+            
+            // If still no employee number, check for generic error at specific row
+            if (!employeeNumber && error.row) {
+              // This might be a generic error without employee ID
+              // We'll need to look at the preview data or make a note
+              employeeNumber = `Row_${error.row}`
+              name = `Employee at row ${error.row}`
+            }
+            
+            // Store unique employees
+            if (employeeNumber && !employeeMap.has(employeeNumber)) {
+              employeeMap.set(employeeNumber, { name, current_rate: 0 })
+            }
+          }
+        })
+      }
+    })
+    
+    // Convert to array for the modal
+    return Array.from(employeeMap.entries()).map(([employee_number, data]) => ({
+      employee_number,
+      name: data.name,
+      current_rate: data.current_rate,
+      new_rate: 0
+    }))
+  }
+
+  const removeFile = (index: number) => {
+    const newFiles = files.filter((_, i) => i !== index)
+    setFiles(newFiles)
+    
+    // Clear results for removed file
+    const removedFileName = files[index].name
+    const newResults = new Map(importResults)
+    newResults.delete(removedFileName)
+    setImportResults(newResults)
+    
+    // If removing current file, show next or clear preview
+    if (index === currentFileIndex) {
+      if (newFiles.length > 0) {
+        const newIndex = Math.min(index, newFiles.length - 1)
+        setCurrentFileIndex(newIndex)
+        processFile(newFiles[newIndex])
+      } else {
+        setPreview(null)
+        setCurrentFileIndex(0)
+      }
+    } else if (index < currentFileIndex) {
+      setCurrentFileIndex(currentFileIndex - 1)
+    }
+  }
+
+  const handleImport = async () => {
+    if (files.length === 0 || !selectedProject) {
+      toast.error('Please select files and a project')
+      return
     }
 
-    importMutation.mutate(formData)
+    setIsProcessingBatch(true)
+    const results = new Map<string, LaborImportResult>()
+
+    // Process files sequentially
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      setCurrentFileIndex(i)
+      
+      // Process file to get preview
+      await processFile(file)
+      
+      // Wait a moment for preview to be set
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('project_id', selectedProject)
+      
+      // If we just completed setup, add timestamp to force fresh queries
+      if (justCompletedSetup) {
+        formData.append('force_refresh', Date.now().toString())
+      }
+
+      try {
+        const response = await fetch('/api/labor-import', {
+          method: 'POST',
+          body: formData
+        })
+        
+        const data = await response.json()
+        results.set(file.name, data)
+        setImportResults(new Map(results))
+        
+        if (!response.ok) {
+          console.error(`Failed to import ${file.name}:`, data.error)
+        }
+      } catch (error) {
+        console.error(`Error importing ${file.name}:`, error)
+        results.set(file.name, {
+          success: false,
+          imported: 0,
+          updated: 0,
+          skipped: 0,
+          errors: [{
+            row: 0,
+            message: error instanceof Error ? error.message : 'Import failed'
+          }]
+        })
+        setImportResults(new Map(results))
+      }
+    }
+
+    setIsProcessingBatch(false)
+    setJustCompletedSetup(false)
+    
+    // Show summary
+    const totalImported = Array.from(results.values()).reduce((sum, r) => sum + r.imported, 0)
+    const totalUpdated = Array.from(results.values()).reduce((sum, r) => sum + r.updated, 0)
+    const totalErrors = Array.from(results.values()).reduce((sum, r) => sum + r.errors.length, 0)
+    
+    if (totalErrors === 0) {
+      toast.success(`Successfully processed ${files.length} file(s): ${totalImported} imported, ${totalUpdated} updated`)
+      setTimeout(() => {
+        window.location.reload()
+      }, 2000)
+    } else {
+      toast.warning(`Processed ${files.length} file(s) with ${totalErrors} total errors`)
+    }
   }
 
   const handleSetupComplete = async () => {
@@ -554,15 +812,8 @@ export default function LaborImportPage() {
       // Refresh craft types to ensure UI shows updated data
       await refetchCraftTypes()
       
-      // Show success message instead of auto-retry
-      setImportResult({
-        success: true,
-        imported: 0,
-        updated: 0,
-        skipped: 0,
-        errors: [],
-        message: 'Setup completed successfully! Crafts and employees have been created. Please click "Import Labor Data" again to import the file.'
-      } as LaborImportResult & { message?: string })
+      // Show success message
+      toast.success('Setup completed successfully! Crafts and employees have been created. Please click "Import Labor Data" again to import the files.')
       
       // Set flag to indicate setup just completed
       setJustCompletedSetup(true)
@@ -596,7 +847,7 @@ export default function LaborImportPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card className="p-8 text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <CircleAlert className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">Permission Denied</h2>
           <p className="text-foreground">You don&apos;t have permission to import labor data.</p>
           <Button
@@ -702,6 +953,7 @@ export default function LaborImportPage() {
           <input
             type="file"
             accept=".xlsx,.xls"
+            multiple
             onChange={handleFileSelect}
             className="hidden"
             id="file-upload"
@@ -721,24 +973,302 @@ export default function LaborImportPage() {
               <>
                 <FileSpreadsheet className="h-12 w-12 text-foreground/60 mx-auto mb-4" />
                 <p className="text-lg font-medium text-foreground mb-2">
-                  {file ? file.name : 'Click to upload or drag and drop'}
+                  {files.length > 0 ? `${files.length} file(s) selected` : 'Click to upload or drag and drop'}
                 </p>
-                <p className="text-sm text-foreground/80">Excel files (.xlsx, .xls) up to 10MB</p>
+                <p className="text-sm text-foreground/80">
+                  Excel files (.xlsx, .xls) - Multiple files supported
+                </p>
               </>
             )}
           </label>
         </div>
       </Card>
 
-      {/* Preview */}
-      {preview && (
+      {/* Selected Files List */}
+      {files.length > 0 && (
         <Card className="p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4">Preview</h3>
+          <h3 className="text-lg font-semibold mb-4">Selected Files ({files.length})</h3>
+          <div className="space-y-2">
+            {files.map((file, index) => {
+              const result = importResults.get(file.name)
+              const isExpanded = expandedErrors.has(file.name)
+              const hasErrors = result && result.errors && result.errors.length > 0
+              
+              // Parse errors to find employee issues
+              const employeeErrors = result?.errors?.filter(e => 
+                e.message?.includes('base_rate=0') || 
+                e.message?.includes('Employee has base_rate=0') ||
+                e.message?.includes('New employee created with base_rate=0')
+              ) || []
+              
+              const otherErrors = result?.errors?.filter(e => 
+                !e.message?.includes('base_rate=0') && 
+                !e.message?.includes('Employee has base_rate=0') &&
+                !e.message?.includes('New employee created with base_rate=0')
+              ) || []
+              
+              return (
+                <div key={`${file.name}-${index}`}>
+                  <div 
+                    className={cn(
+                      "flex items-center justify-between p-3 rounded-lg border",
+                      currentFileIndex === index && "bg-blue-50 border-blue-300",
+                      result?.success === true && "bg-green-50 border-green-300",
+                      result?.success === false && "bg-red-50 border-red-300"
+                    )}
+                  >
+                    <div className="flex items-center gap-3 flex-1">
+                      <FileSpreadsheet className="h-5 w-5 text-foreground/60" />
+                      <div className="flex-1">
+                        <p className="font-medium">{file.name}</p>
+                        <p className="text-sm text-foreground/60">
+                          {(file.size / 1024).toFixed(1)} KB
+                          {result && (
+                            <span className="ml-2">
+                              {result.success ? (
+                                <span className="text-green-600">
+                                  ✓ Processed ({result.imported + result.updated} records)
+                                </span>
+                              ) : (
+                                <span className="text-red-600">
+                                  ✗ Failed {hasErrors && `(${result.errors.length} errors)`}
+                                </span>
+                              )}
+                            </span>
+                          )}
+                          {isProcessingBatch && currentFileIndex === index && (
+                            <span className="ml-2 text-blue-600">Processing...</span>
+                          )}
+                        </p>
+                        {hasErrors && employeeErrors.length > 0 && (
+                          <p className="text-xs text-amber-600 mt-1">
+                            <AlertCircle className="inline h-3 w-3 mr-1" />
+                            {employeeErrors.length} employee(s) missing pay rates
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {hasErrors && !isProcessingBatch && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const newExpanded = new Set(expandedErrors)
+                            if (isExpanded) {
+                              newExpanded.delete(file.name)
+                            } else {
+                              newExpanded.add(file.name)
+                            }
+                            setExpandedErrors(newExpanded)
+                          }}
+                        >
+                          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </Button>
+                      )}
+                      {currentFileIndex !== index && !isProcessingBatch && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setCurrentFileIndex(index)
+                            processFile(files[index])
+                          }}
+                        >
+                          Preview
+                        </Button>
+                      )}
+                      {!isProcessingBatch && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFile(index)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Expanded Error Details */}
+                  {isExpanded && hasErrors && (
+                    <div className="mt-2 ml-8 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      {employeeErrors.length > 0 && (
+                        <div className="mb-3">
+                          <h5 className="font-medium text-sm text-amber-800 mb-2">
+                            Employees Missing Pay Rates:
+                          </h5>
+                          <div className="space-y-1">
+                            {employeeErrors.slice(0, 5).map((error, i) => (
+                              <div key={i} className="text-xs text-gray-700">
+                                • Row {error.row}: {error.message}
+                              </div>
+                            ))}
+                            {employeeErrors.length > 5 && (
+                              <p className="text-xs text-gray-500 italic">
+                                ... and {employeeErrors.length - 5} more
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {otherErrors.length > 0 && (
+                        <div>
+                          <h5 className="font-medium text-sm text-red-800 mb-2">
+                            Other Errors:
+                          </h5>
+                          <div className="space-y-1">
+                            {otherErrors.slice(0, 3).map((error, i) => (
+                              <div key={i} className="text-xs text-gray-700">
+                                • {error.row > 0 ? `Row ${error.row}: ` : ''}{error.message}
+                              </div>
+                            ))}
+                            {otherErrors.length > 3 && (
+                              <p className="text-xs text-gray-500 italic">
+                                ... and {otherErrors.length - 3} more
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          
+          {/* Batch Processing Status */}
+          {isProcessingBatch && (
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                <p className="text-sm text-blue-700">
+                  Processing file {currentFileIndex + 1} of {files.length}...
+                </p>
+              </div>
+            </div>
+          )}
+          
+          {/* Batch Results Summary */}
+          {importResults.size > 0 && !isProcessingBatch && (
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+              <h4 className="font-medium mb-2">Import Summary</h4>
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="text-foreground/60">Successful</p>
+                  <p className="font-semibold text-green-600">
+                    {Array.from(importResults.values()).filter(r => r.success).length}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-foreground/60">Failed</p>
+                  <p className="font-semibold text-red-600">
+                    {Array.from(importResults.values()).filter(r => !r.success).length}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-foreground/60">Total Records</p>
+                  <p className="font-semibold">
+                    {Array.from(importResults.values()).reduce((sum, r) => sum + r.imported + r.updated, 0)}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Check for employee errors across all files */}
+              {(() => {
+                const allEmployeeErrors = Array.from(importResults.values())
+                  .flatMap(r => r.errors || [])
+                  .filter(e => 
+                    e.message?.includes('base_rate=0') || 
+                    e.message?.includes('Employee has base_rate=0') ||
+                    e.message?.includes('New employee created with base_rate=0')
+                  )
+                
+                if (allEmployeeErrors.length > 0) {
+                  // Extract unique employee numbers - same logic as extractEmployeesNeedingRates
+                  const uniqueEmployees = new Set<string>()
+                  allEmployeeErrors.forEach(error => {
+                    // Check data field first
+                    if (error.data && typeof error.data === 'object') {
+                      const errorData = error.data as any
+                      if (errorData.employee_number) {
+                        uniqueEmployees.add(errorData.employee_number)
+                        return
+                      }
+                    }
+                    
+                    // Fall back to regex extraction
+                    const match = error.message?.match(/T\d+/)
+                    if (match) {
+                      uniqueEmployees.add(match[0])
+                    } else if (error.row) {
+                      // Use row as fallback
+                      uniqueEmployees.add(`Row_${error.row}`)
+                    }
+                  })
+                  
+                  return (
+                    <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-amber-900">
+                            Employee Pay Rate Issues Detected
+                          </p>
+                          <p className="text-xs text-amber-800 mt-1">
+                            {uniqueEmployees.size} employee(s) are missing pay rates across {
+                              Array.from(importResults.entries())
+                                .filter(([_, r]) => r.errors?.some(e => e.message?.includes('base_rate=0')))
+                                .length
+                            } file(s)
+                          </p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-2 bg-amber-100 hover:bg-amber-200 border-amber-300"
+                            onClick={() => {
+                              // Debug: log all errors to see their structure
+                              Array.from(importResults.values()).forEach(result => {
+                                if (result.errors) {
+                                  console.log('Import errors:', result.errors)
+                                }
+                              })
+                              
+                              const employeesToFix = extractEmployeesNeedingRates()
+                              console.log('Extracted employees to fix:', employeesToFix)
+                              setEmployeesToFixRates(employeesToFix)
+                              setShowRateFixModal(true)
+                            }}
+                          >
+                            <Wrench className="h-4 w-4 mr-2" />
+                            Fix Employee Rates
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                }
+                return null
+              })()}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Preview */}
+      {preview && currentFileIndex < files.length && (
+        <Card className="p-6 mb-6">
+          <h3 className="text-lg font-semibold mb-4">
+            Preview: {files[currentFileIndex]?.name}
+          </h3>
           
           {preview.errors.length > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
               <div className="flex items-start">
-                <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-2" />
+                <CircleAlert className="h-5 w-5 text-red-500 mt-0.5 mr-2" />
                 <div>
                   <p className="font-medium text-red-800">Validation Errors:</p>
                   <ul className="list-disc ml-5 mt-1">
@@ -813,7 +1343,7 @@ export default function LaborImportPage() {
               {preview.employees.some(emp => emp.exists === false) && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
                   <div className="flex items-start">
-                    <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
+                    <CircleAlert className="h-5 w-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
                     <div className="text-sm text-yellow-800">
                       <p className="font-medium mb-1">New employees will be created during import:</p>
                       <p>Employees highlighted in yellow don't exist in the system yet. Their wage rates will be set from the Excel file or default to $0 if not specified.</p>
@@ -873,56 +1403,153 @@ export default function LaborImportPage() {
         </Card>
       )}
 
-      {/* Import Result */}
-      {importResult && (
+      {/* Auto-Retry Progress */}
+      {isAutoRetrying && (
+        <Card className="p-6 mb-6 bg-blue-50 border-blue-200">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div>
+              <h3 className="font-semibold text-blue-900">Retrying Import</h3>
+              <p className="text-sm text-blue-700">Importing labor data with updated employee information...</p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Import Result - Now shown in file list above */}
+      {false && (
         <Card className="p-6 mb-6">
-          <div className={`flex items-start ${importResult.success ? 'text-green-700' : 'text-red-700'}`}>
-            {importResult.success ? (
-              <CheckCircle className="h-5 w-5 mt-0.5 mr-2" />
-            ) : (
-              <AlertCircle className="h-5 w-5 mt-0.5 mr-2" />
-            )}
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg mb-2">
-                {(importResult as any).message ? 'Setup Completed' : `Import ${importResult.success ? 'Completed' : 'Failed'}`}
-              </h3>
-              {(importResult as any).message ? (
-                <p className="text-sm">{(importResult as any).message}</p>
+          <div className="space-y-4">
+            {/* Status Header */}{/* 
+            <div className="flex items-start gap-3">
+              {employeesToFix.length > 0 ? (
+                <InfoIcon className="h-6 w-6 text-amber-600 mt-0.5" />
+              ) : importResult.success ? (
+                <CircleCheck className="h-6 w-6 text-green-600 mt-0.5" />
               ) : (
-                <div className="space-y-1 text-sm">
-                  {importResult.imported > 0 && (
-                    <p>✓ Created new weekly labor total</p>
-                  )}
-                  {importResult.updated > 0 && (
-                    <p>✓ Updated existing weekly labor total</p>
-                  )}
-                  {(importResult as any).employeeCount && (
-                    <p>Employees processed: {(importResult as any).employeeCount} with hours</p>
-                  )}
-                  {importResult.errors.length > 0 && (
-                    <p className="text-red-600">Errors: {importResult.errors.length}</p>
-                  )}
-                </div>
+                <CircleAlert className="h-6 w-6 text-red-600 mt-0.5" />
               )}
-              
-              {importResult.errors.length > 0 && !((importResult as any).message) && (
-                <div className="mt-4">
-                  <p className="font-medium mb-2">Error Details:</p>
-                  <div className="bg-red-50 rounded-md p-3 max-h-40 overflow-y-auto">
-                    {importResult.errors.slice(0, 10).map((error, i) => (
-                      <div key={i} className="text-xs mb-1 text-red-700">
-                        {error.row > 0 ? `Row ${error.row}: ` : ''}{error.message}
-                      </div>
-                    ))}
-                    {importResult.errors.length > 10 && (
-                      <p className="text-xs mt-2 font-medium">
-                        ... and {importResult.errors.length - 10} more errors
-                      </p>
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg text-foreground mb-1">
+                  {(importResult as any).message ? 'Setup Completed' : 
+                   employeesToFix.length > 0 ? 'Import Partially Complete' : 
+                   `Import ${importResult.success ? 'Completed' : 'Failed'}`}
+                </h3>
+                {(importResult as any).message ? (
+                  <p className="text-sm text-foreground">{(importResult as any).message}</p>
+                ) : null}
+              </div>
+            </div>
+            
+            {/* Progress Indicator */}
+            {(importResult as any).employeeCount && employeesToFix.length > 0 && (
+              <ImportProgressIndicator
+                totalEmployees={(importResult as any).employeeCount}
+                processedEmployees={(importResult as any).employeeCount}
+                errors={employeesToFix.length}
+              />
+            )}
+            
+            {/* Action Section for Fixing Employees */}
+            {employeesToFix.length > 0 && (
+              <Card className="p-6 bg-blue-50 border-blue-200">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5 text-blue-600" />
+                    <h4 className="font-semibold text-blue-900">Next Step: Update Employee Wages</h4>
+                  </div>
+                  <p className="text-sm text-blue-800">
+                    We need hourly wage rates for {employeesToFix.length} employee{employeesToFix.length > 1 ? 's' : ''} to complete
+                    your import. This usually takes 2-3 minutes.
+                  </p>
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      onClick={() => setShowBulkFix(true)}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      Update Employee Info ({employeesToFix.length})
+                    </Button>
+                    {hasFixedEmployees && (
+                      <Button
+                        variant="outline"
+                        onClick={handleImport}
+                        disabled={importMutation.isPending}
+                      >
+                        Retry Import
+                      </Button>
                     )}
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setEmployeesToFix([])
+                        // Clear current file results
+                        const newResults = new Map(importResults)
+                        if (files[currentFileIndex]) {
+                          newResults.delete(files[currentFileIndex].name)
+                        }
+                        setImportResults(newResults)
+                      }}
+                      className="text-gray-600"
+                    >
+                      Skip for Now
+                    </Button>
                   </div>
                 </div>
-              )}
-            </div>
+              </Card>
+            )}
+            
+            {/* Error Details Panel */}
+            {employeesToFix.length > 0 && (
+              <ErrorDetailsPanel
+                errors={employeesToFix.map(emp => ({
+                  ...emp,
+                  error_message: emp.error_message || 'Missing hourly wage rate'
+                }))}
+                onFixIndividual={(emp) => {
+                  setSelectedEmployeeToFix(emp)
+                  setShowSingleFix(true)
+                }}
+              />
+            )}
+            
+            {/* Success Message */}
+            {importResult.success && employeesToFix.length === 0 && !((importResult as any).message) && (
+              <div className="flex items-center gap-2 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <CircleCheck className="h-5 w-5 text-green-600" />
+                <div className="text-sm">
+                  <p className="font-medium text-green-900">Import completed successfully!</p>
+                  {importResult.imported > 0 && (
+                    <p className="text-green-800">Created new weekly labor total</p>
+                  )}
+                  {importResult.updated > 0 && (
+                    <p className="text-green-800">Updated existing weekly labor total</p>
+                  )}
+                  {(importResult as any).employeeCount && (
+                    <p className="text-green-800">Processed {(importResult as any).employeeCount} employees with hours</p>
+                  )}
+                  <p className="text-green-700 mt-1">Page will refresh automatically...</p>
+                </div>
+              </div>
+            )}
+            
+            {/* True Error State (non-employee errors) */}
+            {importResult.errors.length > 0 && employeesToFix.length === 0 && !importResult.success && !((importResult as any).message) && (
+              <div className="mt-4">
+                <p className="font-medium mb-2 text-red-800">Error Details:</p>
+                <div className="bg-red-50 rounded-md p-3 max-h-40 overflow-y-auto">
+                  {importResult.errors.slice(0, 10).map((error, i) => (
+                    <div key={i} className="text-xs mb-1 text-red-700">
+                      {error.row > 0 ? `Row ${error.row}: ` : ''}{error.message}
+                    </div>
+                  ))}
+                  {importResult.errors.length > 10 && (
+                    <p className="text-xs mt-2 font-medium text-red-700">
+                      ... and {importResult.errors.length - 10} more errors
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </Card>
       )}
@@ -935,15 +1562,154 @@ export default function LaborImportPage() {
         >
           Cancel
         </Button>
+        
+        {/* Retry Failed Button */}
+        {importResults.size > 0 && Array.from(importResults.values()).some(r => !r.success) && (
+          <Button
+            variant="outline"
+            onClick={async () => {
+              // Get list of failed files
+              const failedFiles = files.filter(f => {
+                const result = importResults.get(f.name)
+                return result && !result.success
+              })
+              
+              if (failedFiles.length === 0) {
+                toast.info('No failed files to retry')
+                return
+              }
+              
+              toast.info(`Retrying ${failedFiles.length} failed file(s)...`)
+              
+              // Clear previous results for failed files
+              const newResults = new Map(importResults)
+              failedFiles.forEach(f => newResults.delete(f.name))
+              setImportResults(newResults)
+              
+              // Retry processing
+              setIsProcessingBatch(true)
+              
+              for (let i = 0; i < failedFiles.length; i++) {
+                const file = failedFiles[i]
+                const fileIndex = files.indexOf(file)
+                setCurrentFileIndex(fileIndex)
+                
+                await processFile(file)
+                await new Promise(resolve => setTimeout(resolve, 100))
+                
+                const formData = new FormData()
+                formData.append('file', file)
+                formData.append('project_id', selectedProject)
+                formData.append('force_refresh', Date.now().toString())
+                
+                try {
+                  const response = await fetch('/api/labor-import', {
+                    method: 'POST',
+                    body: formData
+                  })
+                  
+                  const data = await response.json()
+                  const updatedResults = new Map(importResults)
+                  updatedResults.set(file.name, data)
+                  setImportResults(updatedResults)
+                } catch (error) {
+                  console.error(`Error retrying ${file.name}:`, error)
+                }
+              }
+              
+              setIsProcessingBatch(false)
+            }}
+            disabled={isProcessingBatch}
+          >
+            <UploadIcon className="h-4 w-4 mr-2" />
+            Retry Failed Files
+          </Button>
+        )}
+        
         <Button
           onClick={handleImport}
-          disabled={!file || !preview?.isValid || !selectedProject || importMutation.isPending}
-          loading={importMutation.isPending}
+          disabled={files.length === 0 || !selectedProject || isProcessingBatch}
+          loading={isProcessingBatch}
         >
           <UploadIcon className="h-4 w-4 mr-2" />
-          Import Labor Data
+          {files.length > 1 ? `Import ${files.length} Files` : 'Import Labor Data'}
         </Button>
       </div>
+
+      {/* Employee Data Fix Modal */}
+      {showSingleFix && selectedEmployeeToFix && (
+        <EmployeeDataFixModal
+          open={showSingleFix}
+          onOpenChange={setShowSingleFix}
+          employee={selectedEmployeeToFix}
+          onSuccess={() => {
+            // Mark as fixed
+            setHasFixedEmployees(true)
+            // Remove from fix list
+            setEmployeesToFix(prev => 
+              prev.filter(e => e.employee_number !== selectedEmployeeToFix.employee_number)
+            )
+            // Clear selection
+            setSelectedEmployeeToFix(null)
+          }}
+        />
+      )}
+
+      {/* Bulk Employee Fix Dialog */}
+      <Dialog open={showBulkFix} onOpenChange={setShowBulkFix}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Fix Employee Data</DialogTitle>
+            <DialogDescription>
+              Update missing information for multiple employees at once.
+            </DialogDescription>
+          </DialogHeader>
+          <BulkEmployeeFix
+            employees={employeesToFix}
+            autoRetry={true}
+            onComplete={() => {
+              setHasFixedEmployees(true)
+              setShowBulkFix(false)
+              
+              // Auto-retry the import after a brief delay to show success
+              setTimeout(() => {
+                console.log('Starting auto-retry import...')
+                console.log('Current state:', {
+                  file: !!file,
+                  preview: !!preview,
+                  previewIsValid: preview?.isValid,
+                  selectedProject,
+                  isPending: importMutation.isPending
+                })
+                
+                setIsAutoRetrying(true)
+                setEmployeesToFix([]) // Clear the fix list
+                
+                // Set flag to indicate we just fixed employees (like justCompletedSetup)
+                setJustCompletedSetup(true)
+                
+                // Call handleImport to retry with updated data
+                if (file && preview?.isValid && selectedProject && !importMutation.isPending) {
+                  console.log('Calling handleImport...')
+                  handleImport()
+                } else {
+                  console.error('Cannot auto-retry: validation failed', {
+                    hasFile: !!file,
+                    isValid: preview?.isValid,
+                    hasProject: !!selectedProject,
+                    isPending: importMutation.isPending
+                  })
+                  setIsAutoRetrying(false)
+                  
+                  // Show an error message to the user
+                  toast.error('Unable to auto-retry import. Please click "Retry Import" manually.')
+                }
+              }, 1500) // Show success message for 1.5 seconds before retrying
+            }}
+            onCancel={() => setShowBulkFix(false)}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Setup Dialog for New Employees/Crafts */}
       <Dialog open={showSetupDialog} onOpenChange={setShowSetupDialog}>
@@ -1026,7 +1792,7 @@ export default function LaborImportPage() {
             ) : (
               // Employee setup
               newEmployees.map((employee, index) => (
-                <Card key={employee.employee_number} className="p-4">
+                <Card key={`${employee.employee_number}-${index}`} className="p-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label className="text-sm">Employee ID</Label>
@@ -1106,6 +1872,218 @@ export default function LaborImportPage() {
               {setupStep === 'crafts' && newEmployees.length > 0
                 ? 'Next: Employees'
                 : 'Complete Setup & Import'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Employee Rate Fix Modal */}
+      <Dialog open={showRateFixModal} onOpenChange={setShowRateFixModal}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wrench className="h-5 w-5" />
+              Fix Employee Pay Rates
+            </DialogTitle>
+            <DialogDescription>
+              Set hourly rates for employees to complete the import. These rates will be saved to the employee records.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-3 py-4">
+            {employeesToFixRates.length === 0 ? (
+              <p className="text-sm text-gray-500">No employees need rate updates.</p>
+            ) : (
+              <>
+                <div className="text-sm text-gray-600 mb-2">
+                  {employeesToFixRates.length} employee(s) need pay rates:
+                </div>
+                {employeesToFixRates.map((employee, index) => (
+                  <div key={employee.employee_number} className="flex items-center gap-3 p-3 border rounded-lg">
+                    <div className="flex-1">
+                      <p className="font-medium">{employee.employee_number}</p>
+                      <p className="text-sm text-gray-600">{employee.name}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor={`rate-${index}`} className="text-sm whitespace-nowrap">
+                        Hourly Rate:
+                      </Label>
+                      <div className="flex items-center gap-1">
+                        <span className="text-gray-500">$</span>
+                        <input
+                          id={`rate-${index}`}
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          className="w-24 px-2 py-1 border rounded-md"
+                          value={employee.new_rate || ''}
+                          onChange={(e) => {
+                            const newRate = parseFloat(e.target.value) || 0
+                            setEmployeesToFixRates(prev => 
+                              prev.map((emp, i) => 
+                                i === index ? { ...emp, new_rate: newRate } : emp
+                              )
+                            )
+                          }}
+                        />
+                        <span className="text-sm text-gray-500">/hr</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Quick fill options */}
+                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm font-medium mb-2">Quick Fill:</p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEmployeesToFixRates(prev =>
+                          prev.map(emp => ({ ...emp, new_rate: 25 }))
+                        )
+                      }}
+                    >
+                      $25/hr All
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEmployeesToFixRates(prev =>
+                          prev.map(emp => ({ ...emp, new_rate: 35 }))
+                        )
+                      }}
+                    >
+                      $35/hr All
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEmployeesToFixRates(prev =>
+                          prev.map(emp => ({ ...emp, new_rate: 50 }))
+                        )
+                      }}
+                    >
+                      $50/hr All
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRateFixModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                // Filter out employees with no rate set
+                const employeesToUpdate = employeesToFixRates.filter(e => e.new_rate > 0)
+                
+                if (employeesToUpdate.length === 0) {
+                  toast.error('Please set rates for at least one employee')
+                  return
+                }
+                
+                try {
+                  // Filter out row-based placeholders - we can't update those directly
+                  const actualEmployees = employeesToUpdate.filter(e => !e.employee_number.startsWith('Row_'))
+                  const rowBasedEmployees = employeesToUpdate.filter(e => e.employee_number.startsWith('Row_'))
+                  
+                  if (rowBasedEmployees.length > 0 && actualEmployees.length === 0) {
+                    toast.error('Unable to identify employee IDs from the file. Please check the Excel file format.')
+                    return
+                  }
+                  
+                  if (actualEmployees.length === 0) {
+                    toast.error('No valid employee IDs found to update')
+                    return
+                  }
+                  
+                  // Update employee rates
+                  const response = await fetch('/api/employees/batch-update-rates', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      employees: actualEmployees.map(e => ({
+                        employee_number: e.employee_number,
+                        base_rate: e.new_rate
+                      }))
+                    })
+                  })
+                  
+                  if (!response.ok) {
+                    throw new Error('Failed to update employee rates')
+                  }
+                  
+                  const result = await response.json()
+                  toast.success(`Updated ${result.updated} employee rate(s)`)
+                  
+                  // Close modal
+                  setShowRateFixModal(false)
+                  setEmployeesToFixRates([])
+                  
+                  // Automatically retry failed files
+                  const failedFiles = files.filter(f => {
+                    const result = importResults.get(f.name)
+                    return result && !result.success
+                  })
+                  
+                  if (failedFiles.length > 0) {
+                    toast.info(`Retrying ${failedFiles.length} file(s) with updated rates...`)
+                    
+                    // Clear previous results for failed files
+                    const newResults = new Map(importResults)
+                    failedFiles.forEach(f => newResults.delete(f.name))
+                    setImportResults(newResults)
+                    
+                    // Retry processing
+                    setIsProcessingBatch(true)
+                    
+                    for (let i = 0; i < failedFiles.length; i++) {
+                      const file = failedFiles[i]
+                      const fileIndex = files.indexOf(file)
+                      setCurrentFileIndex(fileIndex)
+                      
+                      await processFile(file)
+                      await new Promise(resolve => setTimeout(resolve, 100))
+                      
+                      const formData = new FormData()
+                      formData.append('file', file)
+                      formData.append('project_id', selectedProject)
+                      formData.append('force_refresh', Date.now().toString())
+                      
+                      try {
+                        const retryResponse = await fetch('/api/labor-import', {
+                          method: 'POST',
+                          body: formData
+                        })
+                        
+                        const data = await retryResponse.json()
+                        const updatedResults = new Map(importResults)
+                        updatedResults.set(file.name, data)
+                        setImportResults(updatedResults)
+                      } catch (error) {
+                        console.error(`Error retrying ${file.name}:`, error)
+                      }
+                    }
+                    
+                    setIsProcessingBatch(false)
+                  }
+                  
+                } catch (error) {
+                  console.error('Error updating rates:', error)
+                  toast.error('Failed to update employee rates')
+                }
+              }}
+              disabled={employeesToFixRates.every(e => e.new_rate === 0)}
+            >
+              Update Rates & Retry Import
             </Button>
           </DialogFooter>
         </DialogContent>

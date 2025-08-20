@@ -8,8 +8,8 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
-  AlertCircle, 
-  CheckCircle, 
+  CircleAlert, 
+  CircleCheck, 
   Info, 
   XCircle,
   FileText,
@@ -272,7 +272,7 @@ export function ValidationResults({ budgetData, analysisResult, onNext }: Valida
         <CardContent className="pt-6">
           {canProceed ? (
             <Alert>
-              <CheckCircle className="h-4 w-4 text-green-600" />
+              <CircleCheck className="h-4 w-4 text-green-600" />
               <AlertTitle>Validation Passed</AlertTitle>
               <AlertDescription>
                 Your budget data has been validated and is ready for import. 
@@ -281,7 +281,7 @@ export function ValidationResults({ budgetData, analysisResult, onNext }: Valida
             </Alert>
           ) : (
             <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
+              <CircleAlert className="h-4 w-4" />
               <AlertTitle>Validation Failed</AlertTitle>
               <AlertDescription>
                 There are {errorCount} error{errorCount === 1 ? '' : 's'} that must be resolved before importing. 

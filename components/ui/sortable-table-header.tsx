@@ -18,7 +18,7 @@ interface SortableTableHeaderProps {
   sortKey: string
   currentSort: { field: string | null; direction: SortDirection }
   onSort: (field: string) => void
-  // Filter props
+  // Funnel props
   filterable?: boolean
   currentFilters: ColumnFilter[]
   onFilterChange: (column: string, values: string[]) => void

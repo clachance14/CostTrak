@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -62,9 +62,31 @@ export default function ProjectsPage() {
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState<string>('20')
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('')
+  const [statusFilter, setStatusFilter] = useState<string>(() => {
+    // Load from localStorage, default to empty string (all projects)
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('projects-status-filter')
+        return stored || ''
+      } catch (error) {
+        console.error('Error loading status filter:', error)
+      }
+    }
+    return ''
+  })
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: null, direction: null })
   const [columnFilters, setColumnFilters] = useState<ColumnFilter[]>([])
+
+  // Save status filter to localStorage when it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('projects-status-filter', statusFilter)
+      } catch (error) {
+        console.error('Error saving status filter:', error)
+      }
+    }
+  }, [statusFilter])
 
   // Sort handler
   const handleSort = (field: string) => {

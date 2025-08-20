@@ -38,15 +38,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
     }
 
-    // Verify project exists and user has access
-    const { data: project } = await supabase
-      .from('projects')
-      .select('id, name, job_number')
-      .eq('id', projectId)
-      .single()
+    // For preview mode with a new project, skip project validation
+    // 'preview-only' is used during project creation before the project exists
+    let project = null
+    if (mode === 'preview' && projectId === 'preview-only') {
+      // Creating a new project - no validation needed
+      project = {
+        id: 'preview-only',
+        name: 'New Project (Preview)',
+        job_number: 'TBD'
+      }
+    } else {
+      // Verify project exists and user has access
+      const { data: existingProject } = await supabase
+        .from('projects')
+        .select('id, name, job_number')
+        .eq('id', projectId)
+        .single()
 
-    if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      if (!existingProject) {
+        return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      }
+      
+      project = existingProject
     }
 
     // Read Excel file

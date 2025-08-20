@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { DollarSign, FileText, AlertCircle, CheckCircle2, Users, Hammer } from 'lucide-react'
+import { DollarSign, FileText, CircleAlert, CircleCheck2, Users, Hammer } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface BudgetSummaryCardsProps {
@@ -102,9 +102,9 @@ export function BudgetSummaryCards({ totals, stats, validationResult }: BudgetSu
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Validation Status</CardTitle>
             {validationResult?.isValid ? (
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <CircleCheck2 className="h-4 w-4 text-green-600" />
             ) : (
-              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <CircleAlert className="h-4 w-4 text-amber-600" />
             )}
           </CardHeader>
           <CardContent>

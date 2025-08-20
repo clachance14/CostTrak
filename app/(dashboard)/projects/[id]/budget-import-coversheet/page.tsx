@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Upload, FileSpreadsheet, AlertCircle, ChevronRight, ChevronDown } from 'lucide-react'
+import { LoaderCircle, Upload, FileSpreadsheet, CircleAlert, ChevronRight, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface BudgetLineItem {
@@ -308,7 +308,7 @@ export default function BudgetImportCoversheetPage({
             {/* Debug Info */}
             {debugInfo && (
               <Alert className="bg-blue-50 border-blue-200">
-                <AlertCircle className="h-4 w-4 text-blue-600" />
+                <CircleAlert className="h-4 w-4 text-blue-600" />
                 <AlertDescription className="text-blue-800">
                   <strong>Debug Info:</strong> {debugInfo}
                 </AlertDescription>
@@ -347,14 +347,14 @@ export default function BudgetImportCoversheetPage({
 
             {error && (
               <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
+                <CircleAlert className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
             {previewData && previewData.validation.warnings.length > 0 && (
               <Alert>
-                <AlertCircle className="h-4 w-4" />
+                <CircleAlert className="h-4 w-4" />
                 <AlertDescription>
                   <div className="space-y-1">
                     <div className="font-medium">Warnings:</div>
@@ -657,7 +657,7 @@ export default function BudgetImportCoversheetPage({
               >
                 {loading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                     Processing...
                   </>
                 ) : (

@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { ChevronDown, Activity, FileText, AlertCircle, Upload, CheckCircle } from 'lucide-react'
+import { ChevronDown, Activity, FileText, CircleAlert, Upload, CircleCheck } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts'
 import { formatCurrency } from '@/lib/utils'
 import { formatDistanceToNow } from 'date-fns'
@@ -50,9 +50,9 @@ export function ProjectHealthDashboard({
       case 'import':
         return Upload
       case 'alert':
-        return AlertCircle
+        return CircleAlert
       case 'approval':
-        return CheckCircle
+        return CircleCheck
       default:
         return Activity
     }
@@ -74,10 +74,15 @@ export function ProjectHealthDashboard({
   }
 
   return (
-    <Collapsible defaultOpen className="mb-6">
-      <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
-        <h3 className="text-lg font-semibold text-gray-900">Project Health Dashboard</h3>
-        <ChevronDown className="h-4 w-4 text-gray-500 transition-transform data-[state=open]:rotate-180" />
+    <Collapsible defaultOpen={false} className="mb-6">
+      <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow group">
+        <div className="flex items-center gap-4">
+          <h3 className="text-lg font-semibold text-gray-900">Financial Breakdown & Activity</h3>
+          <span className="text-sm text-gray-500">
+            Latest: {recentActivity.length > 0 ? formatDistanceToNow(new Date(recentActivity[0].timestamp), { addSuffix: true }) : 'No recent activity'}
+          </span>
+        </div>
+        <ChevronDown className="h-4 w-4 text-gray-500 transition-transform group-data-[state=open]:rotate-180" />
       </CollapsibleTrigger>
       <CollapsibleContent className="mt-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

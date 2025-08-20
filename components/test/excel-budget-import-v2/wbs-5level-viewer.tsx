@@ -57,7 +57,7 @@ export function WBS5LevelViewer({ wbsStructure }: WBS5LevelViewerProps) {
     setExpandedNodes(newExpanded)
   }
 
-  // Filter nodes based on search
+  // Funnel nodes based on search
   const filteredStructure = useMemo(() => {
     if (!searchTerm) return wbsStructure
     

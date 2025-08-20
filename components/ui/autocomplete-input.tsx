@@ -51,7 +51,7 @@ export function AutocompleteInput({
     setInputValue(value)
   }, [value])
 
-  // Filter options based on input
+  // Funnel options based on input
   useEffect(() => {
     if (!inputValue.trim()) {
       setFilteredOptions(options)

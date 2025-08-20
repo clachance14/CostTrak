@@ -1,0 +1,4844 @@
+[
+  {
+    "page": "Dashboard",
+    "label": "Total Contract Value (Filtered)",
+    "selector": "text-3xl font-bold text-gray-900",
+    "display_value": "$4,190,721",
+    "normalized_value": 4190721,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.441Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "Forecasted Final Cost (Filtered)",
+    "selector": "text-3xl font-bold text-gray-900",
+    "display_value": "$2,428,475",
+    "normalized_value": 2428475,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.441Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "Company Margin (Filtered)",
+    "selector": "text-3xl font-bold text-green-600",
+    "display_value": "42.1%",
+    "normalized_value": 0.42100000000000004,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-right",
+    "display_value": "$665,353",
+    "normalized_value": 665353,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-right",
+    "display_value": "$444,819",
+    "normalized_value": 444819,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-right",
+    "display_value": "$447,840",
+    "normalized_value": 447840,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "font-medium text-green-600",
+    "display_value": "32.7%",
+    "normalized_value": 0.327,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "font-medium text-gray-900",
+    "display_value": "$217,513",
+    "normalized_value": 217513,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-right",
+    "display_value": "$1,033,385",
+    "normalized_value": 1033385,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-right",
+    "display_value": "$390,617",
+    "normalized_value": 390617,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-right",
+    "display_value": "$371,293",
+    "normalized_value": 371293,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "font-medium text-green-600",
+    "display_value": "64.1%",
+    "normalized_value": 0.6409999999999999,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "font-medium text-gray-900",
+    "display_value": "$662,092",
+    "normalized_value": 662092,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-right",
+    "display_value": "$128,750",
+    "normalized_value": 128750,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-right",
+    "display_value": "$34,011",
+    "normalized_value": 34011,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-right",
+    "display_value": "$36,446",
+    "normalized_value": 36446,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "font-medium text-green-600",
+    "display_value": "71.7%",
+    "normalized_value": 0.7170000000000001,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "font-medium text-gray-900",
+    "display_value": "$92,304",
+    "normalized_value": 92304,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-right",
+    "display_value": "$387,846",
+    "normalized_value": 387846,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-right",
+    "display_value": "$349,695",
+    "normalized_value": 349695,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-right",
+    "display_value": "$358,084",
+    "normalized_value": 358084,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "font-medium text-red-600",
+    "display_value": "7.7%",
+    "normalized_value": 0.077,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "font-medium text-gray-900",
+    "display_value": "$29,762",
+    "normalized_value": 29762,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-right",
+    "display_value": "$828,752",
+    "normalized_value": 828752,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-right",
+    "display_value": "$559,906",
+    "normalized_value": 559906,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-right",
+    "display_value": "$563,032",
+    "normalized_value": 563032,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "font-medium text-green-600",
+    "display_value": "32.1%",
+    "normalized_value": 0.321,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "font-medium text-gray-900",
+    "display_value": "$265,720",
+    "normalized_value": 265720,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-right",
+    "display_value": "$1,146,635",
+    "normalized_value": 1146635,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-right",
+    "display_value": "$470,206",
+    "normalized_value": 470206,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-right",
+    "display_value": "$651,781",
+    "normalized_value": 651781,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "font-medium text-green-600",
+    "display_value": "43.2%",
+    "normalized_value": 0.43200000000000005,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Dashboard",
+    "label": "",
+    "selector": "font-medium text-gray-900",
+    "display_value": "$494,854",
+    "normalized_value": 494854,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:38.442Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5614Client: N/APM: Joe Geer",
+    "selector": "text-xs text-foreground/80",
+    "display_value": "2%",
+    "normalized_value": 0.02,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.003Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5614Client: N/APM: Joe Geer",
+    "selector": "font-semibold",
+    "display_value": "$665,353",
+    "normalized_value": 665353,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.003Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5614Client: N/APM: Joe Geer",
+    "selector": "font-semibold",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.003Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5614Client: N/APM: Joe Geer",
+    "selector": "font-semibold ",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.003Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5601Client: N/APM: Joe Geer",
+    "selector": "text-xs text-foreground/80",
+    "display_value": "2%",
+    "normalized_value": 0.02,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.003Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5601Client: N/APM: Joe Geer",
+    "selector": "font-semibold",
+    "display_value": "$1,033,385",
+    "normalized_value": 1033385,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.003Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5601Client: N/APM: Joe Geer",
+    "selector": "font-semibold",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.003Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5601Client: N/APM: Joe Geer",
+    "selector": "font-semibold ",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.003Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5790Client: N/APM: Joe Geer",
+    "selector": "text-xs text-foreground/80",
+    "display_value": "2%",
+    "normalized_value": 0.02,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.003Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5790Client: N/APM: Joe Geer",
+    "selector": "font-semibold",
+    "display_value": "$128,750",
+    "normalized_value": 128750,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.003Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5790Client: N/APM: Joe Geer",
+    "selector": "font-semibold",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.003Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5790Client: N/APM: Joe Geer",
+    "selector": "font-semibold ",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.003Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5800Client: N/APM: Joe Geer",
+    "selector": "text-xs text-foreground/80",
+    "display_value": "13%",
+    "normalized_value": 0.13,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.003Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5800Client: N/APM: Joe Geer",
+    "selector": "font-semibold",
+    "display_value": "$387,846",
+    "normalized_value": 387846,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.003Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5800Client: N/APM: Joe Geer",
+    "selector": "font-semibold",
+    "display_value": "$332,521",
+    "normalized_value": 332521,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.003Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5800Client: N/APM: Joe Geer",
+    "selector": "font-semibold ",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.003Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5730Client: N/APM: Joe Geer",
+    "selector": "text-xs text-foreground/80",
+    "display_value": "15%",
+    "normalized_value": 0.15,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.004Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5730Client: N/APM: Joe Geer",
+    "selector": "font-semibold",
+    "display_value": "$791,773",
+    "normalized_value": 791773,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.004Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5730Client: N/APM: Joe Geer",
+    "selector": "font-semibold",
+    "display_value": "$633,419",
+    "normalized_value": 633419,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.004Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5730Client: N/APM: Joe Geer",
+    "selector": "font-semibold ",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.004Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5772Client: N/APM: Joe Geer",
+    "selector": "text-xs text-foreground/80",
+    "display_value": "16%",
+    "normalized_value": 0.16,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.004Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5772Client: N/APM: Joe Geer",
+    "selector": "font-semibold",
+    "display_value": "$1,109,400",
+    "normalized_value": 1109400,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.004Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5772Client: N/APM: Joe Geer",
+    "selector": "font-semibold",
+    "display_value": "$1,146,635",
+    "normalized_value": 1146635,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.004Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5772Client: N/APM: Joe Geer",
+    "selector": "font-semibold ",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.004Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5640Client: N/APM: N/A",
+    "selector": "font-semibold",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.004Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5640Client: N/APM: N/A",
+    "selector": "font-semibold",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.004Z"
+  },
+  {
+    "page": "Projects List",
+    "label": "Job #: 5640Client: N/APM: N/A",
+    "selector": "font-semibold ",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:04:48.004Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Original$665,353",
+    "selector": "text-2xl font-bold text-gray-900",
+    "display_value": "$665,353",
+    "normalized_value": 665353,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Original$665,353",
+    "selector": "font-medium",
+    "display_value": "$665,353",
+    "normalized_value": 665353,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Total Committed",
+    "selector": "text-2xl font-bold text-gray-900",
+    "display_value": "$447,840",
+    "normalized_value": 447840,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Total Forecasted Cost",
+    "selector": "text-3xl font-bold text-red-600",
+    "display_value": "$334,742",
+    "normalized_value": 334742,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Actual to Date$334,742",
+    "selector": "font-medium",
+    "display_value": "$334,742",
+    "normalized_value": 334742,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Actual to Date$334,742",
+    "selector": "font-medium text-gray-500",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Budget$266,820",
+    "selector": "font-medium",
+    "display_value": "$266,820",
+    "normalized_value": 266820,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Total Committed Cost",
+    "selector": "text-3xl font-bold text-gray-900",
+    "display_value": "$113,098",
+    "normalized_value": 113098,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Actual to Date$110,078",
+    "selector": "font-medium",
+    "display_value": "$110,078",
+    "normalized_value": 110078,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Actual to Date$110,078",
+    "selector": "font-medium text-gray-500",
+    "display_value": "$3,021",
+    "normalized_value": 3021,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Budget$298,734",
+    "selector": "font-medium",
+    "display_value": "$298,734",
+    "normalized_value": 298734,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Remaining Budget",
+    "selector": "text-2xl font-bold text-gray-900",
+    "display_value": "$217,513",
+    "normalized_value": 217513,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Spent: $447,840Budget: $665,353",
+    "selector": "font-medium",
+    "display_value": "$217,513",
+    "normalized_value": 217513,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Total PO Value",
+    "selector": "text-2xl font-bold",
+    "display_value": "$113,098",
+    "normalized_value": 113098,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "This Month",
+    "selector": "text-2xl font-bold",
+    "display_value": "$110,078",
+    "normalized_value": 110078,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "PO Breakdown by Vendor",
+    "selector": {},
+    "display_value": "31%",
+    "normalized_value": 0.31,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "PO Breakdown by Vendor",
+    "selector": {},
+    "display_value": "11%",
+    "normalized_value": 0.11,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "PO Breakdown by Vendor",
+    "selector": {},
+    "display_value": "49%",
+    "normalized_value": 0.49,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Subcontracts",
+    "selector": "text-lg font-bold text-gray-900 mt-1",
+    "display_value": "$298,734",
+    "normalized_value": 298734,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Subcontracts",
+    "selector": "text-lg font-bold text-gray-900 mt-1",
+    "display_value": "$110,078",
+    "normalized_value": 110078,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(104%)",
+    "selector": "text-right py-4 px-2 text-gray-900 font-bold",
+    "display_value": "$113,098",
+    "normalized_value": 113098,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(104%)",
+    "selector": "text-right py-4 px-2 text-gray-900 font-bold",
+    "display_value": "$113,098",
+    "normalized_value": 113098,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(104%)",
+    "selector": "text-right py-4 px-2 text-gray-900 font-bold",
+    "display_value": "$110,078",
+    "normalized_value": 110078,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(104%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$247",
+    "normalized_value": 247,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(104%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$247",
+    "normalized_value": 247,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$26",
+    "normalized_value": 26,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.269Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$26",
+    "normalized_value": 26,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(1254%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$100",
+    "normalized_value": 100,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(1254%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$100",
+    "normalized_value": 100,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$21",
+    "normalized_value": 21,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$21",
+    "normalized_value": 21,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$176",
+    "normalized_value": 176,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$176",
+    "normalized_value": 176,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(500%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$431",
+    "normalized_value": 431,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(500%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$431",
+    "normalized_value": 431,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$103",
+    "normalized_value": 103,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$103",
+    "normalized_value": 103,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$142",
+    "normalized_value": 142,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$142",
+    "normalized_value": 142,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(102%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$8,666",
+    "normalized_value": 8666,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(102%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$8,666",
+    "normalized_value": 8666,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(146%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$393",
+    "normalized_value": 393,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(146%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$393",
+    "normalized_value": 393,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$105",
+    "normalized_value": 105,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$105",
+    "normalized_value": 105,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$480",
+    "normalized_value": 480,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$480",
+    "normalized_value": 480,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$3,144",
+    "normalized_value": 3144,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$3,144",
+    "normalized_value": 3144,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(89%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$33,511",
+    "normalized_value": 33511,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(89%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$33,511",
+    "normalized_value": 33511,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$3,792",
+    "normalized_value": 3792,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$3,792",
+    "normalized_value": 3792,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$11",
+    "normalized_value": 11,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$11",
+    "normalized_value": 11,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$108",
+    "normalized_value": 108,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$108",
+    "normalized_value": 108,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$15,121",
+    "normalized_value": 15121,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$15,121",
+    "normalized_value": 15121,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$13,588",
+    "normalized_value": 13588,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$13,588",
+    "normalized_value": 13588,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$1,526",
+    "normalized_value": 1526,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$1,526",
+    "normalized_value": 1526,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$1,796",
+    "normalized_value": 1796,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$1,796",
+    "normalized_value": 1796,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$528",
+    "normalized_value": 528,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$528",
+    "normalized_value": 528,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(122%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$1,792",
+    "normalized_value": 1792,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(122%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$1,792",
+    "normalized_value": 1792,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(107%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$554",
+    "normalized_value": 554,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(107%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$554",
+    "normalized_value": 554,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$279",
+    "normalized_value": 279,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$279",
+    "normalized_value": 279,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$2,482",
+    "normalized_value": 2482,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$2,482",
+    "normalized_value": 2482,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$165",
+    "normalized_value": 165,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$165",
+    "normalized_value": 165,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$103",
+    "normalized_value": 103,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$103",
+    "normalized_value": 103,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$441",
+    "normalized_value": 441,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$441",
+    "normalized_value": 441,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(126%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$70",
+    "normalized_value": 70,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(126%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$70",
+    "normalized_value": 70,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$183",
+    "normalized_value": 183,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$183",
+    "normalized_value": 183,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$594",
+    "normalized_value": 594,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$594",
+    "normalized_value": 594,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$192",
+    "normalized_value": 192,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$192",
+    "normalized_value": 192,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.270Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$1,594",
+    "normalized_value": 1594,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$1,594",
+    "normalized_value": 1594,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$53",
+    "normalized_value": 53,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$53",
+    "normalized_value": 53,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$2,755",
+    "normalized_value": 2755,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$2,755",
+    "normalized_value": 2755,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$281",
+    "normalized_value": 281,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$281",
+    "normalized_value": 281,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$270",
+    "normalized_value": 270,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$270",
+    "normalized_value": 270,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(266%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$500",
+    "normalized_value": 500,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(266%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$500",
+    "normalized_value": 500,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$36",
+    "normalized_value": 36,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$36",
+    "normalized_value": 36,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(77%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$16,726",
+    "normalized_value": 16726,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(77%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$16,726",
+    "normalized_value": 16726,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$13",
+    "normalized_value": 13,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$13",
+    "normalized_value": 13,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-bold text-gray-900",
+    "display_value": "$113,098",
+    "normalized_value": 113098,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-bold text-gray-900",
+    "display_value": "$113,098",
+    "normalized_value": 113098,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Invoiced:",
+    "selector": "text-sm font-bold text-gray-900",
+    "display_value": "$110,078",
+    "normalized_value": 110078,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$247",
+    "normalized_value": 247,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$247",
+    "normalized_value": 247,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$26",
+    "normalized_value": 26,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$26",
+    "normalized_value": 26,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$100",
+    "normalized_value": 100,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$100",
+    "normalized_value": 100,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$21",
+    "normalized_value": 21,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$21",
+    "normalized_value": 21,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$176",
+    "normalized_value": 176,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$176",
+    "normalized_value": 176,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$431",
+    "normalized_value": 431,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$431",
+    "normalized_value": 431,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$103",
+    "normalized_value": 103,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$103",
+    "normalized_value": 103,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$142",
+    "normalized_value": 142,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$142",
+    "normalized_value": 142,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$8,666",
+    "normalized_value": 8666,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$8,666",
+    "normalized_value": 8666,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$393",
+    "normalized_value": 393,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$393",
+    "normalized_value": 393,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$105",
+    "normalized_value": 105,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$105",
+    "normalized_value": 105,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$480",
+    "normalized_value": 480,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$480",
+    "normalized_value": 480,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$3,144",
+    "normalized_value": 3144,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$3,144",
+    "normalized_value": 3144,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.271Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$33,511",
+    "normalized_value": 33511,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$33,511",
+    "normalized_value": 33511,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$3,792",
+    "normalized_value": 3792,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$3,792",
+    "normalized_value": 3792,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$11",
+    "normalized_value": 11,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$11",
+    "normalized_value": 11,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$108",
+    "normalized_value": 108,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$108",
+    "normalized_value": 108,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$15,121",
+    "normalized_value": 15121,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$15,121",
+    "normalized_value": 15121,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$13,588",
+    "normalized_value": 13588,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$13,588",
+    "normalized_value": 13588,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$1,526",
+    "normalized_value": 1526,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$1,526",
+    "normalized_value": 1526,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$1,796",
+    "normalized_value": 1796,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$1,796",
+    "normalized_value": 1796,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$528",
+    "normalized_value": 528,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$528",
+    "normalized_value": 528,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$1,792",
+    "normalized_value": 1792,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$1,792",
+    "normalized_value": 1792,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$554",
+    "normalized_value": 554,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$554",
+    "normalized_value": 554,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$279",
+    "normalized_value": 279,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$279",
+    "normalized_value": 279,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$2,482",
+    "normalized_value": 2482,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$2,482",
+    "normalized_value": 2482,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$165",
+    "normalized_value": 165,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$165",
+    "normalized_value": 165,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$103",
+    "normalized_value": 103,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$103",
+    "normalized_value": 103,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$441",
+    "normalized_value": 441,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$441",
+    "normalized_value": 441,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$70",
+    "normalized_value": 70,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$70",
+    "normalized_value": 70,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$183",
+    "normalized_value": 183,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$183",
+    "normalized_value": 183,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$594",
+    "normalized_value": 594,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$594",
+    "normalized_value": 594,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$192",
+    "normalized_value": 192,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$192",
+    "normalized_value": 192,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$1,594",
+    "normalized_value": 1594,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$1,594",
+    "normalized_value": 1594,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$53",
+    "normalized_value": 53,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$53",
+    "normalized_value": 53,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$2,755",
+    "normalized_value": 2755,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$2,755",
+    "normalized_value": 2755,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$281",
+    "normalized_value": 281,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$281",
+    "normalized_value": 281,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$270",
+    "normalized_value": 270,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$270",
+    "normalized_value": 270,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$500",
+    "normalized_value": 500,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$500",
+    "normalized_value": 500,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$36",
+    "normalized_value": 36,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$36",
+    "normalized_value": 36,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$16,726",
+    "normalized_value": 16726,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$16,726",
+    "normalized_value": 16726,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$13",
+    "normalized_value": 13,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: S1601-0073913 EOEG LOPA Gap Closure",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$13",
+    "normalized_value": 13,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:11.272Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Original$128,750",
+    "selector": "text-2xl font-bold text-gray-900",
+    "display_value": "$128,750",
+    "normalized_value": 128750,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.566Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Original$128,750",
+    "selector": "font-medium",
+    "display_value": "$128,750",
+    "normalized_value": 128750,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.566Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Total Committed",
+    "selector": "text-2xl font-bold text-gray-900",
+    "display_value": "$94,196",
+    "normalized_value": 94196,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.567Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Total Forecasted Cost",
+    "selector": "text-3xl font-bold text-gray-900",
+    "display_value": "$57,750",
+    "normalized_value": 57750,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.567Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Actual to Date$57,750",
+    "selector": "font-medium",
+    "display_value": "$57,750",
+    "normalized_value": 57750,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.567Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Actual to Date$57,750",
+    "selector": "font-medium text-gray-500",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.567Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Budget$68,318",
+    "selector": "font-medium",
+    "display_value": "$68,318",
+    "normalized_value": 68318,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.567Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Total Committed Cost",
+    "selector": "text-3xl font-bold text-gray-900",
+    "display_value": "$36,446",
+    "normalized_value": 36446,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.567Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Actual to Date$34,011",
+    "selector": "font-medium",
+    "display_value": "$34,011",
+    "normalized_value": 34011,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.567Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Actual to Date$34,011",
+    "selector": "font-medium text-gray-500",
+    "display_value": "$2,435",
+    "normalized_value": 2435,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.567Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Budget$46,725",
+    "selector": "font-medium",
+    "display_value": "$46,725",
+    "normalized_value": 46725,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.567Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Remaining Budget",
+    "selector": "text-2xl font-bold text-gray-900",
+    "display_value": "$34,554",
+    "normalized_value": 34554,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.567Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Spent: $94,196Budget: $128,750",
+    "selector": "font-medium",
+    "display_value": "$34,554",
+    "normalized_value": 34554,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.567Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Total PO Value",
+    "selector": "text-2xl font-bold",
+    "display_value": "$36,446",
+    "normalized_value": 36446,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.568Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "This Month",
+    "selector": "text-2xl font-bold",
+    "display_value": "$34,011",
+    "normalized_value": 34011,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.568Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Equipment",
+    "selector": "text-lg font-bold text-gray-900 mt-1",
+    "display_value": "$46,725",
+    "normalized_value": 46725,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.568Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Equipment",
+    "selector": "text-lg font-bold text-gray-900 mt-1",
+    "display_value": "$34,011",
+    "normalized_value": 34011,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.568Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(0%)",
+    "selector": "text-right py-4 px-2 text-gray-900 font-bold",
+    "display_value": "$20,632",
+    "normalized_value": 20632,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.568Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(0%)",
+    "selector": "text-right py-4 px-2 text-gray-900 font-bold",
+    "display_value": "$36,446",
+    "normalized_value": 36446,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.568Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(0%)",
+    "selector": "text-right py-4 px-2 text-gray-900 font-bold",
+    "display_value": "$34,011",
+    "normalized_value": 34011,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.568Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(0%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$1,834",
+    "normalized_value": 1834,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.568Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(0%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$1,834",
+    "normalized_value": 1834,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.568Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(106%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$298",
+    "normalized_value": 298,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.568Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(106%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors text-yellow-600 font-medium",
+    "display_value": "$316",
+    "normalized_value": 316,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.568Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(200%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$65",
+    "normalized_value": 65,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.568Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(200%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors text-yellow-600 font-medium",
+    "display_value": "$130",
+    "normalized_value": 130,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.568Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$67",
+    "normalized_value": 67,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$67",
+    "normalized_value": 67,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(73%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$2,076",
+    "normalized_value": 2076,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(73%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$2,076",
+    "normalized_value": 2076,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$37",
+    "normalized_value": 37,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$37",
+    "normalized_value": 37,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$54",
+    "normalized_value": 54,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$54",
+    "normalized_value": 54,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$38",
+    "normalized_value": 38,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$38",
+    "normalized_value": 38,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$19",
+    "normalized_value": 19,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$19",
+    "normalized_value": 19,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(186%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$2,132",
+    "normalized_value": 2132,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(186%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors text-yellow-600 font-medium",
+    "display_value": "$3,966",
+    "normalized_value": 3966,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$521",
+    "normalized_value": 521,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$521",
+    "normalized_value": 521,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(108%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$3,222",
+    "normalized_value": 3222,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(108%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors text-yellow-600 font-medium",
+    "display_value": "$3,488",
+    "normalized_value": 3488,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$533",
+    "normalized_value": 533,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$533",
+    "normalized_value": 533,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(312%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$2,594",
+    "normalized_value": 2594,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(312%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors text-yellow-600 font-medium",
+    "display_value": "$8,103",
+    "normalized_value": 8103,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(3118%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$100",
+    "normalized_value": 100,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(3118%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors text-yellow-600 font-medium",
+    "display_value": "$3,118",
+    "normalized_value": 3118,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(255%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$756",
+    "normalized_value": 756,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(255%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors text-yellow-600 font-medium",
+    "display_value": "$1,930",
+    "normalized_value": 1930,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(400%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$183",
+    "normalized_value": 183,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(400%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors text-yellow-600 font-medium",
+    "display_value": "$732",
+    "normalized_value": 732,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$208",
+    "normalized_value": 208,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.569Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$208",
+    "normalized_value": 208,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(187%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$2,958",
+    "normalized_value": 2958,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(187%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors text-yellow-600 font-medium",
+    "display_value": "$5,520",
+    "normalized_value": 5520,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(160%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$1,354",
+    "normalized_value": 1354,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(160%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors text-yellow-600 font-medium",
+    "display_value": "$2,172",
+    "normalized_value": 2172,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$297",
+    "normalized_value": 297,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$297",
+    "normalized_value": 297,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$220",
+    "normalized_value": 220,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$220",
+    "normalized_value": 220,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$302",
+    "normalized_value": 302,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$302",
+    "normalized_value": 302,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$240",
+    "normalized_value": 240,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$240",
+    "normalized_value": 240,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$50",
+    "normalized_value": 50,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$50",
+    "normalized_value": 50,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(50%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$81",
+    "normalized_value": 81,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(50%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$81",
+    "normalized_value": 81,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "text-right py-4 px-2 text-gray-900",
+    "display_value": "$394",
+    "normalized_value": 394,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "(100%)",
+    "selector": "w-full text-right hover:bg-gray-100 px-2 py-1 rounded transition-colors",
+    "display_value": "$394",
+    "normalized_value": 394,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-bold text-gray-900",
+    "display_value": "$20,632",
+    "normalized_value": 20632,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-bold text-gray-900",
+    "display_value": "$36,446",
+    "normalized_value": 36446,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Invoiced:",
+    "selector": "text-sm font-bold text-gray-900",
+    "display_value": "$34,011",
+    "normalized_value": 34011,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$1,834",
+    "normalized_value": 1834,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$1,834",
+    "normalized_value": 1834,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$298",
+    "normalized_value": 298,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors text-yellow-600",
+    "display_value": "$316",
+    "normalized_value": 316,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$65",
+    "normalized_value": 65,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors text-yellow-600",
+    "display_value": "$130",
+    "normalized_value": 130,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$67",
+    "normalized_value": 67,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$67",
+    "normalized_value": 67,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$2,076",
+    "normalized_value": 2076,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$2,076",
+    "normalized_value": 2076,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$37",
+    "normalized_value": 37,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$37",
+    "normalized_value": 37,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$54",
+    "normalized_value": 54,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$54",
+    "normalized_value": 54,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$38",
+    "normalized_value": 38,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$38",
+    "normalized_value": 38,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.570Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$19",
+    "normalized_value": 19,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.571Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$19",
+    "normalized_value": 19,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.571Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$2,132",
+    "normalized_value": 2132,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.571Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors text-yellow-600",
+    "display_value": "$3,966",
+    "normalized_value": 3966,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.571Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$521",
+    "normalized_value": 521,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.571Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$521",
+    "normalized_value": 521,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.571Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$3,222",
+    "normalized_value": 3222,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.571Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors text-yellow-600",
+    "display_value": "$3,488",
+    "normalized_value": 3488,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.571Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$533",
+    "normalized_value": 533,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$533",
+    "normalized_value": 533,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$2,594",
+    "normalized_value": 2594,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors text-yellow-600",
+    "display_value": "$8,103",
+    "normalized_value": 8103,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$100",
+    "normalized_value": 100,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors text-yellow-600",
+    "display_value": "$3,118",
+    "normalized_value": 3118,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$756",
+    "normalized_value": 756,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors text-yellow-600",
+    "display_value": "$1,930",
+    "normalized_value": 1930,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$183",
+    "normalized_value": 183,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors text-yellow-600",
+    "display_value": "$732",
+    "normalized_value": 732,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$208",
+    "normalized_value": 208,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$208",
+    "normalized_value": 208,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$2,958",
+    "normalized_value": 2958,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors text-yellow-600",
+    "display_value": "$5,520",
+    "normalized_value": 5520,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$1,354",
+    "normalized_value": 1354,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors text-yellow-600",
+    "display_value": "$2,172",
+    "normalized_value": 2172,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$297",
+    "normalized_value": 297,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$297",
+    "normalized_value": 297,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$220",
+    "normalized_value": 220,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$220",
+    "normalized_value": 220,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$302",
+    "normalized_value": 302,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$302",
+    "normalized_value": 302,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$240",
+    "normalized_value": 240,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$240",
+    "normalized_value": 240,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$50",
+    "normalized_value": 50,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$50",
+    "normalized_value": 50,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$81",
+    "normalized_value": 81,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$81",
+    "normalized_value": 81,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Fusion PO Value:",
+    "selector": "text-sm font-medium",
+    "display_value": "$394",
+    "normalized_value": 394,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Project: 5790 - S1606 & 07-085888 Dow Dark Knight Demo Project",
+    "label": "Revised PO Value:",
+    "selector": "text-sm font-medium hover:bg-gray-100 px-2 py-0.5 rounded transition-colors",
+    "display_value": "$394",
+    "normalized_value": 394,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:05:50.572Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "Total PO Value",
+    "selector": "text-2xl font-bold text-foreground",
+    "display_value": "$2,385,486",
+    "normalized_value": 2385486,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "Total Line Item Value",
+    "selector": "text-2xl font-bold text-green-600",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "Remaining",
+    "selector": "text-2xl font-bold text-orange-600",
+    "display_value": "$2,385,486",
+    "normalized_value": 2385486,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$183",
+    "normalized_value": 183,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$183",
+    "normalized_value": 183,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$1,792",
+    "normalized_value": 1792,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$2,192",
+    "normalized_value": 2192,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$3,792",
+    "normalized_value": 3792,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$3,804",
+    "normalized_value": 3804,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$70",
+    "normalized_value": 70,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$89",
+    "normalized_value": 89,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$16,726",
+    "normalized_value": 16726,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$12,941",
+    "normalized_value": 12941,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$554",
+    "normalized_value": 554,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$591",
+    "normalized_value": 591,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$103",
+    "normalized_value": 103,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$103",
+    "normalized_value": 103,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$33,511",
+    "normalized_value": 33511,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$29,721",
+    "normalized_value": 29721,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$528",
+    "normalized_value": 528,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$528",
+    "normalized_value": 528,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$441",
+    "normalized_value": 441,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$441",
+    "normalized_value": 441,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$281",
+    "normalized_value": 281,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$281",
+    "normalized_value": 281,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$36",
+    "normalized_value": 36,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$36",
+    "normalized_value": 36,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$192",
+    "normalized_value": 192,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$192",
+    "normalized_value": 192,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.813Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$2,482",
+    "normalized_value": 2482,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$2,482",
+    "normalized_value": 2482,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$176",
+    "normalized_value": 176,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$176",
+    "normalized_value": 176,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$431",
+    "normalized_value": 431,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$2,154",
+    "normalized_value": 2154,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$393",
+    "normalized_value": 393,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$574",
+    "normalized_value": 574,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$3,144",
+    "normalized_value": 3144,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$3,144",
+    "normalized_value": 3144,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$15,121",
+    "normalized_value": 15121,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$15,121",
+    "normalized_value": 15121,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$1,796",
+    "normalized_value": 1796,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$1,796",
+    "normalized_value": 1796,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$279",
+    "normalized_value": 279,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$279",
+    "normalized_value": 279,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$103",
+    "normalized_value": 103,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$103",
+    "normalized_value": 103,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$1,594",
+    "normalized_value": 1594,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$1,594",
+    "normalized_value": 1594,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$2,755",
+    "normalized_value": 2755,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$2,755",
+    "normalized_value": 2755,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$270",
+    "normalized_value": 270,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$270",
+    "normalized_value": 270,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$500",
+    "normalized_value": 500,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$1,332",
+    "normalized_value": 1332,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$13",
+    "normalized_value": 13,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$13",
+    "normalized_value": 13,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$53",
+    "normalized_value": 53,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$53",
+    "normalized_value": 53,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$594",
+    "normalized_value": 594,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$594",
+    "normalized_value": 594,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$165",
+    "normalized_value": 165,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$165",
+    "normalized_value": 165,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$100",
+    "normalized_value": 100,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$1,254",
+    "normalized_value": 1254,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$21",
+    "normalized_value": 21,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$21",
+    "normalized_value": 21,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$247",
+    "normalized_value": 247,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$256",
+    "normalized_value": 256,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$26",
+    "normalized_value": 26,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$26",
+    "normalized_value": 26,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$142",
+    "normalized_value": 142,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$142",
+    "normalized_value": 142,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$8,666",
+    "normalized_value": 8666,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.814Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$8,855",
+    "normalized_value": 8855,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$105",
+    "normalized_value": 105,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$105",
+    "normalized_value": 105,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$480",
+    "normalized_value": 480,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$480",
+    "normalized_value": 480,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$11",
+    "normalized_value": 11,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$11",
+    "normalized_value": 11,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$108",
+    "normalized_value": 108,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$108",
+    "normalized_value": 108,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$13,588",
+    "normalized_value": 13588,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$13,588",
+    "normalized_value": 13588,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$1,526",
+    "normalized_value": 1526,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$1,526",
+    "normalized_value": 1526,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0073913 EOEG LOPA Gap Closure",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$17,377",
+    "normalized_value": 17377,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$26,909",
+    "normalized_value": 26909,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$680",
+    "normalized_value": 680,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$680",
+    "normalized_value": 680,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$682",
+    "normalized_value": 682,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$682",
+    "normalized_value": 682,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$1,467",
+    "normalized_value": 1467,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$1,467",
+    "normalized_value": 1467,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$463",
+    "normalized_value": 463,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$463",
+    "normalized_value": 463,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$69",
+    "normalized_value": 69,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$69",
+    "normalized_value": 69,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$1,704",
+    "normalized_value": 1704,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$5,859",
+    "normalized_value": 5859,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "px-6 py-4 whitespace-nowrap font-medium text-foreground",
+    "display_value": "$3,897",
+    "normalized_value": 3897,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "px-6 py-4 whitespace-nowrap text-foreground",
+    "display_value": "$4,382",
+    "normalized_value": 4382,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  },
+  {
+    "page": "Purchase Orders",
+    "label": "S1601-0080682 SDO Air Upgrade Project",
+    "selector": "text-foreground",
+    "display_value": "$0",
+    "normalized_value": 0,
+    "element_type": "inline_value",
+    "captured_at": "2025-08-10T19:06:17.815Z"
+  }
+]

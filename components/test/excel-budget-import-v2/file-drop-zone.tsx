@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
-import { FileSpreadsheet, Upload, Loader2 } from 'lucide-react'
+import { FileSpreadsheet, Upload, LoaderCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface FileDropZoneProps {
@@ -108,7 +108,7 @@ export function FileDropZone({ onFileUpload, loading }: FileDropZoneProps) {
       <div className="flex flex-col items-center gap-4">
         {loading ? (
           <>
-            <Loader2 className="h-12 w-12 text-muted-foreground animate-spin" />
+            <LoaderCircle className="h-12 w-12 text-muted-foreground animate-spin" />
             <div>
               <p className="text-lg font-medium">Analyzing Excel file...</p>
               <p className="text-sm text-muted-foreground">This may take a few moments</p>
