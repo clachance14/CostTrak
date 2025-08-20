@@ -37,7 +37,9 @@
       "mcp__agent-os__read_text_file",
       "Bash(for:*)",
       "Bash(do sed -i 's/\\bFilter\\b/Funnel/g' \"$file\")",
-      "Bash(psql:*)"
+      "Bash(psql:*)",
+      "Bash(true)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }

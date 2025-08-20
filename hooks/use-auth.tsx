@@ -73,6 +73,12 @@ export function useSignIn() {
         return { user: data.user, profile: null }
       }
       
+      // Update last_login_at timestamp manually since trigger was removed
+      await supabase
+        .from('profiles')
+        .update({ last_login_at: new Date().toISOString() })
+        .eq('id', data.user.id)
+      
       return { user: data.user, profile }
     },
     onSuccess: async (data) => {

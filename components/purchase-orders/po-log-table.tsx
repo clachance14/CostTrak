@@ -24,6 +24,7 @@ interface PurchaseOrder {
   invoiced_amount?: number
   status: string
   cost_center?: string | null
+  generation_date: string | null
   cost_code?: {
     id: string
     code: string
@@ -31,7 +32,7 @@ interface PurchaseOrder {
   }
 }
 
-type SortField = 'po_number' | 'vendor_name' | 'po_value' | 'committed_amount' | 'invoiced_amount' | 'cost_center'
+type SortField = 'po_number' | 'vendor_name' | 'po_value' | 'committed_amount' | 'invoiced_amount' | 'cost_center' | 'generation_date'
 
 interface SortConfig {
   field: SortField | null
@@ -538,6 +539,18 @@ export function POLogTable({ purchaseOrders: purchaseOrdersProp, className, proj
                 PO #
               </POLogTableHeader>
               <POLogTableHeader
+                sortKey="generation_date"
+                currentSort={sortConfig}
+                onSort={handleSort}
+                filterable={true}
+                currentFilters={columnFilters}
+                onFilterChange={handleFilterChange}
+                className="py-3 px-2"
+                projectId={projectId}
+              >
+                Generation Date
+              </POLogTableHeader>
+              <POLogTableHeader
                 sortKey="vendor_name"
                 currentSort={sortConfig}
                 onSort={handleSort}
@@ -607,7 +620,7 @@ export function POLogTable({ purchaseOrders: purchaseOrdersProp, className, proj
             {processedOrders.length > 0 && (
               <tr className="border-b-2 border-gray-300 bg-gray-100 font-semibold">
                 <td className="py-4 px-2"></td>
-                <td colSpan={3} className="py-4 px-2 text-gray-900">
+                <td colSpan={4} className="py-4 px-2 text-gray-900">
                   Subtotal ({processedOrders.length} {processedOrders.length === 1 ? 'item' : 'items'})
                 </td>
                 <td className="text-right py-4 px-2 text-gray-900 font-bold">
@@ -627,11 +640,14 @@ export function POLogTable({ purchaseOrders: purchaseOrdersProp, className, proj
               const percentage = calculatePercentage(po.invoiced_amount || 0, poValue)
               
               return (
-                <ExpandableRow key={po.id} purchaseOrderId={po.id} colSpan={7}>
+                <ExpandableRow key={po.id} purchaseOrderId={po.id} colSpan={8}>
                   <td className="py-4 px-2">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-gray-900">{po.po_number}</span>
                     </div>
+                  </td>
+                  <td className="py-4 px-2 text-gray-700">
+                    {po.generation_date ? format(new Date(po.generation_date), 'MMM d, yyyy') : '-'}
                   </td>
                   <td className="py-4 px-2 text-gray-700">{po.vendor_name}</td>
                   <td className="py-4 px-2 text-gray-700">
@@ -770,6 +786,11 @@ export function POLogTable({ purchaseOrders: purchaseOrdersProp, className, proj
               {/* Vendor & Cost Code */}
               <div className="space-y-1">
                 <p className="text-sm font-medium text-gray-700">{po.vendor_name}</p>
+                {po.generation_date && (
+                  <p className="text-sm text-gray-500">
+                    Generation Date: {format(new Date(po.generation_date), 'MMM d, yyyy')}
+                  </p>
+                )}
                 {po.cost_center && (
                   <p className="text-sm text-gray-500">
                     Cost Code: {formatCostCenter(po.cost_center)}

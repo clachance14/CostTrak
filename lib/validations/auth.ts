@@ -36,7 +36,8 @@ export const userRegistrationSchema = z.object({
     .regex(
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
       'Password must contain uppercase, lowercase, number, and special character'
-    ),
+    )
+    .optional(), // Password is optional when using email invite
   first_name: z
     .string()
     .min(1, 'First name is required')
@@ -56,6 +57,8 @@ export const userRegistrationSchema = z.object({
     'viewer',
   ]),
   division_id: z.string().uuid().nullable().optional(),
+  creation_method: z.enum(['invite', 'password']).default('invite'),
+  redirect_to: z.string().url().optional(), // For invite email redirect
 })
 
 // Password reset schema

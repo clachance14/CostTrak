@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { createClient } from '@/lib/supabase/client'
 import { Button, Input, Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui'
 import { passwordResetSchema, type PasswordResetInput } from '@/lib/validations/auth'
 import { CircleAlert, ArrowLeft, CircleCheck, Mail } from 'lucide-react'
@@ -11,6 +12,7 @@ import Link from 'next/link'
 export default function PasswordResetPage() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const supabase = createClient()
   
   const {
     register,
@@ -25,18 +27,16 @@ export default function PasswordResetPage() {
     setIsLoading(true)
     
     try {
-      const response = await fetch('/api/auth/password-reset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+      // Use Supabase's built-in password reset which triggers the email template
+      // The redirectTo URL must be added to Supabase dashboard's allowed redirect URLs
+      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
+        redirectTo: `${window.location.origin}/auth/callback?type=recovery&next=/auth/reset-password`,
       })
 
-      const result = await response.json()
-
-      if (!response.ok) {
+      if (error) {
         setError('root', {
           type: 'manual',
-          message: result.error || 'Failed to send reset email',
+          message: error.message || 'Failed to send reset email',
         })
         return
       }

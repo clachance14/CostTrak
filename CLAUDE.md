@@ -303,3 +303,159 @@ Always ask Claude to:
 3. **Labor Import** - Weekly data processing and classification
 4. **Authentication** - Email domain validation, session management
 5. **Data Validation** - Form inputs, file uploads, API payloads
+
+## Database Operations for Claude
+
+**CRITICAL**: Follow these rules when working with the Supabase database to prevent errors and confusion.
+
+### Required Reading
+Before any database operation, review:
+- `docs/SUPABASE_OPERATIONS_GUIDE.md` - Complete operations guide
+- `docs/SUPABASE_QUICK_REFERENCE.md` - Quick lookup reference
+
+### Mandatory Database Rules
+
+1. **ALWAYS use the query-database.ts script for SQL operations**:
+   ```bash
+   npx tsx scripts/query-database.ts
+   ```
+   - Never use raw psql commands without checking environment first
+   - This script handles connection automatically and logs operations
+
+2. **ALWAYS check table existence before operations**:
+   ```sql
+   SELECT EXISTS (
+     SELECT FROM information_schema.tables 
+     WHERE table_name = 'your_table_name'
+   );
+   ```
+
+3. **ALWAYS use transactions for multi-step operations**:
+   ```sql
+   BEGIN;
+   -- Your operations here
+   -- Verify results before committing
+   SELECT COUNT(*) FROM affected_table; -- verification
+   COMMIT; -- or ROLLBACK if something looks wrong
+   ```
+
+4. **ALWAYS preview before destructive operations**:
+   ```sql
+   -- Preview what will be affected
+   SELECT * FROM table_name WHERE condition LIMIT 5;
+   
+   -- Then perform operation
+   UPDATE table_name SET column = value WHERE condition;
+   ```
+
+5. **NEVER modify schema without testing locally first**:
+   ```bash
+   # Start local instance
+   pnpm db:start
+   
+   # Test migration locally
+   pnpm db:migrate
+   
+   # Only then apply to remote
+   pnpm db:push
+   ```
+
+### Common Error Prevention
+
+- **"relation does not exist"**: Always check table spelling and existence first
+- **"permission denied"**: Use MCP postgres tool or query-database.ts script
+- **"connection timeout"**: Check internet connection, retry with fresh connection
+- **"column does not exist"**: Verify column names with information_schema.columns
+
+### Safe Operation Pattern
+
+For any database modification, follow this pattern:
+
+```bash
+# 1. Connect safely
+npx tsx scripts/query-database.ts
+
+# 2. In the script, follow this sequence:
+```
+```sql
+-- 2a. Start transaction
+BEGIN;
+
+-- 2b. Check current state
+SELECT COUNT(*) FROM target_table WHERE condition;
+
+-- 2c. Preview changes (if applicable)
+SELECT * FROM target_table WHERE condition LIMIT 3;
+
+-- 2d. Perform operation
+UPDATE/INSERT/DELETE operations;
+
+-- 2e. Verify results
+SELECT COUNT(*) FROM target_table WHERE condition;
+
+-- 2f. Commit or rollback
+COMMIT; -- or ROLLBACK if unexpected results
+```
+
+### Database Connection Details
+
+- **Remote Database** (Production): `gzrxhwpmtbgnngadgnse.supabase.co`
+- **Connection via MCP**: Already configured in environment
+- **Direct queries**: Use `scripts/query-database.ts`
+- **Migrations**: Use `pnpm db:push` after local testing
+
+### Troubleshooting Database Issues
+
+If you encounter database errors:
+
+1. **Check connection first**:
+   ```bash
+   npx tsx scripts/test-final-connection.ts
+   ```
+
+2. **Verify environment variables** are set in `.env.local`
+
+3. **Check table structure**:
+   ```sql
+   \d table_name  -- In psql
+   -- OR
+   SELECT column_name, data_type FROM information_schema.columns 
+   WHERE table_name = 'your_table';
+   ```
+
+4. **Review recent migrations**:
+   ```sql
+   SELECT * FROM supabase_migrations.schema_migrations 
+   ORDER BY version DESC LIMIT 5;
+   ```
+
+### Quick Reference
+
+**Most Common Tables**:
+- `projects` - Project information
+- `purchase_orders`, `po_line_items` - PO tracking
+- `labor_employee_actuals` - Weekly labor data
+- `budget_line_items` - Budget baselines
+- `change_orders` - Contract modifications
+- `employees` - Employee master data
+- `profiles` - User authentication
+
+**Most Common Scripts**:
+- `scripts/query-database.ts` - Safe SQL execution
+- `scripts/test-final-connection.ts` - Connection test
+- `pnpm generate-types:remote` - Update TypeScript types
+- `pnpm db:push` - Apply migrations to remote
+
+**Emergency Commands**:
+```bash
+# If stuck in transaction
+ROLLBACK;
+
+# If connection issues
+npx tsx scripts/test-final-connection.ts
+
+# If type issues
+pnpm generate-types:remote
+```
+
+Remember: **When in doubt, ask for clarification rather than guessing table names or column structures.**

@@ -93,6 +93,21 @@ function mapStatus(icsStatus: string): 'draft' | 'approved' | 'cancelled' | 'com
   }
 }
 
+// Helper function to normalize contract extra type values
+function normalizeContractType(value: string | undefined): string | null {
+  if (!value || value.trim() === '') return null
+  
+  const normalized = value.trim()
+  const allowedValues = ['Contract', 'Extra', 'Overhead']
+  
+  // Check if it's one of the allowed values (case-insensitive)
+  const matched = allowedValues.find(v => 
+    v.toLowerCase() === normalized.toLowerCase()
+  )
+  
+  return matched || null // Return the properly-cased value or null
+}
+
 // POST /api/purchase-orders/import - Import ICS PO Log CSV (OPTIMIZED)
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
@@ -346,7 +361,7 @@ export async function POST(request: NextRequest) {
         generation_date: parseICSDate(firstRow['Generation Date']),
         requestor: firstRow['Requestor'],
         sub_cost_code: firstRow['Sub Cost Code'],
-        contract_extra_type: firstRow['Def. Contr./Extra'],
+        contract_extra_type: normalizeContractType(firstRow['Def. Contr./Extra']),
         wo_pmo: firstRow['WO/PMO'],
         cost_center: costCenter,
         budget_category: budgetCategory,
@@ -380,9 +395,9 @@ export async function POST(request: NextRequest) {
             total_amount: lineItemValue,
             invoice_ticket: invoiceTicket,
             invoice_date: parseICSDate(row['Inv. Date']),
-            contract_extra_type: row['Contract/Extra'],
+            contract_extra_type: normalizeContractType(row['Contract/Extra']),
             material_description: row['Material Description'],
-            category: row['Contract/Extra'] || 'Contract'
+            category: normalizeContractType(row['Contract/Extra']) || 'Contract'
           })
         }
       }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 
 // GET /api/users - List users with optional role filter
@@ -20,10 +21,21 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const role = searchParams.get('role')
 
-    // Build query
+    // Build query - include additional status fields
     let query = supabase
       .from('profiles')
-      .select('id, email, first_name, last_name, role')
+      .select(`
+        id, 
+        email, 
+        first_name, 
+        last_name, 
+        role,
+        created_at,
+        last_login_at,
+        is_active,
+        force_password_change,
+        division_id
+      `)
       .order('first_name')
 
     // Apply role filter if provided
@@ -37,7 +49,33 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
 
-    return NextResponse.json({ users: users || [] })
+    // Fetch invite status for users
+    const adminClient = createAdminClient()
+    const userIds = users?.map(u => u.id) || []
+    
+    let inviteStatuses = new Map()
+    if (userIds.length > 0) {
+      const { data: invites } = await adminClient
+        .from('user_invites')
+        .select('user_id, status, invited_at, accepted_at')
+        .in('user_id', userIds)
+
+      invites?.forEach(invite => {
+        inviteStatuses.set(invite.user_id, {
+          invite_status: invite.status,
+          invited_at: invite.invited_at,
+          accepted_at: invite.accepted_at,
+        })
+      })
+    }
+
+    // Combine user data with invite status
+    const usersWithStatus = users?.map(user => ({
+      ...user,
+      ...(inviteStatuses.get(user.id) || { invite_status: user.last_login_at ? 'active' : 'unknown' }),
+    }))
+
+    return NextResponse.json({ users: usersWithStatus || [] })
   } catch (error) {
     console.error('Users API error:', error)
     return NextResponse.json(
@@ -65,9 +103,9 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    // Only controllers and ops_manager can create users (ops_manager can create project_manager only)
-    if (!['controller', 'ops_manager'].includes(currentUser?.role || '')) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+    // Project managers can create users (simplified permission model)
+    if (currentUser?.role !== 'project_manager') {
+      return NextResponse.json({ error: 'Only project managers can create users' }, { status: 403 })
     }
 
     // Validate request body
@@ -79,11 +117,6 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const validatedData = userSchema.parse(body)
-    
-    // Ops managers can only create project managers
-    if (currentUser?.role === 'ops_manager' && validatedData.role !== 'project_manager') {
-      return NextResponse.json({ error: 'Ops managers can only create project manager users' }, { status: 403 })
-    }
     
     // Split name into first and last name
     const nameParts = validatedData.name.trim().split(' ')

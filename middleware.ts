@@ -5,7 +5,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import type { Database } from '@/types/database.generated'
 
 // Routes that don't require authentication
-const publicRoutes = ['/', '/login', '/unauthorized', '/password-reset', '/password-reset/confirm']
+const publicRoutes = ['/', '/login', '/unauthorized', '/password-reset', '/password-reset/confirm', '/reset-password']
 
 export async function middleware(request: NextRequest) {
   // Create a response that we can modify
@@ -17,8 +17,10 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
-  // Allow public routes and auth API routes
-  if (publicRoutes.some(route => pathname === route) || pathname.startsWith('/api/auth/')) {
+  // Allow public routes, auth API routes, and auth callback routes
+  if (publicRoutes.some(route => pathname === route) || 
+      pathname.startsWith('/api/auth/') || 
+      pathname.startsWith('/auth/')) {
     return response
   }
 
